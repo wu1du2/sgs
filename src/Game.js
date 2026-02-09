@@ -62,6 +62,7 @@ export const CardGame = {
     gameResult: null, // { winnerRole: string, scoreChanges: object }
     rematchVotes: [],
     lastAction: null,
+    actionLog: [],
   }),
 
   turn: {
@@ -230,6 +231,18 @@ export const CardGame = {
         cards: cardsPlayed,
         targetIDs
       };
+
+      // Add to action log
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const cardNames = cardsPlayed.map(c => c.name).join(' ');
+      let logEntry = '';
+      if (targetIDs && targetIDs.length > 0) {
+        const targets = targetIDs.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
+        logEntry = `${playerName} 对 ${targets} 出牌 [${cardNames}]`;
+      } else {
+        logEntry = `${playerName} 出牌 [${cardNames}]`;
+      }
+      G.actionLog.push(logEntry);
     },
     discardCards: ({ G, playerID }, cardIndices) => {
       if (G.phase !== 'playing') return;
@@ -245,6 +258,12 @@ export const CardGame = {
         playerID,
         cards: cardsDiscarded
       };
+
+      // Add to action log
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const cardNames = cardsDiscarded.map(c => c.name).join(' ');
+      const logEntry = `${playerName} 弃牌 [${cardNames}]`;
+      G.actionLog.push(logEntry);
     }
   },
 

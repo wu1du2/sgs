@@ -396,6 +396,113 @@ const GameResultOverlay = ({ result, myPlayerID, onRematch, rematchVotes }) => {
   );
 };
 
+const ActionLog = ({ logs }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  // Get last 3 logs for collapsed view
+  const recentLogs = logs.slice(-3);
+
+  if (isExpanded) {
+    return (
+      <>
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 2999
+          }}
+          onClick={() => setIsExpanded(false)}
+        />
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '500px',
+          height: '400px',
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          border: '2px solid #ffd700',
+          borderRadius: '8px',
+          padding: '20px',
+          zIndex: 3000,
+          color: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 0 20px rgba(0,0,0,0.8)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #555', paddingBottom: '10px' }}>
+            <h3 style={{ margin: 0, color: '#ffd700' }}>Action Log</h3>
+            <button 
+              onClick={() => setIsExpanded(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#ff4444',
+                fontSize: '20px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                lineHeight: 1
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', fontSize: '14px', lineHeight: '1.6', fontFamily: 'monospace' }}>
+            {logs.length === 0 ? (
+              <div style={{ color: '#777', textAlign: 'center', marginTop: '20px' }}>No actions recorded yet.</div>
+            ) : (
+              logs.map((log, i) => (
+                <div key={i} style={{ marginBottom: '5px', borderBottom: '1px solid #333', paddingBottom: '2px' }}>
+                  <span style={{ color: '#888', marginRight: '10px' }}>#{i + 1}</span>
+                  {log}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div 
+      onClick={() => setIsExpanded(true)}
+      style={{
+        width: '250px',
+        height: '90px',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        border: '1px solid #7f8c8d',
+        borderRadius: '5px',
+        padding: '10px',
+        color: '#e0e0e0',
+        fontSize: '12px',
+        cursor: 'pointer',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+        transition: 'all 0.2s'
+      }}
+      title="Click to view full log"
+    >
+      {recentLogs.length === 0 && <div style={{ color: '#777', textAlign: 'center', marginTop: 'auto', marginBottom: 'auto' }}>No actions yet</div>}
+      {recentLogs.map((log, i) => (
+        <div key={i} style={{ 
+          whiteSpace: 'nowrap', 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis',
+          marginBottom: '2px',
+          color: i === recentLogs.length - 1 ? '#fff' : '#aaa'
+        }}>
+          {log}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -804,14 +911,29 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         position: 'absolute',
         top: '50%',
         left: '50%',
-        transform: 'translate(-50%, -50%)',
-        display: 'flex',
-        gap: '20px'
+        width: 0,
+        height: 0,
+        overflow: 'visible'
       }}>
-        {/* Draw Pile */}
+        {/* Action Log - Exactly Center */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          transform: 'translate(-50%, -50%)',
+          zIndex: 10
+        }}>
+           <ActionLog logs={G.actionLog || []} />
+        </div>
+
+        {/* Draw Pile - Left of Log */}
         <div 
           onClick={onClickDraw}
           style={{
+            position: 'absolute',
+            top: 0,
+            right: '145px', // 125px (half log) + 20px gap
+            transform: 'translateY(-50%)',
             width: '60px',
             height: '90px',
             backgroundColor: '#ecf0f1',
@@ -821,7 +943,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            zIndex: 10
           }}
         >
           <div style={{ textAlign: 'center', fontSize: '12px', color: '#7f8c8d' }}>
