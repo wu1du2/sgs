@@ -2,93 +2,111 @@ import React from 'react';
 import { Card } from './Card';
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], portrait, isMe = false }) => (
-  <div style={{
-    width: '140px',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: '8px',
-    padding: '8px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    color: '#e0e0e0',
-    pointerEvents: 'auto',
-    border: '2px solid #8b4513', // Bronze/Wood border
-    boxShadow: '0 4px 8px rgba(0,0,0,0.5)',
-    flexShrink: 0 // Prevent shrinking
-  }}>
-    {/* Avatar & Name Row */}
-    <div style={{ display: 'flex', width: '100%', marginBottom: '8px', alignItems: 'center' }}>
-      {/* Avatar */}
-      <div style={{ 
-        width: '50px', 
-        height: '50px', 
-        backgroundColor: '#555', 
-        borderRadius: '4px',
-        border: '1px solid #aaa',
-        marginRight: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '24px',
-        overflow: 'hidden',
-        backgroundSize: 'cover',
-        backgroundPosition: 'top center',
-        backgroundImage: portrait ? `url(${portrait})` : 'none'
-      }}>
-        {!portrait && '👤'}
-      </div>
-      
-      {/* Name & HP */}
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700' }}>{name}</div>
-        <div style={{ fontSize: '12px', color: '#ff4444', letterSpacing: '1px' }}>
-          {'♥'.repeat(hp)}
-        </div>
-      </div>
-    </div>
+const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral' }) => {
+  const getBorderColor = () => {
+    if (role === 'landlord') return '#ff0000'; // Red for Landlord
+    if (role === 'peasant') return '#00ff00'; // Green for Peasant
+    return '#8b4513'; // Default Bronze/Wood
+  };
 
-    {/* Skills */}
-    <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
-      {skills.map((skill, i) => (
-        <button key={i} style={{
-          fontSize: '10px',
-          padding: '2px 6px',
-          backgroundColor: '#eecfa1',
-          color: '#3e2723',
-          border: '1px solid #8b4513',
+  const getBackgroundColor = () => {
+    if (role === 'landlord') return 'rgba(50, 0, 0, 0.8)';
+    if (role === 'peasant') return 'rgba(0, 50, 0, 0.8)';
+    return 'rgba(0,0,0,0.7)';
+  };
+
+  return (
+    <div style={{
+      width: '140px',
+      backgroundColor: getBackgroundColor(),
+      borderRadius: '8px',
+      padding: '8px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      color: '#e0e0e0',
+      pointerEvents: 'auto',
+      border: `2px solid ${getBorderColor()}`,
+      boxShadow: '0 4px 8px rgba(0,0,0,0.5)',
+      flexShrink: 0 // Prevent shrinking
+    }}>
+      {/* Avatar & Name Row */}
+      <div style={{ display: 'flex', width: '100%', marginBottom: '8px', alignItems: 'center' }}>
+        {/* Avatar */}
+        <div style={{ 
+          width: '50px', 
+          height: '50px', 
+          backgroundColor: '#555', 
           borderRadius: '4px',
-          cursor: 'pointer',
-          flex: 1,
-          textAlign: 'center',
-          fontWeight: 'bold'
-        }}>
-          {skill}
-        </button>
-      ))}
-    </div>
-
-    {/* Equipment Slots */}
-    <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-      {['Wpn', 'Arm', '+1', '-1'].map((slot, i) => (
-        <div key={i} style={{ 
-          height: '20px', 
-          border: '1px dashed #666', 
-          fontSize: '9px', 
-          display: 'flex', 
-          alignItems: 'center', 
+          border: '1px solid #aaa',
+          marginRight: '8px',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
-          color: '#aaa',
-          backgroundColor: 'rgba(0,0,0,0.3)'
+          fontSize: '24px',
+          overflow: 'hidden',
+          backgroundSize: 'cover',
+          backgroundPosition: 'top center',
+          backgroundImage: portrait ? `url(${portrait})` : 'none'
         }}>
-          {slot}
+          {!portrait && '👤'}
         </div>
-      ))}
-    </div>
-  </div>
-);
+        
+        {/* Name & HP */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700' }}>{name}</div>
+          <div style={{ fontSize: '12px', color: '#ff4444', letterSpacing: '1px' }}>
+            {'♥'.repeat(hp)}
+          </div>
+          {/* Role Label */}
+          <div style={{ fontSize: '10px', color: role === 'landlord' ? '#ffaaaa' : '#aaffaa', marginTop: '2px' }}>
+            {role === 'landlord' ? 'Landlord' : 'Peasant'}
+          </div>
+        </div>
+      </div>
 
-const GeneralSelection = ({ options, onSelect, onChange, changeUsed }) => {
+      {/* Skills */}
+      <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+        {skills.map((skill, i) => (
+          <button key={i} style={{
+            fontSize: '10px',
+            padding: '2px 6px',
+            backgroundColor: '#eecfa1',
+            color: '#3e2723',
+            border: '1px solid #8b4513',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            flex: 1,
+            textAlign: 'center',
+            fontWeight: 'bold'
+          }}>
+            {skill}
+          </button>
+        ))}
+      </div>
+
+      {/* Equipment Slots */}
+      <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+        {['Wpn', 'Arm', '+1', '-1'].map((slot, i) => (
+          <div key={i} style={{ 
+            height: '20px', 
+            border: '1px dashed #666', 
+            fontSize: '9px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            color: '#aaa',
+            backgroundColor: 'rgba(0,0,0,0.3)'
+          }}>
+            {slot}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord }) => {
   return (
     <div style={{
       position: 'absolute',
@@ -101,7 +119,34 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed }) => {
       zIndex: 2000,
       color: 'white'
     }}>
-      <h2 style={{ marginBottom: '40px', color: '#ffd700', textShadow: '0 0 10px #ff0000' }}>选择武将</h2>
+      <h2 style={{ marginBottom: '20px', color: '#ffd700', textShadow: '0 0 10px #ff0000' }}>选择武将</h2>
+      
+      {/* Bidding Buttons */}
+      <div style={{ marginBottom: '30px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+        <span style={{ fontSize: '18px', fontWeight: 'bold' }}>叫分:</span>
+        {[100, 200, 300].map(amount => (
+          <button
+            key={amount}
+            onClick={() => onBid(amount)}
+            disabled={landlord !== null}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              backgroundColor: landlord !== null ? '#555' : '#ffd700',
+              color: landlord !== null ? '#aaa' : '#8b4513',
+              border: '2px solid #8b4513',
+              borderRadius: '8px',
+              cursor: landlord !== null ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
+            }}
+          >
+            {amount}
+          </button>
+        ))}
+        {landlord !== null && <span style={{ color: '#ff4444', fontWeight: 'bold' }}>已有人叫地主!</span>}
+      </div>
+
       <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
         {options.map((general, index) => (
           <div key={general.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -151,6 +196,194 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed }) => {
           </div>
         ))}
       </div>
+    </div>
+  );
+};
+
+const ScoreBoard = ({ players, onWin, landlord }) => {
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+
+  if (isCollapsed) {
+    return (
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        zIndex: 1500,
+      }}>
+        <button 
+          onClick={() => setIsCollapsed(false)}
+          style={{
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            color: '#ffd700',
+            border: '1px solid #ffd700',
+            borderRadius: '4px',
+            padding: '5px 10px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+          }}
+        >
+          积分板 ▼
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: '10px',
+      left: '10px',
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      padding: '10px',
+      borderRadius: '8px',
+      color: 'white',
+      zIndex: 1500,
+      border: '1px solid #ffd700',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+      minWidth: '200px'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <h3 style={{ margin: 0, color: '#ffd700', fontSize: '16px' }}>积分板</h3>
+        <button 
+          onClick={() => setIsCollapsed(true)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#aaa',
+            cursor: 'pointer',
+            fontSize: '16px',
+            padding: '0 5px',
+            lineHeight: 1
+          }}
+          title="收起"
+        >
+          ▲
+        </button>
+      </div>
+      <div style={{ marginBottom: '10px' }}>
+        {Object.entries(players).map(([id, p]) => (
+          <div key={id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '14px' }}>
+            <span>
+              玩家 {id} 
+              {p.role === 'landlord' && <span style={{ color: '#ff4444', marginLeft: '4px' }}>(地主)</span>}
+              {p.role === 'peasant' && <span style={{ color: '#4CAF50', marginLeft: '4px' }}>(农民)</span>}
+            </span>
+            <span style={{ fontWeight: 'bold', color: p.score >= 0 ? '#4CAF50' : '#ff4444', marginLeft: '10px' }}>
+              {p.score}
+            </span>
+          </div>
+        ))}
+      </div>
+      {landlord && (
+        <div style={{ display: 'flex', gap: '5px', marginTop: '10px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+          <button 
+            onClick={() => onWin('landlord')} 
+            style={{ 
+              flex: 1,
+              backgroundColor: '#ff4444', 
+              color: 'white', 
+              border: '1px solid #c0392b', 
+              padding: '5px', 
+              cursor: 'pointer', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}
+          >
+            地主胜
+          </button>
+          <button 
+            onClick={() => onWin('peasant')} 
+            style={{ 
+              flex: 1,
+              backgroundColor: '#4CAF50', 
+              color: 'white', 
+              border: '1px solid #388E3C', 
+              padding: '5px', 
+              cursor: 'pointer', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}
+          >
+            农民胜
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const GameResultOverlay = ({ result, myPlayerID, onRematch, rematchVotes }) => {
+  if (!result) return null;
+
+  const myScoreChange = result.scoreChanges[myPlayerID];
+  const isWin = myScoreChange > 0;
+  const isDraw = myScoreChange === 0;
+  
+  let title = "败北";
+  let color = "#ff4444";
+  
+  if (isWin) {
+    title = "胜利";
+    color = "#ffd700";
+  } else if (isDraw) {
+    title = "平局";
+    color = "#aaa";
+  }
+
+  const hasVoted = rematchVotes.includes(myPlayerID);
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.85)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white'
+    }}>
+      <h1 style={{ 
+        fontSize: '64px', 
+        color: color, 
+        textShadow: `0 0 20px ${color}`,
+        marginBottom: '20px'
+      }}>
+        {title}
+      </h1>
+      
+      <div style={{ 
+        fontSize: '32px', 
+        fontWeight: 'bold',
+        color: myScoreChange >= 0 ? '#4CAF50' : '#ff4444',
+        marginBottom: '40px'
+      }}>
+        {myScoreChange > 0 ? '+' : ''}{myScoreChange}
+      </div>
+
+      <button
+        onClick={onRematch}
+        disabled={hasVoted}
+        style={{
+          padding: '15px 40px',
+          fontSize: '24px',
+          fontWeight: 'bold',
+          backgroundColor: hasVoted ? '#555' : '#2196F3',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: hasVoted ? 'default' : 'pointer',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+          transition: 'all 0.2s'
+        }}
+      >
+        {hasVoted ? '等待其他玩家...' : '下一局'} ({rematchVotes.length}/3)
+      </button>
     </div>
   );
 };
@@ -205,16 +438,24 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     }
   };
 
-  const onAddMockPlayers = () => {
-    moves.addMockPlayers();
-  };
-
   const onSelectGeneral = (generalId) => {
     moves.selectGeneral(generalId);
   };
 
   const onChangeGeneral = (generalId) => {
     moves.changeGeneral(generalId);
+  };
+
+  const onBid = (amount) => {
+    moves.claimLandlord(amount);
+  };
+
+  const onResolveGame = (winnerRole) => {
+    moves.resolveGame(winnerRole);
+  };
+
+  const onRematch = () => {
+    moves.voteRematch();
   };
 
   // Render a player's hand area
@@ -224,6 +465,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const hand = G.hands[id] || [];
     const isCurrentTurn = id === ctx.currentPlayer;
     const general = G.players[id]?.general;
+    const role = G.players[id]?.role || 'neutral';
 
     // Dynamic overlap calculation
     const CARD_WIDTH = 60;
@@ -313,6 +555,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               skills={general ? general.skills : ["Strike", "Dodge"]}
               portrait={general ? general.portrait : null}
               isMe={true} 
+              role={role}
             />
           </div>
         </React.Fragment>
@@ -328,6 +571,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             hp={general ? general.hp : 4}
             skills={general ? general.skills : ["Strike", "Dodge"]}
             portrait={general ? general.portrait : null}
+            role={role}
           />
         )}
         
@@ -354,6 +598,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onSelect={onSelectGeneral} 
           onChange={onChangeGeneral}
           changeUsed={G.generalChangeUsed[playerID] || [false, false, false]}
+          onBid={onBid}
+          landlord={G.landlord}
         />
       )}
       
@@ -375,28 +621,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         </div>
       )}
 
-      {/* Add Mock Players Button */}
-      {G.phase === 'lobby' && myPlayerID === '0' && (
-        <button
-          onClick={onAddMockPlayers}
-          style={{
-            position: 'absolute',
-            top: '10px',
-            left: '10px',
-            zIndex: 1000,
-            padding: '8px 16px',
-            backgroundColor: '#e67e22',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-          }}
-        >
-          Add Mock Players
-        </button>
-      )}
+      {/* Scoreboard */}
+      <ScoreBoard players={G.players} onWin={onResolveGame} landlord={G.landlord} />
+
+      {/* Game Result Overlay */}
+      <GameResultOverlay 
+        result={G.gameResult} 
+        myPlayerID={playerID} 
+        onRematch={onRematch}
+        rematchVotes={G.rematchVotes}
+      />
 
       {/* Game Status Overlay */}
       {G.phase === 'lobby' && (

@@ -19,6 +19,19 @@ function shuffle(array) {
   return newArray;
 }
 
+const distributeGenerals = () => {
+  const shuffledGenerals = shuffle(ENABLED_GENERALS);
+  const generalOptions = {};
+  const generalChangeUsed = {};
+  let genIndex = 0;
+  ['0', '1', '2'].forEach(pid => {
+    generalOptions[pid] = shuffledGenerals.slice(genIndex, genIndex + 3);
+    generalChangeUsed[pid] = [false, false, false];
+    genIndex += 3;
+  });
+  return { generalOptions, generalChangeUsed };
+};
+
 export const CardGame = {
   setup: () => ({
     deck: shuffle(SGS_CARDS),
@@ -28,9 +41,9 @@ export const CardGame = {
       '2': [],
     },
     players: {
-      '0': { general: null },
-      '1': { general: null },
-      '2': { general: null },
+      '0': { general: null, role: 'neutral', score: 0 },
+      '1': { general: null, role: 'neutral', score: 0 },
+      '2': { general: null, role: 'neutral', score: 0 },
     },
     generalOptions: {
       '0': [],
@@ -43,7 +56,11 @@ export const CardGame = {
       '2': [false, false, false],
     },
     readyPlayers: [],
+    landlord: null,
+    bidAmount: 0,
     phase: 'lobby', // lobby -> selection -> playing
+    gameResult: null, // { winnerRole: string, scoreChanges: object }
+    rematchVotes: [],
   }),
 
   turn: {
@@ -61,32 +78,9 @@ export const CardGame = {
         // Start selection phase
         G.phase = 'selection';
         // Distribute 3 random generals to each player
-        const shuffledGenerals = shuffle(ENABLED_GENERALS);
-        let genIndex = 0;
-        ['0', '1', '2'].forEach(pid => {
-          G.generalOptions[pid] = shuffledGenerals.slice(genIndex, genIndex + 3);
-          G.generalChangeUsed[pid] = [false, false, false];
-          genIndex += 3;
-        });
-      }
-    },
-    addMockPlayers: ({ G }) => {
-      ['0', '1', '2'].forEach(id => {
-        if (!G.readyPlayers.includes(id)) {
-          G.readyPlayers.push(id);
-        }
-      });
-      if (G.readyPlayers.length === 3) {
-        // Start selection phase
-        G.phase = 'selection';
-        // Distribute 3 random generals to each player
-        const shuffledGenerals = shuffle(ENABLED_GENERALS);
-        let genIndex = 0;
-        ['0', '1', '2'].forEach(pid => {
-          G.generalOptions[pid] = shuffledGenerals.slice(genIndex, genIndex + 3);
-          G.generalChangeUsed[pid] = [false, false, false];
-          genIndex += 3;
-        });
+        const { generalOptions, generalChangeUsed } = distributeGenerals();
+        G.generalOptions = generalOptions;
+        G.generalChangeUsed = generalChangeUsed;
       }
     },
     selectGeneral: ({ G, playerID }, generalId) => {
@@ -100,6 +94,86 @@ export const CardGame = {
       const allSelected = ['0', '1', '2'].every(pid => G.players[pid].general);
       if (allSelected) {
         G.phase = 'playing';
+      }
+    },
+    claimLandlord: ({ G, playerID }, amount) => {
+      if (G.landlord !== null) return; // Already claimed
+
+      G.landlord = playerID;
+      G.bidAmount = amount;
+      
+      // Set roles
+      ['0', '1', '2'].forEach(pid => {
+        if (pid === playerID) {
+          G.players[pid].role = 'landlord';
+        } else {
+          G.players[pid].role = 'peasant';
+        }
+      });
+    },
+    resolveGame: ({ G }, winnerRole) => {
+      const bid = G.bidAmount;
+      const landlordID = G.landlord;
+      
+      if (!landlordID) return; // No landlord yet
+
+      const scoreChanges = {};
+
+      if (winnerRole === 'landlord') {
+        // Landlord wins
+        ['0', '1', '2'].forEach(pid => {
+          if (pid === landlordID) {
+            scoreChanges[pid] = 2 * bid;
+            G.players[pid].score += 2 * bid;
+          } else {
+            scoreChanges[pid] = -bid;
+            G.players[pid].score -= bid;
+          }
+        });
+      } else {
+        // Peasants win
+        ['0', '1', '2'].forEach(pid => {
+          if (pid === landlordID) {
+            scoreChanges[pid] = -2 * bid;
+            G.players[pid].score -= 2 * bid;
+          } else {
+            scoreChanges[pid] = bid;
+            G.players[pid].score += bid;
+          }
+        });
+      }
+
+      G.gameResult = {
+        winnerRole,
+        scoreChanges
+      };
+    },
+    voteRematch: ({ G, playerID }) => {
+      if (!G.rematchVotes.includes(playerID)) {
+        G.rematchVotes.push(playerID);
+      }
+
+      if (G.rematchVotes.length === 3) {
+        // Reset game state but keep scores and players
+        G.deck = shuffle(SGS_CARDS);
+        G.hands = { '0': [], '1': [], '2': [] };
+        
+        // Reset player roles and generals
+        ['0', '1', '2'].forEach(pid => {
+          G.players[pid].general = null;
+          G.players[pid].role = 'neutral';
+        });
+
+        // Distribute new generals
+        const { generalOptions, generalChangeUsed } = distributeGenerals();
+        G.generalOptions = generalOptions;
+        G.generalChangeUsed = generalChangeUsed;
+
+        G.landlord = null;
+        G.bidAmount = 0;
+        G.phase = 'selection';
+        G.gameResult = null;
+        G.rematchVotes = [];
       }
     },
     changeGeneral: ({ G, playerID }, generalIdToReplace) => {
