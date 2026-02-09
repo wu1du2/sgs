@@ -54,13 +54,14 @@ const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], port
         <button key={i} style={{
           fontSize: '10px',
           padding: '2px 6px',
-          backgroundColor: 'linear-gradient(to bottom, #4a4a4a, #2a2a2a)',
-          color: 'white',
-          border: '1px solid #666',
+          backgroundColor: '#eecfa1',
+          color: '#3e2723',
+          border: '1px solid #8b4513',
           borderRadius: '4px',
           cursor: 'pointer',
           flex: 1,
-          textAlign: 'center'
+          textAlign: 'center',
+          fontWeight: 'bold'
         }}>
           {skill}
         </button>
@@ -87,7 +88,7 @@ const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], port
   </div>
 );
 
-const GeneralSelection = ({ options, onSelect }) => {
+const GeneralSelection = ({ options, onSelect, onChange, changeUsed }) => {
   return (
     <div style={{
       position: 'absolute',
@@ -100,9 +101,9 @@ const GeneralSelection = ({ options, onSelect }) => {
       zIndex: 2000,
       color: 'white'
     }}>
-      <h2 style={{ marginBottom: '40px', color: '#ffd700', textShadow: '0 0 10px #ff0000' }}>Select Your General</h2>
+      <h2 style={{ marginBottom: '40px', color: '#ffd700', textShadow: '0 0 10px #ff0000' }}>选择武将</h2>
       <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        {options.map(general => (
+        {options.map((general, index) => (
           <div key={general.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ transform: 'scale(1.2)', marginBottom: '20px' }}>
               <HeroArea 
@@ -127,8 +128,26 @@ const GeneralSelection = ({ options, onSelect }) => {
                 boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
               }}
             >
-              Select
+              SELECT
             </button>
+            {!changeUsed[index] && (
+              <button 
+                onClick={() => onChange(general.id)}
+                style={{
+                  marginTop: '10px',
+                  padding: '5px 12px',
+                  backgroundColor: '#e74c3c',
+                  color: 'white',
+                  border: '1px solid #c0392b',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}
+              >
+                CHANGE
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -192,6 +211,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const onSelectGeneral = (generalId) => {
     moves.selectGeneral(generalId);
+  };
+
+  const onChangeGeneral = (generalId) => {
+    moves.changeGeneral(generalId);
   };
 
   // Render a player's hand area
@@ -329,6 +352,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         <GeneralSelection 
           options={G.generalOptions[playerID]} 
           onSelect={onSelectGeneral} 
+          onChange={onChangeGeneral}
+          changeUsed={G.generalChangeUsed[playerID] || [false, false, false]}
         />
       )}
       

@@ -37,6 +37,11 @@ export const CardGame = {
       '1': [],
       '2': [],
     },
+    generalChangeUsed: {
+      '0': [false, false, false],
+      '1': [false, false, false],
+      '2': [false, false, false],
+    },
     readyPlayers: [],
     phase: 'lobby', // lobby -> selection -> playing
   }),
@@ -60,6 +65,7 @@ export const CardGame = {
         let genIndex = 0;
         ['0', '1', '2'].forEach(pid => {
           G.generalOptions[pid] = shuffledGenerals.slice(genIndex, genIndex + 3);
+          G.generalChangeUsed[pid] = [false, false, false];
           genIndex += 3;
         });
       }
@@ -78,6 +84,7 @@ export const CardGame = {
         let genIndex = 0;
         ['0', '1', '2'].forEach(pid => {
           G.generalOptions[pid] = shuffledGenerals.slice(genIndex, genIndex + 3);
+          G.generalChangeUsed[pid] = [false, false, false];
           genIndex += 3;
         });
       }
@@ -94,6 +101,35 @@ export const CardGame = {
       if (allSelected) {
         G.phase = 'playing';
       }
+    },
+    changeGeneral: ({ G, playerID }, generalIdToReplace) => {
+      const options = G.generalOptions[playerID];
+      const index = options.findIndex(g => g.id === generalIdToReplace);
+      
+      if (index === -1) return;
+      if (G.generalChangeUsed[playerID][index]) return;
+
+      // Find all currently used generals to avoid duplicates
+      const usedGenerals = new Set();
+      Object.values(G.generalOptions).forEach(options => {
+        options.forEach(g => usedGenerals.add(g.id));
+      });
+      Object.values(G.players).forEach(p => {
+        if (p.general) usedGenerals.add(p.general.id);
+      });
+
+      // Find available generals
+      const available = ENABLED_GENERALS.filter(g => !usedGenerals.has(g.id));
+      
+      if (available.length === 0) return;
+
+      // Pick a random one
+      const randomIndex = Math.floor(Math.random() * available.length);
+      const newGeneral = available[randomIndex];
+
+      // Replace
+      options[index] = newGeneral;
+      G.generalChangeUsed[playerID][index] = true;
     },
     drawCard: ({ G, playerID }) => {
       if (G.phase !== 'playing') return;
