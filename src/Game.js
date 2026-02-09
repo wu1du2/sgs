@@ -41,9 +41,9 @@ export const CardGame = {
       '2': [],
     },
     players: {
-      '0': { general: null, role: 'neutral', score: 0 },
-      '1': { general: null, role: 'neutral', score: 0 },
-      '2': { general: null, role: 'neutral', score: 0 },
+      '0': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null } },
+      '1': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null } },
+      '2': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null } },
     },
     generalOptions: {
       '0': [],
@@ -213,6 +213,67 @@ export const CardGame = {
       if (card !== undefined) {
         G.hands[playerID].push(card);
       }
+    },
+    equipCard: ({ G, playerID }, cardIndex) => {
+      if (G.phase !== 'playing') return;
+      
+      const hand = G.hands[playerID];
+      const card = hand[cardIndex];
+      
+      if (!card) return;
+
+      let slot = null;
+      if (card.type === '武器') slot = 'weapon';
+      else if (card.type === '防具') slot = 'armor';
+      else if (card.type === '加一') slot = 'plusOne';
+      else if (card.type === '减一') slot = 'minusOne'; // Note: In data it might be '减一' or '减一马' etc. based on user changes. User said '减一'.
+
+      if (!slot) return;
+
+      // Remove card from hand
+      const newHand = hand.filter((_, index) => index !== cardIndex);
+      G.hands[playerID] = newHand;
+
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const currentEquip = G.players[playerID].equipments[slot];
+
+      // Discard existing equipment if any
+      if (currentEquip) {
+        // Add to discard pile (not explicitly tracked in this simple version, but we log it)
+        // In a full game, we'd have a discard pile array.
+        const logEntry = `${playerName} 弃置了 ${currentEquip.name}`;
+        G.actionLog.push(logEntry);
+      }
+
+      // Equip new card
+      G.players[playerID].equipments[slot] = card;
+
+      const logEntry = `${playerName} 装备了 ${card.name}`;
+      G.actionLog.push(logEntry);
+      
+      G.lastAction = {
+        type: 'equip',
+        playerID,
+        card
+      };
+    },
+    discardEquipment: ({ G, playerID }, slot) => {
+      if (G.phase !== 'playing') return;
+      
+      const equipment = G.players[playerID].equipments[slot];
+      if (!equipment) return;
+
+      G.players[playerID].equipments[slot] = null;
+
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const logEntry = `${playerName} 弃置了 ${equipment.name}`;
+      G.actionLog.push(logEntry);
+
+      G.lastAction = {
+        type: 'discardEquip',
+        playerID,
+        card: equipment
+      };
     },
     playCards: ({ G, playerID }, cardIndices, targetIDs) => {
       if (G.phase !== 'playing') return;

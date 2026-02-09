@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from './Card';
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected }) => {
+const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick }) => {
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -95,20 +95,43 @@ const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], port
 
       {/* Equipment Slots */}
       <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-        {['Wpn', 'Arm', '+1', '-1'].map((slot, i) => (
-          <div key={i} style={{ 
-            height: '20px', 
-            border: '1px dashed #666', 
-            fontSize: '9px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            color: '#aaa',
-            backgroundColor: 'rgba(0,0,0,0.3)'
-          }}>
-            {slot}
-          </div>
-        ))}
+        {[
+          { label: 'Wpn', key: 'weapon', icon: '⚔️' },
+          { label: 'Arm', key: 'armor', icon: '🛡️' },
+          { label: '+1', key: 'plusOne', icon: '🐎' },
+          { label: '-1', key: 'minusOne', icon: '🐎' }
+        ].map((slot, i) => {
+          const equip = equipments[slot.key];
+          return (
+            <div 
+              key={i} 
+              onClick={(e) => {
+                if (isMe && equip && onEquipClick) {
+                  e.stopPropagation();
+                  onEquipClick(slot.key);
+                }
+              }}
+              style={{ 
+                height: '20px', 
+                border: '1px dashed #666', 
+                fontSize: '9px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                color: equip ? '#ffd700' : '#aaa',
+                backgroundColor: equip ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)',
+                cursor: (isMe && equip) ? 'pointer' : 'default',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                padding: '0 2px'
+              }}
+              title={equip ? equip.name : slot.label}
+            >
+              {equip ? equip.name : slot.label}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -511,6 +534,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [selectedCardIndices, setSelectedCardIndices] = React.useState([]);
   const [selectedTargetIds, setSelectedTargetIds] = React.useState([]);
   const [lasers, setLasers] = React.useState([]); // Array of { from: pos, to: pos }
+  const [equipmentMenu, setEquipmentMenu] = React.useState(null); // { slot: string }
 
   // Responsive hand width state
   const [maxHandWidth, setMaxHandWidth] = React.useState(
@@ -603,11 +627,41 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     setSelectedTargetIds([]);
   };
 
+  const handleEquipCard = () => {
+    if (selectedCardIndices.length !== 1) {
+      alert("请选择一张装备牌进行装备");
+      return;
+    }
+    
+    const cardIndex = selectedCardIndices[0];
+    const card = G.hands[playerID][cardIndex];
+    
+    if (!['武器', '防具', '加一', '减一'].includes(card.type)) {
+      alert("这不是一张装备牌");
+      return;
+    }
+
+    moves.equipCard(cardIndex);
+    setSelectedCardIndices([]);
+    setSelectedTargetIds([]);
+  };
+
   const handleDiscardCards = () => {
     if (selectedCardIndices.length === 0) return;
     moves.discardCards(selectedCardIndices);
     setSelectedCardIndices([]);
     setSelectedTargetIds([]);
+  };
+
+  const onEquipClick = (slot) => {
+    setEquipmentMenu({ slot });
+  };
+
+  const handleDiscardEquipment = () => {
+    if (equipmentMenu) {
+      moves.discardEquipment(equipmentMenu.slot);
+      setEquipmentMenu(null);
+    }
   };
 
   const onSelectGeneral = (generalId) => {
@@ -638,6 +692,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const isCurrentTurn = id === ctx.currentPlayer;
     const general = G.players[id]?.general;
     const role = G.players[id]?.role || 'neutral';
+    const equipments = G.players[id]?.equipments || {};
 
     // Target Selection Logic
     const isSelectable = selectedCardIndices.length > 0;
@@ -739,6 +794,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                   出牌
                 </button>
                 <button 
+                  onClick={handleEquipCard}
                   style={{
                     padding: '8px 20px',
                     backgroundColor: '#3498db',
@@ -791,6 +847,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               onClick={() => onHeroClick(id)}
               isSelectable={isSelectable}
               isSelected={isSelected}
+              equipments={equipments}
+              onEquipClick={onEquipClick}
             />
           </div>
         </React.Fragment>
@@ -810,6 +868,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             onClick={() => onHeroClick(id)}
             isSelectable={isSelectable}
             isSelected={isSelected}
+            equipments={equipments}
           />
         )}
         
@@ -829,6 +888,60 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* Equipment Menu Overlay */}
+      {equipmentMenu && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          zIndex: 4000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }} onClick={() => setEquipmentMenu(null)}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '20px',
+            borderRadius: '8px',
+            border: '2px solid #ffd700',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            minWidth: '200px'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ color: '#ffd700', margin: '0 0 10px 0', textAlign: 'center' }}>装备操作</h3>
+            <button
+              onClick={handleDiscardEquipment}
+              style={{
+                padding: '10px',
+                backgroundColor: '#e74c3c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              弃置装备
+            </button>
+            <button
+              onClick={() => setEquipmentMenu(null)}
+              style={{
+                padding: '10px',
+                backgroundColor: '#95a5a6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Laser Effect */}
       {lasers.map((laser, i) => (
         <svg key={i} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 9999 }}>
