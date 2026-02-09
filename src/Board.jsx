@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from './Card';
+import { SGS_CARDS } from './sgs_data';
 
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP }) => {
@@ -459,6 +460,89 @@ const GameResultOverlay = ({ result, myPlayerID, onRematch, rematchVotes }) => {
       >
         {hasVoted ? '等待其他玩家...' : '下一局'} ({rematchVotes.length}/3)
       </button>
+    </div>
+  );
+};
+
+const ActionTicker = ({ logs }) => {
+  const [visible, setVisible] = React.useState(false);
+  const [message, setMessage] = React.useState('');
+  const timeoutRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (logs && logs.length > 0) {
+      setMessage(logs[logs.length - 1]);
+      setVisible(true);
+      
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      timeoutRef.current = setTimeout(() => {
+        setVisible(false);
+      }, 1000);
+    }
+  }, [logs]);
+
+  if (!visible) return null;
+
+  // Parse message to find card names
+  const renderMessage = () => {
+    // Get all unique card names, sorted by length descending to match longest first
+    const cardNames = [...new Set(SGS_CARDS.map(c => c.name))].sort((a, b) => b.length - a.length);
+    
+    // Create a regex pattern
+    const pattern = new RegExp(`(${cardNames.join('|')})`, 'g');
+    
+    const parts = message.split(pattern);
+    
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '4px' }}>
+        {parts.map((part, i) => {
+          if (cardNames.includes(part)) {
+            return (
+              <div key={i} style={{
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                backgroundColor: '#fff',
+                color: '#000',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                boxShadow: '1px 1px 3px rgba(0,0,0,0.3)',
+                display: 'inline-block',
+                fontFamily: 'serif'
+              }}>
+                {part}
+              </div>
+            );
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: '100%', // Position above the parent
+      left: '50%',
+      transform: 'translateX(-50%)',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      color: '#fff',
+      padding: '8px 16px',
+      borderRadius: '20px',
+      marginBottom: '10px',
+      whiteSpace: 'nowrap',
+      zIndex: 100,
+      pointerEvents: 'none',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+      border: '1px solid #ffd700'
+    }}>
+      {renderMessage()}
     </div>
   );
 };
@@ -1088,6 +1172,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           transform: 'translate(-50%, -50%)',
           zIndex: 10
         }}>
+           <ActionTicker logs={G.actionLog || []} />
            <ActionLog logs={G.actionLog || []} />
         </div>
 
