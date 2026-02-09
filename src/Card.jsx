@@ -15,7 +15,7 @@ export const getCardInfo = (card) => {
   return { suit, rank, color, name: '', type: '' };
 };
 
-export const Card = ({ cardIndex, onClick, isHidden = false, isSelected = false }) => {
+export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = false }) => {
   if (isHidden) {
     return (
       <div 
@@ -33,7 +33,7 @@ export const Card = ({ cardIndex, onClick, isHidden = false, isSelected = false 
     );
   }
 
-  const { suit, rank, color, name } = getCardInfo(cardIndex);
+  const { suit, rank, color, name } = getCardInfo(card || cardIndex);
 
   return (
     <div 

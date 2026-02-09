@@ -2,10 +2,9 @@ import React from 'react';
 import { Card } from './Card';
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], isMe = false }) => (
+const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], portrait, isMe = false }) => (
   <div style={{
     width: '140px',
-    marginLeft: '15px',
     backgroundColor: 'rgba(0,0,0,0.7)',
     borderRadius: '8px',
     padding: '8px',
@@ -32,9 +31,12 @@ const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], isMe
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '24px',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        backgroundSize: 'cover',
+        backgroundPosition: 'top center',
+        backgroundImage: portrait ? `url(${portrait})` : 'none'
       }}>
-        👤
+        {!portrait && '👤'}
       </div>
       
       {/* Name & HP */}
@@ -85,6 +87,55 @@ const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], isMe
   </div>
 );
 
+const GeneralSelection = ({ options, onSelect }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.9)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 2000,
+      color: 'white'
+    }}>
+      <h2 style={{ marginBottom: '40px', color: '#ffd700', textShadow: '0 0 10px #ff0000' }}>Select Your General</h2>
+      <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {options.map(general => (
+          <div key={general.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ transform: 'scale(1.2)', marginBottom: '20px' }}>
+              <HeroArea 
+                name={general.name} 
+                hp={general.hp} 
+                skills={general.skills} 
+                portrait={general.portrait}
+              />
+            </div>
+            <button 
+              onClick={() => onSelect(general.id)}
+              style={{
+                marginTop: '10px',
+                padding: '10px 24px',
+                backgroundColor: '#ffd700',
+                color: '#8b4513',
+                border: '2px solid #8b4513',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
+              }}
+            >
+              Select
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -124,13 +175,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onClickDraw = () => {
-    if (G.isGameStarted) {
+    if (G.phase === 'playing') {
       moves.drawCard();
     }
   };
 
   const onClickPlay = (cardIndex) => {
-    if (G.isGameStarted) {
+    if (G.phase === 'playing') {
       moves.playCard(cardIndex);
     }
   };
@@ -139,12 +190,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     moves.addMockPlayers();
   };
 
+  const onSelectGeneral = (generalId) => {
+    moves.selectGeneral(generalId);
+  };
+
   // Render a player's hand area
   const renderPlayerArea = (id) => {
     const position = getPosition(id);
     const isMe = position === 'bottom';
     const hand = G.hands[id] || [];
     const isCurrentTurn = id === ctx.currentPlayer;
+    const general = G.players[id]?.general;
 
     // Dynamic overlap calculation
     const CARD_WIDTH = 60;
@@ -204,7 +260,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           <div key={index} style={{ marginLeft: index === 0 ? 0 : `${marginLeft}px`, zIndex: index, transition: 'margin-left 0.3s ease' }}>
             <Card 
               card={card} 
-              isFaceUp={isMe || G.isGameStarted} // Show cards if game started (for debug) or if it's me
+              isHidden={!(isMe || G.isGameStarted)} // Show cards if game started (for debug) or if it's me
               onClick={() => isMe && onClickPlay(index)}
             />
           </div>
@@ -212,20 +268,48 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       </div>
     );
 
+    if (isMe) {
+      return (
+        <React.Fragment key={id}>
+          <div style={areaStyle}>
+            <HandCards />
+          </div>
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            right: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            zIndex: 50
+          }}>
+            <PlayerInfo />
+            <HeroArea 
+              name={general ? general.name : "My Hero"} 
+              hp={general ? general.hp : 4}
+              skills={general ? general.skills : ["Strike", "Dodge"]}
+              portrait={general ? general.portrait : null}
+              isMe={true} 
+            />
+          </div>
+        </React.Fragment>
+      );
+    }
+
     return (
       <div style={areaStyle}>
         {/* Hero Area for Left/Right players */}
-        {!isMe && <HeroArea name={`Player ${id}`} />}
+        {!isMe && (
+          <HeroArea 
+            name={general ? general.name : `Player ${id}`}
+            hp={general ? general.hp : 4}
+            skills={general ? general.skills : ["Strike", "Dodge"]}
+            portrait={general ? general.portrait : null}
+          />
+        )}
         
         <PlayerInfo />
         
-        {/* Hero Area for Me (Bottom) */}
-        {isMe && (
-          <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: '10px' }}>
-            <HeroArea name="My Hero" isMe={true} />
-          </div>
-        )}
-
         <HandCards />
       </div>
     );
@@ -240,8 +324,34 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* General Selection Overlay */}
+      {G.phase === 'selection' && G.generalOptions[playerID] && !G.players[playerID]?.general && (
+        <GeneralSelection 
+          options={G.generalOptions[playerID]} 
+          onSelect={onSelectGeneral} 
+        />
+      )}
+      
+      {/* Waiting for others overlay */}
+      {G.phase === 'selection' && G.players[playerID]?.general && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          color: 'white',
+          fontSize: '24px',
+          fontWeight: 'bold'
+        }}>
+          Waiting for other players to select...
+        </div>
+      )}
+
       {/* Add Mock Players Button */}
-      {!G.isGameStarted && myPlayerID === '0' && (
+      {G.phase === 'lobby' && myPlayerID === '0' && (
         <button
           onClick={onAddMockPlayers}
           style={{
@@ -264,7 +374,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       )}
 
       {/* Game Status Overlay */}
-      {!G.isGameStarted && (
+      {G.phase === 'lobby' && (
         <div style={{
           position: 'absolute',
           top: '50%',
