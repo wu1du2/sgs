@@ -5,3 +5,20 @@
   padding: 0;
   text-align: center;
 }
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 5px #ffff00; }
+  50% { box-shadow: 0 0 20px #ffff00; }
+  100% { box-shadow: 0 0 5px #ffff00; }
+}
+
+@keyframes pulse-selected {
+  0% { box-shadow: 0 0 15px 5px #00ffff; }
+  50% { box-shadow: 0 0 40px 10px #00ffff; }
+  100% { box-shadow: 0 0 15px 5px #00ffff; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

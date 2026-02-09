@@ -50,7 +50,7 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
         padding: '5px',
         color: color,
         cursor: onClick ? 'pointer' : 'default',
-        transform: isSelected ? 'translateY(-15px)' : 'none',
+        transform: isSelected ? 'translateY(-30px)' : 'none',
         transition: 'transform 0.2s',
         boxShadow: '2px 2px 5px rgba(0,0,0,0.2)',
         userSelect: 'none',

@@ -61,6 +61,7 @@ export const CardGame = {
     phase: 'lobby', // lobby -> selection -> playing
     gameResult: null, // { winnerRole: string, scoreChanges: object }
     rematchVotes: [],
+    lastAction: null,
   }),
 
   turn: {
@@ -212,10 +213,38 @@ export const CardGame = {
         G.hands[playerID].push(card);
       }
     },
-    playCard: ({ G, playerID }, cardIndex) => {
+    playCards: ({ G, playerID }, cardIndices, targetIDs) => {
       if (G.phase !== 'playing') return;
-      // Simple play logic: remove from hand
-      G.hands[playerID].splice(cardIndex, 1);
+      
+      const hand = G.hands[playerID];
+      // Store cards before removing
+      const cardsPlayed = cardIndices.map(i => hand[i]);
+      
+      // Remove cards from hand
+      const newHand = hand.filter((_, index) => !cardIndices.includes(index));
+      G.hands[playerID] = newHand;
+
+      G.lastAction = {
+        type: 'play',
+        playerID,
+        cards: cardsPlayed,
+        targetIDs
+      };
+    },
+    discardCards: ({ G, playerID }, cardIndices) => {
+      if (G.phase !== 'playing') return;
+      
+      const hand = G.hands[playerID];
+      const cardsDiscarded = cardIndices.map(i => hand[i]);
+      
+      const newHand = hand.filter((_, index) => !cardIndices.includes(index));
+      G.hands[playerID] = newHand;
+      
+      G.lastAction = {
+        type: 'discard',
+        playerID,
+        cards: cardsDiscarded
+      };
     }
   },
 

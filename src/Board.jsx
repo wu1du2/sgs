@@ -2,8 +2,10 @@ import React from 'react';
 import { Card } from './Card';
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral' }) => {
+const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected }) => {
   const getBorderColor = () => {
+    if (isSelected) return '#00ffff'; // Cyan for selected
+    if (isSelectable) return '#ffff00'; // Yellow for selectable
     if (role === 'landlord') return '#ff0000'; // Red for Landlord
     if (role === 'peasant') return '#00ff00'; // Green for Peasant
     return '#8b4513'; // Default Bronze/Wood
@@ -16,20 +18,26 @@ const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], port
   };
 
   return (
-    <div style={{
-      width: '140px',
-      backgroundColor: getBackgroundColor(),
-      borderRadius: '8px',
-      padding: '8px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      color: '#e0e0e0',
-      pointerEvents: 'auto',
-      border: `2px solid ${getBorderColor()}`,
-      boxShadow: '0 4px 8px rgba(0,0,0,0.5)',
-      flexShrink: 0 // Prevent shrinking
-    }}>
+    <div 
+      onClick={onClick}
+      style={{
+        width: '140px',
+        backgroundColor: getBackgroundColor(),
+        borderRadius: '8px',
+        padding: '8px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        color: '#e0e0e0',
+        pointerEvents: 'auto',
+        border: `2px solid ${getBorderColor()}`,
+        boxShadow: isSelected ? '0 0 20px 5px #00ffff' : (isSelectable ? '0 0 10px #ffff00' : '0 4px 8px rgba(0,0,0,0.5)'),
+        flexShrink: 0, // Prevent shrinking
+        cursor: isSelectable ? 'pointer' : 'default',
+        animation: isSelected ? 'pulse-selected 1.5s infinite' : (isSelectable ? 'pulse 1.5s infinite' : 'none'),
+        transition: 'all 0.3s ease'
+      }}
+    >
       {/* Avatar & Name Row */}
       <div style={{ display: 'flex', width: '100%', marginBottom: '8px', alignItems: 'center' }}>
         {/* Avatar */}
@@ -392,6 +400,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
 
+  // Selection State
+  const [selectedCardIndices, setSelectedCardIndices] = React.useState([]);
+  const [selectedTargetIds, setSelectedTargetIds] = React.useState([]);
+  const [lasers, setLasers] = React.useState([]); // Array of { from: pos, to: pos }
+
   // Responsive hand width state
   const [maxHandWidth, setMaxHandWidth] = React.useState(
     typeof window !== 'undefined' ? Math.min(600, window.innerWidth - 40) : 600
@@ -411,6 +424,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Reset selection when turn ends or phase changes
+  React.useEffect(() => {
+    setSelectedCardIndices([]);
+    setSelectedTargetIds([]);
+  }, [ctx.turn, G.phase]);
+
   // Auto-ready when joining
   React.useEffect(() => {
     if (playerID && !G.readyPlayers.includes(playerID)) {
@@ -426,16 +445,62 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     return 'left';
   };
 
+  const getCoordinates = (position) => {
+    if (position === 'bottom') return { x: '50%', y: '80%' };
+    if (position === 'left') return { x: '15%', y: '40%' };
+    if (position === 'right') return { x: '85%', y: '40%' };
+    return { x: '50%', y: '50%' };
+  };
+
   const onClickDraw = () => {
     if (G.phase === 'playing') {
       moves.drawCard();
     }
   };
 
-  const onClickPlay = (cardIndex) => {
-    if (G.phase === 'playing') {
-      moves.playCard(cardIndex);
+  const onCardClick = (index) => {
+    if (G.phase !== 'playing') return;
+    
+    if (selectedCardIndices.includes(index)) {
+      setSelectedCardIndices(selectedCardIndices.filter(i => i !== index));
+    } else {
+      setSelectedCardIndices([...selectedCardIndices, index]);
     }
+  };
+
+  const onHeroClick = (targetId) => {
+    if (selectedCardIndices.length > 0) {
+       if (selectedTargetIds.includes(targetId)) {
+         setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
+       } else {
+         setSelectedTargetIds([...selectedTargetIds, targetId]);
+       }
+    }
+  };
+
+  const handlePlayCards = () => {
+    if (selectedCardIndices.length === 0) return;
+    
+    if (selectedTargetIds.length > 0) {
+      const fromPos = getCoordinates('bottom');
+      const newLasers = selectedTargetIds.map(targetId => ({
+        from: fromPos,
+        to: getCoordinates(getPosition(targetId))
+      }));
+      setLasers(newLasers);
+      setTimeout(() => setLasers([]), 1000);
+    }
+
+    moves.playCards(selectedCardIndices, selectedTargetIds);
+    setSelectedCardIndices([]);
+    setSelectedTargetIds([]);
+  };
+
+  const handleDiscardCards = () => {
+    if (selectedCardIndices.length === 0) return;
+    moves.discardCards(selectedCardIndices);
+    setSelectedCardIndices([]);
+    setSelectedTargetIds([]);
   };
 
   const onSelectGeneral = (generalId) => {
@@ -466,6 +531,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const isCurrentTurn = id === ctx.currentPlayer;
     const general = G.players[id]?.general;
     const role = G.players[id]?.role || 'neutral';
+
+    // Target Selection Logic
+    const isSelectable = selectedCardIndices.length > 0;
+    const isSelected = selectedTargetIds.includes(id);
 
     // Dynamic overlap calculation
     const CARD_WIDTH = 60;
@@ -526,7 +595,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             <Card 
               card={card} 
               isHidden={!(isMe || G.isGameStarted)} // Show cards if game started (for debug) or if it's me
-              onClick={() => isMe && onClickPlay(index)}
+              onClick={() => isMe && onCardClick(index)}
+              isSelected={isMe && selectedCardIndices.includes(index)}
             />
           </div>
         ))}
@@ -537,6 +607,61 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return (
         <React.Fragment key={id}>
           <div style={areaStyle}>
+            {/* Action Buttons */}
+            {selectedCardIndices.length > 0 && (
+              <div style={{ 
+                display: 'flex', 
+                gap: '10px', 
+                marginBottom: '20px',
+                animation: 'fadeIn 0.3s',
+                pointerEvents: 'auto' // Enable clicks
+              }}>
+                <button 
+                  onClick={handlePlayCards}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#e74c3c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  出牌
+                </button>
+                <button 
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#3498db',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  装备
+                </button>
+                <button 
+                  onClick={handleDiscardCards}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#95a5a6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  弃牌
+                </button>
+              </div>
+            )}
             <HandCards />
           </div>
           <div style={{
@@ -556,6 +681,9 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               portrait={general ? general.portrait : null}
               isMe={true} 
               role={role}
+              onClick={() => onHeroClick(id)}
+              isSelectable={isSelectable}
+              isSelected={isSelected}
             />
           </div>
         </React.Fragment>
@@ -572,6 +700,9 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             skills={general ? general.skills : ["Strike", "Dodge"]}
             portrait={general ? general.portrait : null}
             role={role}
+            onClick={() => onHeroClick(id)}
+            isSelectable={isSelectable}
+            isSelected={isSelected}
           />
         )}
         
@@ -591,6 +722,25 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* Laser Effect */}
+      {lasers.map((laser, i) => (
+        <svg key={i} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 9999 }}>
+          <line 
+            x1={laser.from.x} 
+            y1={laser.from.y} 
+            x2={laser.to.x} 
+            y2={laser.to.y} 
+            stroke="#ff0000" 
+            strokeWidth="4" 
+            strokeLinecap="round"
+            style={{ filter: 'drop-shadow(0 0 5px #ff0000)' }}
+          >
+            <animate attributeName="opacity" values="1;0" dur="1s" repeatCount="1" />
+            <animate attributeName="stroke-width" values="4;1" dur="1s" repeatCount="1" />
+          </line>
+        </svg>
+      ))}
+
       {/* General Selection Overlay */}
       {G.phase === 'selection' && G.generalOptions[playerID] && !G.players[playerID]?.general && (
         <GeneralSelection 
