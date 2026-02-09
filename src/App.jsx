@@ -76,15 +76,18 @@ const App = () => {
           top: '10px',
           right: '10px',
           zIndex: 1000,
-          padding: '5px 10px',
+          width: '24px',
+          height: '24px',
           backgroundColor: 'rgba(0,0,0,0.5)',
           color: 'white',
           border: '1px solid white',
           borderRadius: '4px',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          fontSize: '12px',
+          padding: 0
         }}
       >
-        Leave
+        L
       </button>
     </div>
   );

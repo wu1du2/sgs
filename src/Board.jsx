@@ -400,9 +400,8 @@ const ScoreBoard = ({ players, onWin, landlord, scale = 1 }) => {
         {Object.entries(players).map(([id, p]) => (
           <div key={id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '14px' }}>
             <span>
-              玩家 {id} 
-              {p.role === 'landlord' && <span style={{ color: '#ff4444', marginLeft: '4px' }}>(地主)</span>}
-              {p.role === 'peasant' && <span style={{ color: '#4CAF50', marginLeft: '4px' }}>(农民)</span>}
+              {p.role === 'landlord' && <span style={{ color: '#ff4444', marginLeft: '4px' }}>地主</span>}
+              {p.role === 'peasant' && <span style={{ color: '#4CAF50', marginLeft: '4px' }}>农民</span>}
             </span>
             <span style={{ fontWeight: 'bold', color: p.score >= 0 ? '#4CAF50' : '#ff4444', marginLeft: '10px' }}>
               {p.score}
@@ -968,30 +967,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       transition: 'all 0.3s ease',
       ...(position === 'bottom' && { bottom: '20px', left: '50%', transform: 'translateX(-50%)', width: '100%', pointerEvents: 'none' }), // Add width and pointerEvents
       ...(position === 'left' && { top: '40%', left: '20px', transform: 'translateY(-50%)' }),
-      ...(position === 'right' && { top: '40%', right: '20px', transform: 'translateY(-50%)' }),
+      ...(position === 'right' && { top: '30%', right: '20px', transform: 'translateY(-50%)' }),
     };
 
     // Player Info Component
-    const PlayerInfo = () => (
-      <div style={{ 
-        marginBottom: '10px', 
-        padding: '5px 15px',
-        backgroundColor: G.readyPlayers.includes(id) ? '#4CAF50' : 'rgba(0,0,0,0.5)',
-        color: 'white',
-        borderRadius: '20px',
-        fontWeight: 'bold',
-        boxShadow: isCurrentTurn ? '0 0 10px #ffd700' : 'none',
-        border: isCurrentTurn ? '2px solid #ffd700' : 'none',
-        pointerEvents: 'auto',
-        textAlign: 'center',
-        width: 'fit-content',
-        alignSelf: 'center',
-        transform: `scale(${uiScale})`,
-        transformOrigin: 'center'
-      }}>
-        {isMe ? '你' : ''} {G.readyPlayers.includes(id) ? '✓' : '...'}
-      </div>
-    );
+    const PlayerInfo = () => null;
 
     // Hand Cards Component
     const HandCards = () => (
@@ -1279,6 +1259,18 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         </div>
       )}
 
+      {/* Action Log - Near Action Buttons */}
+      <div style={{
+        position: 'absolute',
+        left: '50%',
+        bottom: '170px',
+        transform: 'translateX(-50%)',
+        zIndex: 10
+      }}>
+         <ActionTicker logs={G.actionLog || []} />
+         <ActionLog logs={G.actionLog || []} />
+      </div>
+
       {/* Deck Area */}
       <div style={{
         position: 'absolute',
@@ -1288,17 +1280,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         height: 0,
         overflow: 'visible'
       }}>
-        {/* Action Log - Exactly Center */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          transform: `translate(-50%, -50%) translateY(-${ACTION_LOG_HEIGHT}px)`,
-          zIndex: 10
-        }}>
-           <ActionTicker logs={G.actionLog || []} />
-           <ActionLog logs={G.actionLog || []} />
-        </div>
 
         {/* Draw Pile - Left of Log */}
         <div 
@@ -1326,18 +1307,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           </div>
         </div>
 
-        {/* Judgment Button - Left of Draw Pile */}
+        {/* Judgment Button - Above Draw Pile */}
         <div 
           onClick={onPerformJudgment}
           style={{
             position: 'absolute',
-            top: 0,
-            right: '215px', // 145px + 60px + 10px gap
-            transform: 'translateY(-50%)',
-            width: '40px',
-            height: '40px',
+            top: '-50px',
+            right: '145px',
+            width: '28px',
+            height: '28px',
             backgroundColor: '#9b59b6',
-            borderRadius: '50%',
+            borderRadius: '4px',
             border: '2px solid #8e44ad',
             display: 'flex',
             alignItems: 'center',
