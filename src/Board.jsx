@@ -12,7 +12,7 @@ const getSuitColor = (suit) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judgments = {}, onToggleJudgment }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judgments = {}, onToggleJudgment, scale = 1 }) => {
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -32,7 +32,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
       onClick={onClick}
       style={{
         width: '140px',
-        transform: 'scale(0.66)',
+        transform: `scale(${scale})`,
         transformOrigin: 'top center',
         backgroundColor: getBackgroundColor(),
         borderRadius: '8px',
@@ -233,6 +233,8 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
 };
 
 const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord }) => {
+  const isCompact = typeof window !== 'undefined' && window.innerWidth <= 700;
+
   return (
     <div style={{
       position: 'absolute',
@@ -241,23 +243,24 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       zIndex: 2000,
-      color: 'white'
+      color: 'white',
+      padding: '12px 10px',
+      boxSizing: 'border-box',
+      overflowY: 'auto'
     }}>
-      <h2 style={{ marginBottom: '20px', color: '#ffd700', textShadow: '0 0 10px #ff0000' }}>选择武将</h2>
-      
       {/* Bidding Buttons */}
-      <div style={{ marginBottom: '30px', display: 'flex', gap: '20px', alignItems: 'center' }}>
-        <span style={{ fontSize: '18px', fontWeight: 'bold' }}>叫分:</span>
+      <div style={{ marginBottom: isCompact ? '12px' : '20px', display: 'flex', gap: isCompact ? '10px' : '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <span style={{ fontSize: isCompact ? '14px' : '18px', fontWeight: 'bold' }}>叫分:</span>
         {[100, 200, 300].map(amount => (
           <button
             key={amount}
             onClick={() => onBid(amount)}
             disabled={landlord !== null}
             style={{
-              padding: '10px 20px',
-              fontSize: '16px',
+              padding: isCompact ? '6px 12px' : '10px 20px',
+              fontSize: isCompact ? '14px' : '16px',
               fontWeight: 'bold',
               backgroundColor: landlord !== null ? '#555' : '#ffd700',
               color: landlord !== null ? '#aaa' : '#8b4513',
@@ -270,13 +273,13 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
             {amount}
           </button>
         ))}
-        {landlord !== null && <span style={{ color: '#ff4444', fontWeight: 'bold' }}>已有人叫地主!</span>}
+        {landlord !== null && <span style={{ color: '#ff4444', fontWeight: 'bold', fontSize: isCompact ? '12px' : '14px' }}>已有人叫地主!</span>}
       </div>
 
-      <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: isCompact ? '16px' : '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
         {options.map((general, index) => (
           <div key={general.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ transform: 'scale(1.2)', marginBottom: '20px' }}>
+            <div style={{ transform: `scale(${isCompact ? 1 : 1.1})`, marginBottom: isCompact ? '10px' : '16px' }}>
               <HeroArea 
                 name={general.name} 
                 hp={general.hp} 
@@ -288,15 +291,15 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
             <button 
               onClick={() => onSelect(general.id)}
               style={{
-                marginTop: '10px',
-                padding: '10px 24px',
+                marginTop: isCompact ? '6px' : '10px',
+                padding: isCompact ? '6px 14px' : '10px 24px',
                 backgroundColor: '#ffd700',
                 color: '#8b4513',
                 border: '2px solid #8b4513',
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontWeight: 'bold',
-                fontSize: '16px',
+                fontSize: isCompact ? '14px' : '16px',
                 boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
               }}
             >
@@ -306,14 +309,14 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
               <button 
                 onClick={() => onChange(general.id)}
                 style={{
-                  marginTop: '10px',
-                  padding: '5px 12px',
+                  marginTop: isCompact ? '6px' : '10px',
+                  padding: isCompact ? '4px 10px' : '5px 12px',
                   backgroundColor: '#e74c3c',
                   color: 'white',
                   border: '1px solid #c0392b',
                   borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '12px',
+                  fontSize: isCompact ? '11px' : '12px',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
                 }}
               >
@@ -327,7 +330,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
   );
 };
 
-const ScoreBoard = ({ players, onWin, landlord }) => {
+const ScoreBoard = ({ players, onWin, landlord, scale = 1 }) => {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   if (isCollapsed) {
@@ -337,6 +340,8 @@ const ScoreBoard = ({ players, onWin, landlord }) => {
         top: '10px',
         left: '10px',
         zIndex: 1500,
+        transform: `scale(${scale})`,
+        transformOrigin: 'top left'
       }}>
         <button 
           onClick={() => setIsCollapsed(false)}
@@ -369,7 +374,9 @@ const ScoreBoard = ({ players, onWin, landlord }) => {
       zIndex: 1500,
       border: '1px solid #ffd700',
       boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
-      minWidth: '200px'
+      minWidth: '200px',
+      transform: `scale(${scale})`,
+      transformOrigin: 'top left'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <h3 style={{ margin: 0, color: '#ffd700', fontSize: '16px' }}>积分板</h3>
@@ -613,6 +620,8 @@ const ActionTicker = ({ logs }) => {
   );
 };
 
+const ACTION_LOG_HEIGHT = 90;
+
 const ActionLog = ({ logs }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
@@ -709,7 +718,7 @@ const ActionLog = ({ logs }) => {
       onClick={() => setIsExpanded(true)}
       style={{
         width: '250px',
-        height: '90px',
+        height: `${ACTION_LOG_HEIGHT}px`,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
         border: '1px solid #7f8c8d',
         borderRadius: '5px',
@@ -745,6 +754,11 @@ const ActionLog = ({ logs }) => {
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
+  const getUiScale = (width) => {
+    if (width <= 700) return 0.66;
+    if (width <= 900) return 0.8;
+    return 1;
+  };
 
   // Selection State
   const [selectedCardIndices, setSelectedCardIndices] = React.useState([]);
@@ -756,18 +770,23 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [maxHandWidth, setMaxHandWidth] = React.useState(
     typeof window !== 'undefined' ? Math.min(600, window.innerWidth - 40) : 600
   );
+  const [uiScale, setUiScale] = React.useState(
+    typeof window !== 'undefined' ? getUiScale(window.innerWidth) : 1
+  );
 
   // Update max width on resize
   React.useEffect(() => {
     const handleResize = () => {
+      const width = window.innerWidth;
       // Limit to 600px or screen width minus padding
-      setMaxHandWidth(Math.min(600, window.innerWidth - 40));
+      setMaxHandWidth(Math.min(600, width - 40));
+      setUiScale(getUiScale(width));
     };
-    
+
     window.addEventListener('resize', handleResize);
     // Initial calculation
     handleResize();
-    
+
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -966,9 +985,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         pointerEvents: 'auto',
         textAlign: 'center',
         width: 'fit-content',
-        alignSelf: 'center'
+        alignSelf: 'center',
+        transform: `scale(${uiScale})`,
+        transformOrigin: 'center'
       }}>
-        Player {id} {isMe ? '(You)' : ''} {G.readyPlayers.includes(id) ? '✓' : '...'}
+        {isMe ? '你' : ''} {G.readyPlayers.includes(id) ? '✓' : '...'}
       </div>
     );
 
@@ -1082,6 +1103,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               onModifyHP={(amount) => onModifyHP(id, amount)}
               judgments={judgments}
               onToggleJudgment={(type) => onToggleJudgment(id, type)}
+              scale={uiScale}
             />
           </div>
         </React.Fragment>
@@ -1106,6 +1128,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             onModifyHP={(amount) => onModifyHP(id, amount)}
             judgments={judgments}
             onToggleJudgment={(type) => onToggleJudgment(id, type)}
+            scale={uiScale}
           />
         )}
         
@@ -1229,7 +1252,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       )}
 
       {/* Scoreboard */}
-      <ScoreBoard players={G.players} onWin={onResolveGame} landlord={G.landlord} />
+      <ScoreBoard players={G.players} onWin={onResolveGame} landlord={G.landlord} scale={uiScale} />
 
       {/* Game Result Overlay */}
       <GameResultOverlay 
@@ -1270,7 +1293,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           position: 'absolute',
           top: 0,
           left: 0,
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(-50%, -50%) translateY(-${ACTION_LOG_HEIGHT}px)`,
           zIndex: 10
         }}>
            <ActionTicker logs={G.actionLog || []} />
