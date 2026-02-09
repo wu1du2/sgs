@@ -3,7 +3,12 @@ import React from 'react';
 export const getCardInfo = (card) => {
   if (typeof card === 'object' && card !== null) {
     const { suit, rank, name, type } = card;
-    const color = (suit === '♥' || suit === '♦') ? 'red' : 'black';
+    let color = 'black';
+    if (suit === '♥') color = '#d63031'; // Red
+    else if (suit === '♦') color = '#0984e3'; // Blue
+    else if (suit === '♣') color = '#00b894'; // Green
+    else if (suit === '♠') color = '#2d3436'; // Black (Dark Grey)
+    
     return { suit, rank, color, name, type };
   }
   // Fallback for legacy number index
@@ -11,7 +16,13 @@ export const getCardInfo = (card) => {
   const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
   const suit = SUITS[Math.floor(card / 13)];
   const rank = RANKS[card % 13];
-  const color = (suit === '♥' || suit === '♦') ? 'red' : 'black';
+  
+  let color = 'black';
+  if (suit === '♥') color = '#d63031';
+  else if (suit === '♦') color = '#0984e3';
+  else if (suit === '♣') color = '#00b894';
+  else if (suit === '♠') color = '#2d3436';
+
   return { suit, rank, color, name: '', type: '' };
 };
 

@@ -19,7 +19,6 @@ const CardClient = Client({
 
 const App = () => {
   const [playerID, setPlayerID] = useState(null);
-  const [inputValue, setInputValue] = useState('');
 
   if (playerID === null) {
     return (
@@ -34,33 +33,34 @@ const App = () => {
         color: 'white',
         fontFamily: 'Arial, sans-serif'
       }}>
-        <h1>Enter Game</h1>
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ marginRight: '10px' }}>Player ID:</label>
-          <input 
-            type="text" 
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="e.g. 0, 1, 2"
-            style={{ padding: '5px', borderRadius: '4px', border: 'none' }}
-          />
+        <h1>Select Player</h1>
+        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+          {[0, 1, 2].map((id) => (
+            <button 
+              key={id}
+              onClick={() => setPlayerID(String(id))}
+              style={{
+                padding: '15px 30px',
+                backgroundColor: '#ffd700',
+                border: '2px solid #e6c200',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '18px',
+                color: '#2d3436',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
+                transition: 'transform 0.1s'
+              }}
+              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              Player {id}
+            </button>
+          ))}
         </div>
-        <button 
-          onClick={() => setPlayerID(inputValue)}
-          disabled={!inputValue}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#ffd700',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold'
-          }}
-        >
-          Join Game
-        </button>
-        <p style={{ marginTop: '20px', fontSize: '12px', color: '#ccc' }}>
-          Valid IDs: 0, 1, 2
+        <p style={{ marginTop: '30px', fontSize: '14px', color: '#ccc' }}>
+          Click a button to join as that player
         </p>
       </div>
     );

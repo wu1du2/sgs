@@ -2,6 +2,15 @@ import React from 'react';
 import { Card } from './Card';
 import { SGS_CARDS } from './sgs_data';
 
+// Helper for suit colors
+const getSuitColor = (suit) => {
+  if (suit === '♥') return '#d63031'; // Red
+  if (suit === '♦') return '#0984e3'; // Blue
+  if (suit === '♣') return '#00b894'; // Green
+  if (suit === '♠') return '#b2bec3'; // Light Grey for dark backgrounds (Log/Ticker)
+  return '#fff';
+};
+
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judgments = {}, onToggleJudgment }) => {
   const getBorderColor = () => {
@@ -526,19 +535,22 @@ const ActionTicker = ({ logs }) => {
 
   if (!visible) return null;
 
-  // Parse message to find card names
+  // Parse message to find card names and suits
   const renderMessage = () => {
     // Get all unique card names, sorted by length descending to match longest first
     const cardNames = [...new Set(SGS_CARDS.map(c => c.name))].sort((a, b) => b.length - a.length);
     
-    // Create a regex pattern
-    const pattern = new RegExp(`(${cardNames.join('|')})`, 'g');
+    // Create a regex pattern for card names AND suits
+    // Matches: Card Names OR Suit+Rank (e.g., ♥ 6) OR just Suit
+    const pattern = new RegExp(`(${cardNames.join('|')}|[♠♥♣♦]\\s?[A-Z0-9]+|[♠♥♣♦])`, 'g');
     
     const parts = message.split(pattern);
     
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '4px' }}>
         {parts.map((part, i) => {
+          if (!part) return null;
+          
           if (cardNames.includes(part)) {
             return (
               <div key={i} style={{
@@ -557,6 +569,18 @@ const ActionTicker = ({ logs }) => {
               </div>
             );
           }
+          
+          // Check for Suit
+          if (part.match(/[♠♥♣♦]/)) {
+             const suit = part.match(/[♠♥♣♦]/)[0];
+             const color = getSuitColor(suit);
+             return (
+               <span key={i} style={{ color: color, fontWeight: 'bold', fontSize: '18px' }}>
+                 {part}
+               </span>
+             );
+          }
+
           return <span key={i}>{part}</span>;
         })}
       </div>
@@ -592,6 +616,28 @@ const ActionLog = ({ logs }) => {
 
   // Get last 3 logs for collapsed view
   const recentLogs = logs.slice(-3);
+
+  const renderLogText = (text) => {
+    const cardNames = [...new Set(SGS_CARDS.map(c => c.name))].sort((a, b) => b.length - a.length);
+    const pattern = new RegExp(`(${cardNames.join('|')}|[♠♥♣♦]\\s?[A-Z0-9]+|[♠♥♣♦])`, 'g');
+    const parts = text.split(pattern);
+
+    return parts.map((part, i) => {
+      if (!part) return null;
+      
+      if (cardNames.includes(part)) {
+        return <span key={i} style={{ color: '#ffd700', fontWeight: 'bold' }}>[{part}]</span>;
+      }
+      
+      if (part.match(/[♠♥♣♦]/)) {
+         const suit = part.match(/[♠♥♣♦]/)[0];
+         const color = getSuitColor(suit);
+         return <span key={i} style={{ color: color, fontWeight: 'bold' }}>{part}</span>;
+      }
+      
+      return <span key={i}>{part}</span>;
+    });
+  };
 
   if (isExpanded) {
     return (
@@ -646,7 +692,7 @@ const ActionLog = ({ logs }) => {
               logs.map((log, i) => (
                 <div key={i} style={{ marginBottom: '5px', borderBottom: '1px solid #333', paddingBottom: '2px' }}>
                   <span style={{ color: '#888', marginRight: '10px' }}>#{i + 1}</span>
-                  {log}
+                  {renderLogText(log)}
                 </div>
               ))
             )}
@@ -687,7 +733,7 @@ const ActionLog = ({ logs }) => {
           marginBottom: '2px',
           color: i === recentLogs.length - 1 ? '#fff' : '#aaa'
         }}>
-          {log}
+          {renderLogText(log)}
         </div>
       ))}
     </div>
@@ -858,6 +904,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const onToggleJudgment = (targetId, type) => {
     moves.toggleJudgment(targetId, type);
+  };
+
+  const onPerformJudgment = () => {
+    moves.performJudgment();
   };
 
   // Render a player's hand area
@@ -1249,6 +1299,34 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           <div style={{ textAlign: 'center', fontSize: '12px', color: '#7f8c8d' }}>
             Deck<br/>{G.deck.length}
           </div>
+        </div>
+
+        {/* Judgment Button - Left of Draw Pile */}
+        <div 
+          onClick={onPerformJudgment}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: '215px', // 145px + 60px + 10px gap
+            transform: 'translateY(-50%)',
+            width: '40px',
+            height: '40px',
+            backgroundColor: '#9b59b6',
+            borderRadius: '50%',
+            border: '2px solid #8e44ad',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            zIndex: 10,
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '12px'
+          }}
+          title="判定"
+        >
+          判
         </div>
       </div>
 

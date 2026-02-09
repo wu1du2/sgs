@@ -360,6 +360,22 @@ export const CardGame = {
       const cardNames = cardsDiscarded.map(c => c.name).join(' ');
       const logEntry = `${playerName} 弃牌 [${cardNames}]`;
       G.actionLog.push(logEntry);
+    },
+    performJudgment: ({ G, playerID }) => {
+      if (G.phase !== 'playing') return;
+      
+      const card = G.deck.pop();
+      if (!card) return; // Deck empty
+
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const logEntry = `${playerName} 进行了一次判定 ${card.suit} ${card.rank}`;
+      G.actionLog.push(logEntry);
+      
+      G.lastAction = {
+        type: 'judgment',
+        playerID,
+        card
+      };
     }
   },
 
