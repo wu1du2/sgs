@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from './Card';
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP }) => {
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -63,8 +63,51 @@ const HeroArea = ({ name = "General", hp = 4, skills = ["Strike", "Dodge"], port
         {/* Name & HP */}
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700' }}>{name}</div>
-          <div style={{ fontSize: '12px', color: '#ff4444', letterSpacing: '1px' }}>
-            {'♥'.repeat(hp)}
+          <div style={{ fontSize: '12px', color: '#ff4444', letterSpacing: '1px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '4px' }}>
+              {'♥'.repeat(hp)}
+              <span style={{ color: '#ff4444', opacity: 0.5 }}>{'♡'.repeat(Math.max(0, hpMax - hp))}</span>
+            </span>
+            
+            {/* HP Modification Buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginLeft: '4px' }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onModifyHP && onModifyHP(1); }}
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  fontSize: '8px',
+                  padding: 0,
+                  lineHeight: '10px',
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '2px',
+                  cursor: 'pointer'
+                }}
+                title="+1 HP"
+              >
+                +
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onModifyHP && onModifyHP(-1); }}
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  fontSize: '8px',
+                  padding: 0,
+                  lineHeight: '10px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '2px',
+                  cursor: 'pointer'
+                }}
+                title="-1 HP"
+              >
+                -
+              </button>
+            </div>
           </div>
           {/* Role Label */}
           <div style={{ fontSize: '10px', color: role === 'landlord' ? '#ffaaaa' : '#aaffaa', marginTop: '2px' }}>
@@ -185,6 +228,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
               <HeroArea 
                 name={general.name} 
                 hp={general.hp} 
+                hpMax={general.hpMax}
                 skills={general.skills} 
                 portrait={general.portrait}
               />
@@ -684,6 +728,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     moves.voteRematch();
   };
 
+  const onModifyHP = (targetId, amount) => {
+    moves.modifyHP(targetId, amount);
+  };
+
   // Render a player's hand area
   const renderPlayerArea = (id) => {
     const position = getPosition(id);
@@ -840,6 +888,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             <HeroArea 
               name={general ? general.name : "My Hero"} 
               hp={general ? general.hp : 4}
+              hpMax={general ? general.hpMax : 4}
               skills={general ? general.skills : ["Strike", "Dodge"]}
               portrait={general ? general.portrait : null}
               isMe={true} 
@@ -849,6 +898,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               isSelected={isSelected}
               equipments={equipments}
               onEquipClick={onEquipClick}
+              onModifyHP={(amount) => onModifyHP(id, amount)}
             />
           </div>
         </React.Fragment>
@@ -862,6 +912,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           <HeroArea 
             name={general ? general.name : `Player ${id}`}
             hp={general ? general.hp : 4}
+            hpMax={general ? general.hpMax : 4}
             skills={general ? general.skills : ["Strike", "Dodge"]}
             portrait={general ? general.portrait : null}
             role={role}
@@ -869,6 +920,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             isSelectable={isSelectable}
             isSelected={isSelected}
             equipments={equipments}
+            onModifyHP={(amount) => onModifyHP(id, amount)}
           />
         )}
         

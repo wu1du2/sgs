@@ -90,6 +90,12 @@ export const CardGame = {
       const selected = options.find(g => g.id === generalId);
       if (selected) {
         G.players[playerID].general = selected;
+        
+        // Apply Landlord bonus if this player is the landlord
+        if (G.players[playerID].role === 'landlord') {
+           G.players[playerID].general.hpMax += 1;
+           G.players[playerID].general.hp += 1;
+        }
       }
       
       // Check if all players have selected
@@ -108,10 +114,33 @@ export const CardGame = {
       ['0', '1', '2'].forEach(pid => {
         if (pid === playerID) {
           G.players[pid].role = 'landlord';
+          // Landlord gets +1 HP and +1 Max HP
+          if (G.players[pid].general) {
+            G.players[pid].general.hpMax += 1;
+            G.players[pid].general.hp += 1;
+          }
         } else {
           G.players[pid].role = 'peasant';
         }
       });
+    },
+    modifyHP: ({ G }, targetPlayerID, amount) => {
+      const general = G.players[targetPlayerID]?.general;
+      if (general) {
+        const newHP = general.hp + amount;
+        // Ensure HP doesn't exceed Max HP or drop below 0 (optional, but good practice)
+        // User didn't specify limits, but usually HP <= hpMax.
+        // However, some games allow overheal. Standard SGS rules: HP <= MaxHP.
+        // I'll clamp it to MaxHP for addition, but allow subtraction to 0 or below (dying).
+        // Actually, let's just apply the change. The user said "Click ... adds one / subtracts one".
+        // I will clamp to maxHP just in case, as is standard.
+        
+        if (amount > 0) {
+           general.hp = Math.min(general.hp + amount, general.hpMax);
+        } else {
+           general.hp = Math.max(general.hp + amount, 0);
+        }
+      }
     },
     resolveGame: ({ G }, winnerRole) => {
       const bid = G.bidAmount;
