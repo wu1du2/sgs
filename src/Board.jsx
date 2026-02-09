@@ -32,6 +32,8 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
       onClick={onClick}
       style={{
         width: '140px',
+        transform: 'scale(0.66)',
+        transformOrigin: 'top center',
         backgroundColor: getBackgroundColor(),
         borderRadius: '8px',
         padding: '8px',
