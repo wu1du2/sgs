@@ -3,7 +3,7 @@ import { Card } from './Card';
 import { SGS_CARDS } from './sgs_data';
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judgments = {}, onToggleJudgment }) => {
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -173,6 +173,46 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
               title={equip ? equip.name : slot.label}
             >
               {equip ? equip.name : slot.label}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Judgment Area */}
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginTop: '4px', gap: '2px' }}>
+        {[
+          { label: '兵', key: 'bing', color: '#3498db' },
+          { label: '乐', key: 'le', color: '#e74c3c' },
+          { label: '电', key: 'dian', color: '#9b59b6' }
+        ].map((item) => {
+          const isActive = judgments[item.key];
+          return (
+            <div
+              key={item.key}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleJudgment && onToggleJudgment(item.key);
+              }}
+              style={{
+                flex: 1,
+                height: '20px',
+                backgroundColor: item.color,
+                opacity: isActive ? 1 : 0.3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                color: 'white',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                border: isActive ? '1px solid white' : '1px solid transparent',
+                boxShadow: isActive ? `0 0 5px ${item.color}` : 'none',
+                transition: 'all 0.2s'
+              }}
+              title={`Toggle ${item.label}`}
+            >
+              {item.label}
             </div>
           );
         })}
@@ -816,6 +856,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     moves.modifyHP(targetId, amount);
   };
 
+  const onToggleJudgment = (targetId, type) => {
+    moves.toggleJudgment(targetId, type);
+  };
+
   // Render a player's hand area
   const renderPlayerArea = (id) => {
     const position = getPosition(id);
@@ -825,6 +869,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const general = G.players[id]?.general;
     const role = G.players[id]?.role || 'neutral';
     const equipments = G.players[id]?.equipments || {};
+    const judgments = G.players[id]?.judgments || {};
 
     // Target Selection Logic
     const isSelectable = selectedCardIndices.length > 0;
@@ -983,6 +1028,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               equipments={equipments}
               onEquipClick={onEquipClick}
               onModifyHP={(amount) => onModifyHP(id, amount)}
+              judgments={judgments}
+              onToggleJudgment={(type) => onToggleJudgment(id, type)}
             />
           </div>
         </React.Fragment>
@@ -1005,6 +1052,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             isSelected={isSelected}
             equipments={equipments}
             onModifyHP={(amount) => onModifyHP(id, amount)}
+            judgments={judgments}
+            onToggleJudgment={(type) => onToggleJudgment(id, type)}
           />
         )}
         

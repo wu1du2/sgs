@@ -41,9 +41,9 @@ export const CardGame = {
       '2': [],
     },
     players: {
-      '0': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null } },
-      '1': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null } },
-      '2': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null } },
+      '0': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null }, judgments: { le: false, bing: false, dian: false } },
+      '1': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null }, judgments: { le: false, bing: false, dian: false } },
+      '2': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null }, judgments: { le: false, bing: false, dian: false } },
     },
     generalOptions: {
       '0': [],
@@ -140,6 +140,12 @@ export const CardGame = {
         } else {
            general.hp = Math.max(general.hp + amount, 0);
         }
+      }
+    },
+    toggleJudgment: ({ G }, playerID, type) => {
+      const player = G.players[playerID];
+      if (player && player.judgments && player.judgments.hasOwnProperty(type)) {
+        player.judgments[type] = !player.judgments[type];
       }
     },
     resolveGame: ({ G }, winnerRole) => {
