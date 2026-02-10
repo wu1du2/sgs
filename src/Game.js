@@ -352,12 +352,13 @@ export const CardGame = {
              playerID: playerID
            };
            G.actionLog.push(`${playerName} played Harvest (五谷丰登), waiting for count selection`);
-        } else if (['顺手牵羊', '过河拆桥', '火攻'].includes(card.name)) {
+        } else if (['顺手牵羊', '过河拆桥', '火攻', '借刀杀人'].includes(card.name)) {
            if (targetIds && targetIds.length === 1) {
               let actionType = '';
               if (card.name === '顺手牵羊') actionType = 'steal';
               else if (card.name === '过河拆桥') actionType = 'discard';
               else if (card.name === '火攻') actionType = 'fire_attack';
+              else if (card.name === '借刀杀人') actionType = 'collateral';
 
               G.pendingEffect = {
                  active: true,
@@ -472,6 +473,18 @@ export const CardGame = {
          };
          const targetName = G.players[targetPlayerID].general ? G.players[targetPlayerID].general.name : `Player ${targetPlayerID}`;
          G.actionLog.push(`Fire Attack effective, ${targetName} must show a card`);
+      } else if (actionType === 'collateral') {
+         // For Collateral (借刀杀人), if the target doesn't slash, we steal their weapon.
+         // Since we don't have the "Ask to Slash" UI yet, we default to the "Steal Weapon" penalty.
+         // We reuse the 'steal' action type for the selection phase.
+         G.selectCard = {
+            active: true,
+            sourcePlayerID,
+            targetPlayerID,
+            actionType: 'steal',
+            pendingCard,
+         };
+         G.actionLog.push(`Collateral effective, proceeding to steal weapon`);
       } else {
         // Transfer pending effect to selectCard to start the interaction
         G.selectCard = {
@@ -550,6 +563,10 @@ export const CardGame = {
       const targetPlayer = G.players[targetPlayerID];
       const targetHand = G.hands[targetPlayerID];
       
+      const sourcePlayer = G.players[playerID];
+      const sourcePlayerName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${playerID}`;
+      const targetPlayerName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetPlayerID}`;
+
       // Process each selected item
       selectedItems.forEach(item => {
         let card = null;
@@ -569,11 +586,11 @@ export const CardGame = {
              if (actionType === 'discard') {
                targetHand.splice(item.index, 1);
                addToDiscardPile(G, card);
-               G.actionLog.push(`Player ${playerID} discarded a card from Player ${targetPlayerID}'s hand`);
+               G.actionLog.push(`${sourcePlayerName} discarded a card from ${targetPlayerName}'s hand`);
              } else if (actionType === 'steal') {
                targetHand.splice(item.index, 1);
                G.hands[playerID].push(card);
-               G.actionLog.push(`Player ${playerID} stole a card from Player ${targetPlayerID}'s hand`);
+               G.actionLog.push(`${sourcePlayerName} stole a card from ${targetPlayerName}'s hand`);
              }
           }
         } else if (item.type === 'equip') {
@@ -582,10 +599,10 @@ export const CardGame = {
             targetPlayer.equipments[item.slot] = null;
             if (actionType === 'discard') {
               addToDiscardPile(G, card);
-              G.actionLog.push(`Player ${playerID} discarded ${card.name} from Player ${targetPlayerID}'s equipment`);
+              G.actionLog.push(`${sourcePlayerName} discarded ${card.name} from ${targetPlayerName}'s equipment`);
             } else if (actionType === 'steal') {
               G.hands[playerID].push(card);
-              G.actionLog.push(`Player ${playerID} stole ${card.name} from Player ${targetPlayerID}'s equipment`);
+              G.actionLog.push(`${sourcePlayerName} stole ${card.name} from ${targetPlayerName}'s equipment`);
             }
           }
         } else if (item.type === 'judge') {
@@ -594,16 +611,16 @@ export const CardGame = {
             targetPlayer.judges[item.slot] = null;
             if (actionType === 'discard') {
               addToDiscardPile(G, card);
-              G.actionLog.push(`Player ${playerID} discarded ${card.name} from Player ${targetPlayerID}'s judgment area`);
+              G.actionLog.push(`${sourcePlayerName} discarded ${card.name} from ${targetPlayerName}'s judgment area`);
             } else if (actionType === 'steal') {
               G.hands[playerID].push(card);
-              G.actionLog.push(`Player ${playerID} stole ${card.name} from Player ${targetPlayerID}'s judgment area`);
+              G.actionLog.push(`${sourcePlayerName} stole ${card.name} from ${targetPlayerName}'s judgment area`);
             }
           }
         }
       });
       
-      // Reset selectCard state
+      // Reset selection state
       G.selectCard = {
         active: false,
         sourcePlayerID: null,
@@ -611,6 +628,11 @@ export const CardGame = {
         actionType: null,
         pendingCard: null,
       };
+      
+      // If there was a pending card (the Snatch/Dismantle itself), discard it now
+      if (pendingCard) {
+        addToDiscardPile(G, pendingCard);
+      }
     },
 
     changeGeneral: ({ G, playerID }, generalId) => {

@@ -442,12 +442,12 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
     <div 
       onClick={onClick}
       style={{
-        width: '140px',
+        width: '160px',
         transform: `scale(${scale})`,
         transformOrigin: 'top center',
         backgroundColor: getBackgroundColor(),
         borderRadius: '8px',
-        padding: '8px',
+        padding: '4px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -477,11 +477,11 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
       )}
 
       {/* Avatar & Name Row */}
-      <div style={{ display: 'flex', width: '100%', marginBottom: '8px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', width: '100%', marginBottom: '4px', alignItems: 'flex-start' }}>
         {/* Avatar */}
         <div style={{ 
-          width: '50px', 
-          height: '50px', 
+          width: '64px', 
+          height: '64px', 
           backgroundColor: '#555', 
           borderRadius: '4px',
           border: '1px solid #aaa',
@@ -493,28 +493,29 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
           overflow: 'hidden',
           backgroundSize: 'cover',
           backgroundPosition: 'top center',
-          backgroundImage: portrait ? `url(${portrait})` : 'none'
+          backgroundImage: portrait ? `url(${portrait})` : 'none',
+          flexShrink: 0
         }}>
           {!portrait && '👤'}
         </div>
         
         {/* Name & HP */}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700' }}>{name}</div>
-          <div style={{ fontSize: '12px', color: '#ff4444', letterSpacing: '1px', display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '4px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '64px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffd700', marginBottom: '2px' }}>{name}</div>
+          <div style={{ fontSize: '10px', color: '#ff4444', letterSpacing: '1px', display: 'flex', alignItems: 'center', marginBottom: '2px' }}>
+            <span style={{ marginRight: '4px', display: 'flex', flexWrap: 'wrap' }}>
               {'♥'.repeat(hp)}
               <span style={{ color: '#ff4444', opacity: 0.5 }}>{'♡'.repeat(Math.max(0, hpMax - hp))}</span>
             </span>
             
             {/* HP Modification Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginLeft: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '2px', marginLeft: '4px' }}>
               <button 
                 onClick={(e) => { e.stopPropagation(); onModifyHP && onModifyHP(1); }}
                 style={{
                   width: '12px',
                   height: '12px',
-                  fontSize: '8px',
+                  fontSize: '10px',
                   padding: 0,
                   lineHeight: '10px',
                   backgroundColor: '#4CAF50',
@@ -532,7 +533,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
                 style={{
                   width: '12px',
                   height: '12px',
-                  fontSize: '8px',
+                  fontSize: '10px',
                   padding: 0,
                   lineHeight: '10px',
                   backgroundColor: '#f44336',
@@ -548,14 +549,14 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
             </div>
           </div>
           {/* Hand Count */}
-          <div style={{ fontSize: '12px', color: '#fff', marginTop: '2px', fontWeight: 'bold' }}>
+          <div style={{ fontSize: '12px', color: '#fff', fontWeight: 'bold' }}>
             手牌 {handCount}
           </div>
         </div>
       </div>
 
       {/* Skills */}
-      <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+      <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: '2px', marginBottom: '4px' }}>
         {skills.map((skill, i) => (
           <button 
             key={i} 
@@ -564,8 +565,8 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
               onSkillClick && onSkillClick(skill);
             }}
             style={{
-              fontSize: '10px',
-              padding: '2px 6px',
+              fontSize: '9px',
+              padding: '1px 4px',
               backgroundColor: '#eecfa1',
               color: '#3e2723',
               border: '1px solid #8b4513',
@@ -582,7 +583,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
       </div>
 
       {/* Equipment Slots */}
-      <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+      <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px' }}>
         {[
           { label: 'Wpn', key: 'weapon', icon: '⚔️' },
           { label: 'Arm', key: 'armor', icon: '🛡️' },
@@ -600,9 +601,9 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
                 }
               }}
               style={{ 
-                height: '20px', 
+                height: '16px', 
                 border: '1px dashed #666', 
-                fontSize: '9px', 
+                fontSize: '8px', 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
@@ -623,7 +624,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
       </div>
 
       {/* Judgment Area */}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginTop: '4px', gap: '2px' }}>
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginTop: '2px', gap: '1px' }}>
         {[
           { label: '兵', key: 'bing', color: '#3498db' },
           { label: '乐', key: 'le', color: '#e74c3c' },
@@ -640,13 +641,13 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
               }}
               style={{
                 flex: 1,
-                height: '20px',
+                height: '16px',
                 backgroundColor: item.color,
                 opacity: isActive ? 1 : 0.3,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '10px',
+                fontSize: '9px',
                 fontWeight: 'bold',
                 color: 'white',
                 borderRadius: '4px',
@@ -671,12 +672,12 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
             }}
             style={{
                 flex: 1,
-                height: '20px',
+                height: '16px',
                 backgroundColor: isLinked ? '#2c3e50' : 'rgba(0,0,0,0.3)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '10px',
+                fontSize: '9px',
                 fontWeight: 'bold',
                 color: isLinked ? '#ffd700' : '#aaa',
                 borderRadius: '4px',
@@ -2180,7 +2181,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             top: '60px',
             left: '-40px',
             width: '180px',
-            maxHeight: '200px',
+            maxHeight: '90px',
             backgroundColor: 'rgba(0,0,0,0.85)',
             border: '1px solid #7f8c8d',
             borderRadius: '6px',
@@ -2189,12 +2190,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             fontSize: '11px',
             boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
             overflow: 'hidden',
-            zIndex: 20
+            zIndex: 1000
           }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px' }}>
               弃牌堆 ({(G.discardPile || []).length})
             </div>
-            <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+            <div style={{ maxHeight: '50px', overflowY: 'auto' }}>
               {(G.discardPile || []).length === 0 ? (
                 <div style={{ color: '#95a5a6' }}>空</div>
               ) : (
