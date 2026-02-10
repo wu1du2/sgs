@@ -133,6 +133,11 @@ export const CardGame = {
       actionType: null, // 'discard', 'steal'
       pendingCard: null,
     },
+    fireAttackShowCard: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+    },
     harvestCards: [], // Cards for "Harvest" (五谷丰登)
     harvestCountSelect: { // New state for selecting harvest count
       active: false,
@@ -347,6 +352,22 @@ export const CardGame = {
              playerID: playerID
            };
            G.actionLog.push(`${playerName} played Harvest (五谷丰登), waiting for count selection`);
+        } else if (['顺手牵羊', '过河拆桥', '火攻'].includes(card.name)) {
+           if (targetIds && targetIds.length === 1) {
+              let actionType = '';
+              if (card.name === '顺手牵羊') actionType = 'steal';
+              else if (card.name === '过河拆桥') actionType = 'discard';
+              else if (card.name === '火攻') actionType = 'fire_attack';
+
+              G.pendingEffect = {
+                 active: true,
+                 sourcePlayerID: playerID,
+                 targetPlayerID: targetIds[0],
+                 actionType: actionType,
+                 pendingCard: card
+              };
+              G.actionLog.push(`${playerName} played ${card.name}, waiting for effect confirmation`);
+           }
         }
       }
     },
@@ -441,14 +462,26 @@ export const CardGame = {
     confirmEffect: ({ G, playerID }) => {
       if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
       
-      // Transfer pending effect to selectCard to start the interaction
-      G.selectCard = {
-        active: true,
-        sourcePlayerID: G.pendingEffect.sourcePlayerID,
-        targetPlayerID: G.pendingEffect.targetPlayerID,
-        actionType: G.pendingEffect.actionType,
-        pendingCard: G.pendingEffect.pendingCard,
-      };
+      const { actionType, sourcePlayerID, targetPlayerID, pendingCard } = G.pendingEffect;
+
+      if (actionType === 'fire_attack') {
+         G.fireAttackShowCard = {
+            active: true,
+            sourcePlayerID,
+            targetPlayerID
+         };
+         const targetName = G.players[targetPlayerID].general ? G.players[targetPlayerID].general.name : `Player ${targetPlayerID}`;
+         G.actionLog.push(`Fire Attack effective, ${targetName} must show a card`);
+      } else {
+        // Transfer pending effect to selectCard to start the interaction
+        G.selectCard = {
+          active: true,
+          sourcePlayerID,
+          targetPlayerID,
+          actionType,
+          pendingCard,
+        };
+      }
       
       G.pendingEffect = null;
     },
@@ -458,6 +491,23 @@ export const CardGame = {
       // Just clear the pending effect
       G.pendingEffect = null;
     },
+    confirmFireAttackShowCard: ({ G, playerID }, cardIndex) => {
+       if (!G.fireAttackShowCard.active || G.fireAttackShowCard.targetPlayerID !== playerID) return;
+       
+       const hand = G.hands[playerID];
+       const card = hand[cardIndex];
+       
+       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+       G.actionLog.push(`${playerName} 展示了一张 ${card.suit}${card.rank} ${card.name}`);
+       
+       // Reset state
+       G.fireAttackShowCard = {
+          active: false,
+          sourcePlayerID: null,
+          targetPlayerID: null
+       };
+    },
+
     discardCards: ({ G, playerID }, cardIndices) => {
       if (G.phase !== 'playing') return;
       

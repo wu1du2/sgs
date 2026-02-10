@@ -159,6 +159,87 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
   );
 };
 
+const FireAttackShowCardModal = ({ hand, onConfirm }) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(null);
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <h3>请展示一张手牌</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {hand.map((card, index) => (
+            <div
+              key={index}
+              onClick={() => setSelectedIndex(index)}
+              style={{
+                width: '80px',
+                height: '120px',
+                backgroundColor: '#ecf0f1',
+                borderRadius: '6px',
+                border: selectedIndex === index ? '3px solid #e74c3c' : '1px solid #bdc3c7',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                color: getSuitColor(card.suit),
+                transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
+                {card.suit}
+              </div>
+              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
+                {card.rank}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
+                {card.name}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button 
+            onClick={() => onConfirm(selectedIndex)} 
+            disabled={selectedIndex === null}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: selectedIndex !== null ? '#e74c3c' : '#555', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: selectedIndex !== null ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定展示
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const HarvestBox = ({ cards, onPick, onClose }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
 
@@ -1370,6 +1451,14 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         }
         // Distance check removed as per user request
       }
+
+      // Handle Fire Attack (火攻)
+      if (card.name === '火攻') {
+        if (selectedTargetIds.length !== 1) {
+          alert("请选择一名目标玩家");
+          return;
+        }
+      }
     }
 
     if (selectedTargetIds.length > 0) {
@@ -2174,6 +2263,14 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => {}} // No cancel for now as effect is resolving
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
           singleSelection={['过河拆桥', '顺手牵羊'].includes(G.selectCard.pendingCard?.name)}
+        />
+      )}
+
+      {/* Fire Attack Show Card Modal */}
+      {G.fireAttackShowCard && G.fireAttackShowCard.active && G.fireAttackShowCard.targetPlayerID === playerID && (
+        <FireAttackShowCardModal
+          hand={G.hands[playerID]}
+          onConfirm={(index) => moves.confirmFireAttackShowCard(index)}
         />
       )}
 
