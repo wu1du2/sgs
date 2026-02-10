@@ -400,6 +400,33 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
             </div>
           );
         })}
+        {/* Chain Button */}
+        <div
+            onClick={(e) => {
+                e.stopPropagation();
+                onToggleChain && onToggleChain();
+            }}
+            style={{
+                flex: 1,
+                height: '20px',
+                backgroundColor: isLinked ? '#2c3e50' : 'rgba(0,0,0,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                color: isLinked ? '#ffd700' : '#aaa',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                border: '1px solid transparent',
+                transition: 'all 0.2s',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap'
+            }}
+            title="连环"
+        >
+            连
+        </div>
       </div>
     </div>
   );
@@ -985,6 +1012,32 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [equipmentMenu, setEquipmentMenu] = React.useState(null); // { slot: string }
   const [judgmentMenu, setJudgmentMenu] = React.useState(null); // { playerID: string, type: string, card: object }
   const [showDiscardPile, setShowDiscardPile] = React.useState(false);
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      }).catch((err) => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => {
+          setIsFullscreen(false);
+        });
+      }
+    }
+  };
+
+  // Listen for fullscreen change events
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Responsive hand width state
   const [maxHandWidth, setMaxHandWidth] = React.useState(
@@ -1047,8 +1100,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       case 'bottom': return { x: '50%', y: '80%' };
       case 'left': return { x: '15%', y: '40%' };
       case 'right': return { x: '85%', y: '40%' };
-      case 'right-bottom': return { x: '85%', y: '60%' };
-      case 'right-top': return { x: '85%', y: '20%' };
+      case 'right-bottom': return { x: '85%', y: '75%' };
+      case 'right-top': return { x: '85%', y: '15%' };
       default: return { x: '50%', y: '50%' };
     }
   };
@@ -1563,6 +1616,28 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* Fullscreen Toggle */}
+      <button
+        onClick={toggleFullscreen}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          zIndex: 5000,
+          background: 'rgba(0, 0, 0, 0.5)',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          borderRadius: '4px',
+          color: 'white',
+          padding: '5px 10px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px'
+        }}
+      >
+        {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+      </button>
       {/* Equipment Menu Overlay */}
       {equipmentMenu && (
         <div style={{
