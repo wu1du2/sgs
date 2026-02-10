@@ -69,26 +69,6 @@ const App = () => {
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
       <CardClient playerID={playerID} matchID="default" />
-      <button 
-        onClick={() => setPlayerID(null)}
-        style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          zIndex: 1000,
-          width: '24px',
-          height: '24px',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          color: 'white',
-          border: '1px solid white',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '12px',
-          padding: 0
-        }}
-      >
-        L
-      </button>
     </div>
   );
 };

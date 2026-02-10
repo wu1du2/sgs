@@ -400,32 +400,6 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
             </div>
           );
         })}
-        {/* Chain Button */}
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleChain && onToggleChain();
-          }}
-          style={{
-            width: '20px',
-            height: '20px',
-            backgroundColor: isLinked ? '#555' : '#333',
-            color: isLinked ? '#fff' : '#888',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            border: isLinked ? '1px solid #fff' : '1px solid #555',
-            boxShadow: isLinked ? '0 0 5px #fff' : 'none',
-            transition: 'all 0.2s'
-          }}
-          title="铁锁连环"
-        >
-          L
-        </div>
       </div>
     </div>
   );
@@ -1050,18 +1024,33 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   }, [playerID, G.readyPlayers, moves]);
   
   // Helper to get relative player positions
-  // Returns: 'bottom' (me), 'right' (next player), 'left' (previous player)
   const getPosition = (id) => {
     if (id === myPlayerID) return 'bottom';
-    if (id === (parseInt(myPlayerID) + 1) % numPlayers + "") return 'right';
+    const totalPlayers = Object.keys(G.players).length;
+    const relative = (parseInt(id) - parseInt(myPlayerID) + totalPlayers) % totalPlayers;
+    
+    if (totalPlayers === 3) {
+      if (relative === 1) return 'right';
+      return 'left';
+    } else if (totalPlayers === 4) {
+      if (relative === 1) return 'right-bottom';
+      if (relative === 2) return 'right-top';
+      return 'left';
+    }
+    // Fallback
+    if (relative === 1) return 'right';
     return 'left';
   };
 
   const getCoordinates = (position) => {
-    if (position === 'bottom') return { x: '50%', y: '80%' };
-    if (position === 'left') return { x: '15%', y: '40%' };
-    if (position === 'right') return { x: '85%', y: '40%' };
-    return { x: '50%', y: '50%' };
+    switch (position) {
+      case 'bottom': return { x: '50%', y: '80%' };
+      case 'left': return { x: '15%', y: '40%' };
+      case 'right': return { x: '85%', y: '40%' };
+      case 'right-bottom': return { x: '85%', y: '60%' };
+      case 'right-top': return { x: '85%', y: '20%' };
+      default: return { x: '50%', y: '50%' };
+    }
   };
 
   const onClickDraw = () => {
@@ -1317,6 +1306,27 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         alignItems: 'flex-end'
       } : {
         top: '30%',
+        right: '20px',
+        transform: 'translateY(-50%)'
+      })),
+      ...(position === 'right-bottom' && (isCompact ? {
+        top: 'auto',
+        bottom: '40px',
+        right: '5px',
+        transform: 'none',
+        alignItems: 'flex-end'
+      } : {
+        top: '60%',
+        right: '20px',
+        transform: 'translateY(-50%)'
+      })),
+      ...(position === 'right-top' && (isCompact ? {
+        top: '40px',
+        right: '5px',
+        transform: 'none',
+        alignItems: 'flex-end'
+      } : {
+        top: '20%',
         right: '20px',
         transform: 'translateY(-50%)'
       })),
@@ -1775,22 +1785,22 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       <div style={{
         position: 'absolute',
         top: '50%',
-        left: '50%',
+        left: '28%',
         width: 0,
         height: 0,
         overflow: 'visible'
       }}>
 
-        {/* Draw Pile - Left of Log */}
+        {/* Draw Pile */}
         <div 
           onClick={onClickDraw}
           style={{
             position: 'absolute',
             top: 0,
-            right: '145px', // 125px (half log) + 20px gap
+            left: 0,
             transform: 'translateY(-50%)',
-            width: '60px',
-            height: '90px',
+            width: '50px',
+            height: '75px',
             backgroundColor: '#ecf0f1',
             borderRadius: '5px',
             border: '2px solid #bdc3c7',
@@ -1802,18 +1812,45 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             zIndex: 10
           }}
         >
-          <div style={{ textAlign: 'center', fontSize: '12px', color: '#7f8c8d' }}>
+          <div style={{ textAlign: 'center', fontSize: '10px', color: '#7f8c8d' }}>
             Deck<br/>{G.deck.length}
           </div>
         </div>
 
-        {/* Discard Pile Button - Below Draw Pile */}
+        {/* Judgment Button - Left of Deck */}
+        <div 
+          onClick={onPerformJudgment}
+          style={{
+            position: 'absolute',
+            top: '-20px',
+            left: '-40px',
+            width: '28px',
+            height: '28px',
+            backgroundColor: '#9b59b6',
+            borderRadius: '4px',
+            border: '2px solid #8e44ad',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            zIndex: 10,
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '12px'
+          }}
+          title="判定"
+        >
+          判
+        </div>
+
+        {/* Discard Pile Button - Left of Deck */}
         <div 
           onClick={() => setShowDiscardPile(!showDiscardPile)}
           style={{
             position: 'absolute',
-            top: '55px',
-            right: '145px',
+            top: '20px',
+            left: '-40px',
             width: '28px',
             height: '28px',
             backgroundColor: '#7f8c8d',
@@ -1837,8 +1874,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         {showDiscardPile && (
           <div style={{
             position: 'absolute',
-            top: '95px',
-            right: '145px',
+            top: '60px',
+            left: '-40px',
             width: '180px',
             maxHeight: '200px',
             backgroundColor: 'rgba(0,0,0,0.85)',
@@ -1867,37 +1904,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             </div>
           </div>
         )}
-
-        {/* Judgment Button - Above Draw Pile */}
-        <div 
-          onClick={onPerformJudgment}
-          style={{
-            position: 'absolute',
-            top: '-50px',
-            right: '145px',
-            width: '28px',
-            height: '28px',
-            backgroundColor: '#9b59b6',
-            borderRadius: '4px',
-            border: '2px solid #8e44ad',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-            zIndex: 10,
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '12px'
-          }}
-          title="判定"
-        >
-          判
-        </div>
       </div>
 
       {/* Render all players */}
-      {['0', '1', '2'].map(id => renderPlayerArea(id))}
+      {Object.keys(G.players).map(id => renderPlayerArea(id))}
 
       {/* Card Selection Modal */}
       {G.selectCard && G.selectCard.active && G.selectCard.sourcePlayerID === playerID && (
