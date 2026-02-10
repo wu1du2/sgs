@@ -1393,6 +1393,42 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                   </button>
                 </>
               )}
+              {G.pendingEffect && G.pendingEffect.active && G.pendingEffect.sourcePlayerID === id && (
+                <>
+                  <button 
+                    onClick={() => moves.confirmEffect()}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#2ecc71',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                      animation: 'fadeIn 0.3s'
+                    }}
+                  >
+                    生效
+                  </button>
+                  <button 
+                    onClick={() => moves.cancelEffect()}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#95a5a6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                      animation: 'fadeIn 0.3s'
+                    }}
+                  >
+                    失效
+                  </button>
+                </>
+              )}
             </div>
             <HandCards />
           </div>

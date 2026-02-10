@@ -124,6 +124,7 @@ export const CardGame = {
     rematchVotes: [],
     lastAction: null,
     actionLog: [],
+    pendingEffect: null, // { active: boolean, sourcePlayerID, targetPlayerID, actionType, pendingCard }
     selectCard: {
       active: false,
       sourcePlayerID: null,
@@ -615,7 +616,7 @@ export const CardGame = {
         const targetID = targetIDs[0];
         
         if (card.name === '过河拆桥') {
-          G.selectCard = {
+          G.pendingEffect = {
             active: true,
             sourcePlayerID: playerID,
             targetPlayerID: targetID,
@@ -623,7 +624,7 @@ export const CardGame = {
             pendingCard: card,
           };
         } else if (card.name === '顺手牵羊') {
-          G.selectCard = {
+          G.pendingEffect = {
             active: true,
             sourcePlayerID: playerID,
             targetPlayerID: targetID,
@@ -632,6 +633,26 @@ export const CardGame = {
           };
         }
       }
+    },
+    confirmEffect: ({ G, playerID }) => {
+      if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
+      
+      // Transfer pending effect to selectCard to start the interaction
+      G.selectCard = {
+        active: true,
+        sourcePlayerID: G.pendingEffect.sourcePlayerID,
+        targetPlayerID: G.pendingEffect.targetPlayerID,
+        actionType: G.pendingEffect.actionType,
+        pendingCard: G.pendingEffect.pendingCard,
+      };
+      
+      G.pendingEffect = null;
+    },
+    cancelEffect: ({ G, playerID }) => {
+      if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
+      
+      // Just clear the pending effect
+      G.pendingEffect = null;
     },
     discardCards: ({ G, playerID }, cardIndices) => {
       if (G.phase !== 'playing') return;
