@@ -51,11 +51,9 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
         flexDirection: 'column',
         gap: '20px'
       }}>
-        <h2>{title || 'Select Cards'}</h2>
         
         {/* Hand Cards */}
         <div>
-          <h3>Hand Cards ({targetHand.length})</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {targetHand.map((card, index) => (
               <div
@@ -85,7 +83,6 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
 
         {/* Equipment */}
         <div>
-          <h3>Equipment</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {Object.entries(targetPlayer.equipments).map(([slot, card]) => {
               if (!card) return null;
@@ -112,7 +109,6 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
 
         {/* Judgments */}
         <div>
-          <h3>Judgments</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {Object.entries(targetPlayer.judges).map(([slot, card]) => {
               if (!card) return null;

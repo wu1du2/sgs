@@ -130,10 +130,13 @@ export const CardGame = {
     useLuckCard: ({ G, playerID }) => {
       const player = G.players[playerID];
       if (player.luckCardCount > 0 && !player.luckCardConfirmed) {
-        // Discard current hand
+        // Return current hand to deck
         const currentHand = G.hands[playerID];
-        addToDiscardPile(G, currentHand);
+        G.deck.push(...currentHand);
         G.hands[playerID] = [];
+
+        // Shuffle deck
+        G.deck = shuffle(G.deck);
 
         // Draw 4 new cards
         drawCards(G, playerID, 4);
