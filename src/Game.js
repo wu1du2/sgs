@@ -28,6 +28,8 @@ const createPlayerState = () => ({
   general: null,
   role: 'neutral',
   score: 0,
+  luckCardCount: 10,
+  luckCardConfirmed: false,
   ...createEmptyZones()
 });
 
@@ -51,6 +53,23 @@ const addToDiscardPile = (G, cards) => {
   if (validCards.length > 0) {
     G.discardPile.push(...validCards);
   }
+};
+
+const drawCards = (G, playerID, count) => {
+  const cardsToDraw = [];
+  for (let i = 0; i < count; i++) {
+    if (G.deck.length === 0) {
+      if (G.discardPile.length > 0) {
+        G.deck = shuffle(G.discardPile);
+        G.discardPile = [];
+      } else {
+        break; // No more cards
+      }
+    }
+    cardsToDraw.push(G.deck.shift());
+  }
+  G.hands[playerID].push(...cardsToDraw);
+  return cardsToDraw;
 };
 
 export const CardGame = {
@@ -94,6 +113,34 @@ export const CardGame = {
   },
 
   moves: {
+    drawCard: ({ G, playerID }) => {
+      const cards = drawCards(G, playerID, 1);
+      if (cards.length > 0) {
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 摸牌`);
+      }
+    },
+    useLuckCard: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (player.luckCardCount > 0 && !player.luckCardConfirmed) {
+        // Discard current hand
+        const currentHand = G.hands[playerID];
+        addToDiscardPile(G, currentHand);
+        G.hands[playerID] = [];
+
+        // Draw 4 new cards
+        drawCards(G, playerID, 4);
+
+        // Decrement count
+        player.luckCardCount--;
+        
+        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} used Luck Card (${player.luckCardCount} remaining)`);
+      }
+    },
+    confirmLuckCard: ({ G, playerID }) => {
+      G.players[playerID].luckCardConfirmed = true;
+    },
     playerReady: ({ G, playerID }) => {
       if (!G.readyPlayers.includes(playerID)) {
         G.readyPlayers.push(playerID);
@@ -124,6 +171,10 @@ export const CardGame = {
       const allSelected = ['0', '1', '2'].every(pid => G.players[pid].general);
       if (allSelected) {
         G.phase = 'playing';
+        // Deal 4 cards to each player
+        ['0', '1', '2'].forEach(pid => {
+          drawCards(G, pid, 4);
+        });
       }
     },
     claimLandlord: ({ G, playerID }, amount) => {
@@ -289,6 +340,8 @@ export const CardGame = {
           G.players[pid].role = 'neutral';
           G.players[pid].equipments = createEmptyZones().equipments;
           G.players[pid].judges = createEmptyZones().judges;
+          G.players[pid].luckCardCount = 10;
+          G.players[pid].luckCardConfirmed = false;
         });
 
         // Distribute new generals
@@ -345,13 +398,7 @@ export const CardGame = {
       options[index] = newGeneral;
       G.generalChangeUsed[playerID][index] = true;
     },
-    drawCard: ({ G, playerID }) => {
-      if (G.phase !== 'playing') return;
-      const card = G.deck.pop();
-      if (card !== undefined) {
-        G.hands[playerID].push(card);
-      }
-    },
+
     equipCard: ({ G, playerID }, cardIndex) => {
       if (G.phase !== 'playing') return;
       

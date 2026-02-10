@@ -341,7 +341,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
 };
 
 const ScoreBoard = ({ players, onWin, landlord, scale = 1 }) => {
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(true);
 
   if (isCollapsed) {
     return (
@@ -621,7 +621,7 @@ const ActionTicker = ({ logs }) => {
 const ACTION_LOG_HEIGHT = 90;
 
 const ActionLog = ({ logs }) => {
-  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [viewMode, setViewMode] = React.useState('minimized'); // 'minimized', 'normal', 'expanded'
 
   // Get last 3 logs for collapsed view
   const recentLogs = logs.slice(-3);
@@ -648,7 +648,7 @@ const ActionLog = ({ logs }) => {
     });
   };
 
-  if (isExpanded) {
+  if (viewMode === 'expanded') {
     return (
       <>
         <div 
@@ -658,7 +658,7 @@ const ActionLog = ({ logs }) => {
             backgroundColor: 'rgba(0,0,0,0.5)',
             zIndex: 2999
           }}
-          onClick={() => setIsExpanded(false)}
+          onClick={() => setViewMode('normal')}
         />
         <div style={{
           position: 'fixed',
@@ -680,7 +680,7 @@ const ActionLog = ({ logs }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #555', paddingBottom: '10px' }}>
             <h3 style={{ margin: 0, color: '#ffd700' }}>Action Log</h3>
             <button 
-              onClick={() => setIsExpanded(false)}
+              onClick={() => setViewMode('normal')}
               style={{
                 background: 'none',
                 border: 'none',
@@ -711,40 +711,97 @@ const ActionLog = ({ logs }) => {
     );
   }
 
+  if (viewMode === 'minimized') {
+    return (
+      <div
+        onClick={() => setViewMode('normal')}
+        style={{
+          width: '40px',
+          height: '40px',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          border: '1px solid #7f8c8d',
+          borderRadius: '50%',
+          color: '#e0e0e0',
+          fontSize: '12px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+          transition: 'all 0.2s',
+          fontWeight: 'bold',
+          transform: 'translateY(-120px)'
+        }}
+        title="Show Log"
+      >
+        Log
+      </div>
+    );
+  }
+
   return (
-    <div 
-      onClick={() => setIsExpanded(true)}
-      style={{
-        width: '250px',
-        height: `${ACTION_LOG_HEIGHT}px`,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        border: '1px solid #7f8c8d',
-        borderRadius: '5px',
-        padding: '10px',
-        color: '#e0e0e0',
-        fontSize: '12px',
-        cursor: 'pointer',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-end',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-        transition: 'all 0.2s'
-      }}
-      title="Click to view full log"
-    >
-      {recentLogs.length === 0 && <div style={{ color: '#777', textAlign: 'center', marginTop: 'auto', marginBottom: 'auto' }}>No actions yet</div>}
-      {recentLogs.map((log, i) => (
-        <div key={i} style={{ 
-          whiteSpace: 'nowrap', 
-          overflow: 'hidden', 
-          textOverflow: 'ellipsis',
-          marginBottom: '2px',
-          color: i === recentLogs.length - 1 ? '#fff' : '#aaa'
-        }}>
-          {renderLogText(log)}
-        </div>
-      ))}
+    <div style={{ position: 'relative' }}>
+      <div 
+        onClick={() => setViewMode('expanded')}
+        style={{
+          width: '250px',
+          height: `${ACTION_LOG_HEIGHT}px`,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          border: '1px solid #7f8c8d',
+          borderRadius: '5px',
+          padding: '10px',
+          color: '#e0e0e0',
+          fontSize: '12px',
+          cursor: 'pointer',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+          transition: 'all 0.2s'
+        }}
+        title="Click to view full log"
+      >
+        {recentLogs.length === 0 && <div style={{ color: '#777', textAlign: 'center', marginTop: 'auto', marginBottom: 'auto' }}>No actions yet</div>}
+        {recentLogs.map((log, i) => (
+          <div key={i} style={{ 
+            whiteSpace: 'nowrap', 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis',
+            marginBottom: '2px',
+            color: i === recentLogs.length - 1 ? '#fff' : '#aaa'
+          }}>
+            {renderLogText(log)}
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setViewMode('minimized');
+        }}
+        style={{
+          position: 'absolute',
+          top: '-10px',
+          right: '-10px',
+          width: '20px',
+          height: '20px',
+          borderRadius: '50%',
+          backgroundColor: '#7f8c8d',
+          color: 'white',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          zIndex: 10
+        }}
+        title="Minimize Log"
+      >
+        _
+      </button>
     </div>
   );
 };
@@ -1089,50 +1146,97 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     );
 
     if (isMe) {
+      const showLuckCardUI = G.phase === 'playing' && !G.players[id].luckCardConfirmed;
+      const luckCardCount = G.players[id].luckCardCount;
+
       return (
         <React.Fragment key={id}>
           <div style={areaStyle}>
-            {/* Action Buttons */}
-            {selectedCardIndices.length > 0 && (
-              <div style={{ 
-                display: 'flex', 
-                gap: '10px', 
-                marginBottom: '20px',
-                animation: 'fadeIn 0.3s',
-                pointerEvents: 'auto' // Enable clicks
-              }}>
-                <button 
-                  onClick={handlePlayCards}
+            {/* Luck Card UI */}
+            {showLuckCardUI && (
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', pointerEvents: 'auto', position: 'relative', zIndex: 20 }}>
+                <button
+                  onClick={() => moves.useLuckCard()}
+                  disabled={luckCardCount <= 0}
                   style={{
-                    padding: '8px 20px',
-                    backgroundColor: '#e74c3c',
+                    padding: '5px 10px',
+                    backgroundColor: luckCardCount > 0 ? '#3498db' : '#95a5a6',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
-                    cursor: 'pointer',
+                    cursor: luckCardCount > 0 ? 'pointer' : 'not-allowed',
                     fontWeight: 'bold',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                   }}
                 >
-                  出牌
+                  手气卡 {luckCardCount}/10
                 </button>
-                <button 
-                  onClick={handleDiscardCards}
+                <button
+                  onClick={() => moves.confirmLuckCard()}
                   style={{
-                    padding: '8px 20px',
-                    backgroundColor: '#95a5a6',
+                    padding: '5px 10px',
+                    backgroundColor: '#2ecc71',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
                     fontWeight: 'bold',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                   }}
                 >
-                  弃牌
+                  确定
                 </button>
               </div>
             )}
+
+            {/* Action Buttons */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '10px', 
+              marginBottom: '20px',
+              pointerEvents: 'auto',
+              minHeight: '40px', // Reserve space
+              justifyContent: 'center',
+              position: 'relative',
+              zIndex: 20
+            }}>
+              {selectedCardIndices.length > 0 && (
+                <>
+                  <button 
+                    onClick={handlePlayCards}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#e74c3c',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                      animation: 'fadeIn 0.3s'
+                    }}
+                  >
+                    出牌
+                  </button>
+                  <button 
+                    onClick={handleDiscardCards}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#95a5a6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                      animation: 'fadeIn 0.3s'
+                    }}
+                  >
+                    弃牌
+                  </button>
+                </>
+              )}
+            </div>
             <HandCards />
           </div>
           <div style={{
