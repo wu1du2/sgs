@@ -236,7 +236,19 @@ export const CardGame = {
         G.phase = 'selection';
         G.gameResult = null;
         G.rematchVotes = [];
+        G.actionLog = [];
       }
+    },
+    useSkill: ({ G, playerID }, skillName) => {
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const logEntry = `${playerName} 发动了 ${skillName}`;
+      G.actionLog.push(logEntry);
+      
+      G.lastAction = {
+        type: 'useSkill',
+        playerID,
+        skillName
+      };
     },
     changeGeneral: ({ G, playerID }, generalIdToReplace) => {
       const options = G.generalOptions[playerID];

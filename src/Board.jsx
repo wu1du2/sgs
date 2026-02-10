@@ -12,7 +12,7 @@ const getSuitColor = (suit) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, scale = 1, handCount = 0 }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0 }) => {
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -131,18 +131,25 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
       {/* Skills */}
       <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
         {skills.map((skill, i) => (
-          <button key={i} style={{
-            fontSize: '10px',
-            padding: '2px 6px',
-            backgroundColor: '#eecfa1',
-            color: '#3e2723',
-            border: '1px solid #8b4513',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            flex: 1,
-            textAlign: 'center',
-            fontWeight: 'bold'
-          }}>
+          <button 
+            key={i} 
+            onClick={(e) => {
+              e.stopPropagation();
+              onSkillClick && onSkillClick(skill);
+            }}
+            style={{
+              fontSize: '10px',
+              padding: '2px 6px',
+              backgroundColor: '#eecfa1',
+              color: '#3e2723',
+              border: '1px solid #8b4513',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              flex: 1,
+              textAlign: 'center',
+              fontWeight: 'bold'
+            }}
+          >
             {skill}
           </button>
         ))}
@@ -836,6 +843,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const handlePlayCards = () => {
     if (selectedCardIndices.length === 0) return;
     
+    // Check if single equipment card is selected, if so, equip it
+    if (selectedCardIndices.length === 1) {
+      const cardIndex = selectedCardIndices[0];
+      const card = G.hands[playerID][cardIndex];
+      if (['武器', '防具', '加一', '减一'].includes(card.type)) {
+        handleEquipCard();
+        return;
+      }
+    }
+
     if (selectedTargetIds.length > 0) {
       const fromPos = getCoordinates('bottom');
       const newLasers = selectedTargetIds.map(targetId => ({
@@ -918,6 +935,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const onPerformJudgment = () => {
     moves.performJudgment();
+  };
+
+  const onSkillClick = (skillName) => {
+    moves.useSkill(skillName);
   };
 
   // Render a player's hand area
@@ -1019,21 +1040,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                 pointerEvents: 'auto' // Enable clicks
               }}>
                 <button 
-                  onClick={handleEquipCard}
-                  style={{
-                    padding: '8px 20px',
-                    backgroundColor: '#3498db',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
-                  }}
-                >
-                  装备
-                </button>
-                <button 
                   onClick={handlePlayCards}
                   style={{
                     padding: '8px 20px',
@@ -1093,7 +1099,9 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               onModifyHP={(amount) => onModifyHP(id, amount)}
               judges={judges}
               onToggleJudgment={(type) => onToggleJudgment(id, type)}
-              scale={uiScale}
+              onSkillClick={isMe ? onSkillClick : undefined}
+              scale={isCompact ? 0.9 : 1}
+              handCount={hand.length}
             />
           </div>
         </React.Fragment>
@@ -1118,7 +1126,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             onModifyHP={(amount) => onModifyHP(id, amount)}
             judges={judges}
             onToggleJudgment={(type) => onToggleJudgment(id, type)}
-            scale={uiScale}
+            scale={isCompact ? 0.9 : 1}
             handCount={hand.length}
           />
         )}
