@@ -159,6 +159,7 @@ const drawCards = (G, playerID, count) => {
 };
 
 import { jiexushengSkill } from './skills/jiexusheng.js';
+import { wenyangSkill } from './skills/wenyang.js';
 
 export const CardGame = {
   setup: () => ({
@@ -277,11 +278,14 @@ export const CardGame = {
       const selected = options.find(g => g.id === generalId);
       if (selected) {
         G.players[playerID].general = selected;
+        // Initialize HP on player object to avoid polluting the global config
+        G.players[playerID].hp = selected.hp;
+        G.players[playerID].hpMax = selected.hpMax;
         
         // Apply Landlord bonus if this player is the landlord
         if (G.players[playerID].role === 'landlord') {
-           G.players[playerID].general.hpMax += 1;
-           G.players[playerID].general.hp += 1;
+           G.players[playerID].hpMax += 1;
+           G.players[playerID].hp += 1;
         }
       }
       
@@ -307,8 +311,8 @@ export const CardGame = {
           G.players[pid].role = 'landlord';
           // Landlord gets +1 HP and +1 Max HP
           if (G.players[pid].general) {
-            G.players[pid].general.hpMax += 1;
-            G.players[pid].general.hp += 1;
+            G.players[pid].hpMax += 1;
+            G.players[pid].hp += 1;
           }
         } else {
           G.players[pid].role = 'peasant';
@@ -316,20 +320,12 @@ export const CardGame = {
       });
     },
     modifyHP: ({ G }, targetPlayerID, amount) => {
-      const general = G.players[targetPlayerID]?.general;
-      if (general) {
-        const newHP = general.hp + amount;
-        // Ensure HP doesn't exceed Max HP or drop below 0 (optional, but good practice)
-        // User didn't specify limits, but usually HP <= hpMax.
-        // However, some games allow overheal. Standard SGS rules: HP <= MaxHP.
-        // I'll clamp it to MaxHP for addition, but allow subtraction to 0 or below (dying).
-        // Actually, let's just apply the change. The user said "Click ... adds one / subtracts one".
-        // I will clamp to maxHP just in case, as is standard.
-        
+      const player = G.players[targetPlayerID];
+      if (player && player.hp !== undefined) {
         if (amount > 0) {
-           general.hp = Math.min(general.hp + amount, general.hpMax);
+           player.hp = Math.min(player.hp + amount, player.hpMax);
         } else {
-           general.hp = Math.max(general.hp + amount, 0);
+           player.hp = Math.max(player.hp + amount, 0);
         }
       }
     },
@@ -836,23 +832,10 @@ export const CardGame = {
     },
 
     useQueDi: ({ G, playerID }) => {
-      const player = G.players[playerID];
-      if (player.hpMax > 0) {
-        player.hpMax -= 1;
-        if (player.hp > player.hpMax) {
-          player.hp = player.hpMax;
-        }
-        const playerName = player.general ? player.general.name : `Player ${playerID}`;
-        G.actionLog.push(`${playerName} 使用了 却敌，减少了1点体力上限`);
-      }
+      wenyangSkill.useQueDi({ G, playerID }, drawCards);
     },
-
     useChouJue: ({ G, playerID }) => {
-      const player = G.players[playerID];
-      player.hpMax += 1;
-      drawCards(G, playerID, 2);
-      const playerName = player.general ? player.general.name : `Player ${playerID}`;
-      G.actionLog.push(`${playerName} 使用了 仇决，增加了1点体力上限并摸了两张牌`);
+      wenyangSkill.useChouJue({ G, playerID }, drawCards);
     },
 
     useSkill: ({ G, playerID }, skillName) => {

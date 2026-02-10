@@ -1600,10 +1600,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const isMe = position === 'bottom';
     const hand = G.hands[id] || [];
     const isCurrentTurn = id === ctx.currentPlayer;
-    const general = G.players[id]?.general;
-    const role = G.players[id]?.role || 'neutral';
-    const equipments = G.players[id]?.equipments || {};
-    const judges = G.players[id]?.judges || {};
+    const player = G.players[id];
+    const general = player?.general;
+    const role = player?.role || 'neutral';
+    const equipments = player?.equipments || {};
+    const judges = player?.judges || {};
 
     // Target Selection Logic
     const isSelectable = selectedCardIndices.length > 0;
@@ -1865,8 +1866,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             })}
             <HeroArea 
               name={general ? general.name : "My Hero"} 
-              hp={general ? general.hp : 4}
-              hpMax={general ? general.hpMax : 4}
+              hp={player?.hp ?? (general ? general.hp : 4)}
+              hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
               skills={general ? general.skills : ["Strike", "Dodge"]}
               portrait={general ? general.portrait : null}
               isMe={true} 
@@ -1896,8 +1897,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         {!isMe && (
           <HeroArea 
             name={general ? general.name : `Player ${id}`}
-            hp={general ? general.hp : 4}
-            hpMax={general ? general.hpMax : 4}
+            hp={player?.hp ?? (general ? general.hp : 4)}
+            hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
             skills={general ? general.skills : ["Strike", "Dodge"]}
             portrait={general ? general.portrait : null}
             role={role}
