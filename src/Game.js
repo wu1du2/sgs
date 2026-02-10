@@ -104,6 +104,13 @@ export const CardGame = {
     rematchVotes: [],
     lastAction: null,
     actionLog: [],
+    selectCard: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      actionType: null, // 'discard', 'steal'
+      pendingCard: null,
+    },
   }),
 
   turn: {
@@ -286,6 +293,84 @@ export const CardGame = {
       if (player && player.judges && player.judges.hasOwnProperty(type)) {
         player.judges[type] = !player.judges[type];
       }
+    },
+    confirm_select_card: ({ G, playerID }, selectedCards) => {
+      const { active, sourcePlayerID, targetPlayerID, actionType, pendingCard } = G.selectCard;
+      
+      if (!active || playerID !== sourcePlayerID) return;
+      
+      const targetPlayer = G.players[targetPlayerID];
+      const sourcePlayer = G.players[sourcePlayerID];
+      
+      if (!targetPlayer || !sourcePlayer) return;
+
+      const cardsToProcess = [];
+
+      // Process each selected card
+      selectedCards.forEach(selection => {
+        // selection: { type: 'hand'|'equip'|'judge', index: number, slot: string, card: object }
+        if (selection.type === 'hand') {
+          // For hand cards, we need to find the card by index or ID. 
+          // Since hand is an array, index is risky if hand changes, but here it's synchronous.
+          // However, the UI should pass the card object or index.
+          // Let's assume selection has index for hand.
+          const card = G.hands[targetPlayerID][selection.index];
+          if (card) {
+            cardsToProcess.push(card);
+            // Remove from hand (we'll do batch removal later to avoid index shift issues if multiple)
+            // Actually, let's mark for removal or handle one by one carefully.
+            // Since we usually select 1 card for these skills, it's fine.
+            // If multiple, we should sort indices descending.
+          }
+        } else if (selection.type === 'equip') {
+          const card = targetPlayer.equipments[selection.slot];
+          if (card) {
+            cardsToProcess.push(card);
+            targetPlayer.equipments[selection.slot] = null;
+          }
+        } else if (selection.type === 'judge') {
+          const card = targetPlayer.judges[selection.slot];
+          if (card) {
+            cardsToProcess.push(card);
+            targetPlayer.judges[selection.slot] = null;
+          }
+        }
+      });
+
+      // Remove hand cards
+      // We need to handle indices carefully.
+      const handIndicesToRemove = selectedCards
+        .filter(s => s.type === 'hand')
+        .map(s => s.index)
+        .sort((a, b) => b - a); // Descending order
+      
+      handIndicesToRemove.forEach(index => {
+        G.hands[targetPlayerID].splice(index, 1);
+      });
+
+      // Perform Action
+      if (actionType === 'discard') {
+        addToDiscardPile(G, cardsToProcess);
+        const cardNames = cardsToProcess.map(c => c.name).join(', ');
+        const sourceName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${sourcePlayerID}`;
+        const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetPlayerID}`;
+        G.actionLog.push(`${sourceName} 弃置了 ${targetName} 的 ${cardNames}`);
+      } else if (actionType === 'steal') {
+        G.hands[sourcePlayerID].push(...cardsToProcess);
+        const cardNames = cardsToProcess.map(c => c.name).join(', ');
+        const sourceName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${sourcePlayerID}`;
+        const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetPlayerID}`;
+        G.actionLog.push(`${sourceName} 获得了 ${targetName} 的 ${cardNames}`);
+      }
+
+      // Reset state
+      G.selectCard = {
+        active: false,
+        sourcePlayerID: null,
+        targetPlayerID: null,
+        actionType: null,
+        pendingCard: null,
+      };
     },
     resolveGame: ({ G }, winnerRole) => {
       const bid = G.bidAmount;
@@ -492,6 +577,30 @@ export const CardGame = {
         logEntry = `${playerName} 出牌 ${cardNames}`;
       }
       G.actionLog.push(logEntry);
+
+      // Check for special cards
+      if (cardsPlayed.length === 1 && targetIDs && targetIDs.length === 1) {
+        const card = cardsPlayed[0];
+        const targetID = targetIDs[0];
+        
+        if (card.name === '过河拆桥') {
+          G.selectCard = {
+            active: true,
+            sourcePlayerID: playerID,
+            targetPlayerID: targetID,
+            actionType: 'discard',
+            pendingCard: card,
+          };
+        } else if (card.name === '顺手牵羊') {
+          G.selectCard = {
+            active: true,
+            sourcePlayerID: playerID,
+            targetPlayerID: targetID,
+            actionType: 'steal',
+            pendingCard: card,
+          };
+        }
+      }
     },
     discardCards: ({ G, playerID }, cardIndices) => {
       if (G.phase !== 'playing') return;

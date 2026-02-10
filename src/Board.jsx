@@ -11,6 +11,153 @@ const getSuitColor = (suit) => {
   return '#fff';
 };
 
+const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title }) => {
+  const [selected, setSelected] = React.useState([]);
+
+  const toggleSelection = (item) => {
+    const exists = selected.find(s => s.type === item.type && s.index === item.index && s.slot === item.slot);
+    if (exists) {
+      setSelected(selected.filter(s => s !== exists));
+    } else {
+      setSelected([...selected, item]);
+    }
+  };
+
+  const isSelected = (type, indexOrSlot) => {
+    return selected.some(s => s.type === type && (s.index === indexOrSlot || s.slot === indexOrSlot));
+  };
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        maxHeight: '80%',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <h2>{title || 'Select Cards'}</h2>
+        
+        {/* Hand Cards */}
+        <div>
+          <h3>Hand Cards ({targetHand.length})</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            {targetHand.map((card, index) => (
+              <div
+                key={index}
+                onClick={() => toggleSelection({ type: 'hand', index })}
+                style={{
+                  width: '60px',
+                  height: '90px',
+                  backgroundColor: isSelected('hand', index) ? 'rgba(0, 255, 255, 0.3)' : '#555',
+                  border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #aaa',
+                  borderRadius: '5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: isSelected('hand', index) ? '0 0 15px #00ffff' : 'none',
+                  animation: isSelected('hand', index) ? 'pulse-selected 1.5s infinite' : 'none',
+                  color: '#aaa',
+                  fontSize: '12px'
+                }}
+              >
+                Card Back
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Equipment */}
+        <div>
+          <h3>Equipment</h3>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {Object.entries(targetPlayer.equipments).map(([slot, card]) => {
+              if (!card) return null;
+              return (
+                <div
+                  key={slot}
+                  onClick={() => toggleSelection({ type: 'equip', slot })}
+                  style={{
+                    padding: '10px',
+                    backgroundColor: isSelected('equip', slot) ? 'rgba(0, 255, 255, 0.3)' : '#444',
+                    border: isSelected('equip', slot) ? '3px solid #00ffff' : '1px solid #aaa',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    boxShadow: isSelected('equip', slot) ? '0 0 15px #00ffff' : 'none',
+                    animation: isSelected('equip', slot) ? 'pulse-selected 1.5s infinite' : 'none'
+                  }}
+                >
+                  {card.name} ({slot})
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Judgments */}
+        <div>
+          <h3>Judgments</h3>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {Object.entries(targetPlayer.judges).map(([slot, card]) => {
+              if (!card) return null;
+              return (
+                <div
+                  key={slot}
+                  onClick={() => toggleSelection({ type: 'judge', slot })}
+                  style={{
+                    padding: '10px',
+                    backgroundColor: isSelected('judge', slot) ? 'rgba(0, 255, 255, 0.3)' : '#444',
+                    border: isSelected('judge', slot) ? '3px solid #00ffff' : '1px solid #aaa',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    boxShadow: isSelected('judge', slot) ? '0 0 15px #00ffff' : 'none',
+                    animation: isSelected('judge', slot) ? 'pulse-selected 1.5s infinite' : 'none'
+                  }}
+                >
+                  {card.name} ({slot})
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button 
+            onClick={() => onConfirm(selected)} 
+            disabled={selected.length === 0}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: selected.length > 0 ? '#4CAF50' : '#555', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: selected.length > 0 ? 'pointer' : 'not-allowed'
+            }}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0 }) => {
   const getBorderColor = () => {
@@ -1097,7 +1244,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       flexDirection: 'column',
       alignItems: 'center',
       transition: 'all 0.3s ease',
-      ...(position === 'bottom' && { bottom: '20px', left: '50%', transform: 'translateX(-50%)', width: '100%', pointerEvents: 'none' }), // Add width and pointerEvents
+      ...(position === 'bottom' && { bottom: '20px', left: '50%', transform: 'translateX(-50%)', width: '100%', pointerEvents: 'none', zIndex: 30 }), // Add width and pointerEvents
       ...(position === 'left' && (isCompact ? {
         top: '60px',
         left: '5px',
@@ -1656,6 +1803,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
       {/* Render all players */}
       {['0', '1', '2'].map(id => renderPlayerArea(id))}
+
+      {/* Card Selection Modal */}
+      {G.selectCard && G.selectCard.active && G.selectCard.sourcePlayerID === playerID && (
+        <CardSelectionModal
+          targetPlayer={G.players[G.selectCard.targetPlayerID]}
+          targetHand={G.hands[G.selectCard.targetPlayerID]}
+          onConfirm={(selected) => moves.confirm_select_card(selected)}
+          onCancel={() => {}} // No cancel for now as effect is resolving
+          title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
+        />
+      )}
     </div>
   );
 }
