@@ -52,8 +52,8 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
       style={{
         width: '60px',
         height: '90px',
-        backgroundColor: 'white',
-        border: '1px solid #ccc',
+        backgroundColor: '#f5e6cb',
+        border: '1px solid #8b4513',
         borderRadius: '8px',
         display: 'flex',
         flexDirection: 'column',

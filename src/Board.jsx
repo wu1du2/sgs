@@ -1361,6 +1361,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onHeroClick = (targetId) => {
+    if (activeSkill === '破军') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.usePoJun(targetId);
+      setActiveSkill(null);
+      return;
+    }
+
     if (selectedCardIndices.length > 0) {
        if (selectedTargetIds.includes(targetId)) {
          setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
@@ -1514,6 +1524,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     moves.voteRematch();
   };
 
+  const [activeSkill, setActiveSkill] = React.useState(null);
+
   const onModifyHP = (targetId, amount) => {
     moves.modifyHP(targetId, amount);
   };
@@ -1551,7 +1563,34 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     moves.performJudgment();
   };
 
-  const onSkillClick = (skillName) => {
+  const onSkillClick = (rawSkillName) => {
+    // IMPORTANT: Always trim the skill name to avoid issues with invisible characters or spaces
+    // This caused a bug where '却敌' and '仇决' were not matching due to trailing spaces/invisible chars
+    const skillName = rawSkillName.trim();
+    console.log('onSkillClick called with:', skillName, 'length:', skillName.length);
+    if (skillName === '破军') {
+      if (activeSkill === '破军') {
+        setActiveSkill(null); // Toggle off
+      } else {
+        setActiveSkill('破军');
+      }
+      return;
+    }
+
+    if (skillName === '却敌') {
+      if (window.confirm('是否确定减少一点体力上限？')) {
+        moves.useQueDi();
+      }
+      return;
+    }
+
+    if (skillName === '仇决') {
+      if (window.confirm('是否确定增加一点体力上限？')) {
+        moves.useChouJue();
+      }
+      return;
+    }
+
     moves.useSkill(skillName);
   };
 
@@ -1801,6 +1840,29 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             zIndex: 50
           }}>
             <PlayerInfo />
+            {/* Po Jun Return Buttons */}
+            {isMe && G.players[id].pojun && Object.entries(G.players[id].pojun).map(([targetID, cards]) => {
+                if (cards.length === 0) return null;
+                const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
+                return (
+                    <button
+                        key={targetID}
+                        onClick={() => moves.returnPoJunCards(targetID)}
+                        style={{
+                            marginBottom: '5px',
+                            padding: '5px 10px',
+                            backgroundColor: '#8e44ad',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                        }}
+                    >
+                        归还 {targetName} ({cards.length})
+                    </button>
+                );
+            })}
             <HeroArea 
               name={general ? general.name : "My Hero"} 
               hp={general ? general.hp : 4}
@@ -2073,6 +2135,39 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         </div>
       )}
 
+      {/* Skill Selection Overlay */}
+      {activeSkill && (
+        <div style={{
+          position: 'absolute',
+          top: '20%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          padding: '10px 20px',
+          borderRadius: '8px',
+          color: 'white',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <span>请选择 {activeSkill} 的目标</span>
+          <button 
+            onClick={() => setActiveSkill(null)}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      )}
+
       {/* Action Log - Near Action Buttons */}
       <div style={{
         position: 'absolute',
@@ -2222,6 +2317,18 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => {}} // No cancel for now as effect is resolving
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
           singleSelection={['过河拆桥', '顺手牵羊'].includes(G.selectCard.pendingCard?.name)}
+        />
+      )}
+
+      {/* Po Jun Selection Modal */}
+      {G.pojunSelect && G.pojunSelect.active && G.pojunSelect.sourcePlayerID === playerID && (
+        <CardSelectionModal
+          targetPlayer={G.players[G.pojunSelect.targetPlayerID]}
+          targetHand={G.hands[G.pojunSelect.targetPlayerID]}
+          onConfirm={(selected) => moves.confirmPoJunSelection(selected)}
+          onCancel={() => {}} 
+          title="Po Jun: Select cards to move"
+          singleSelection={false}
         />
       )}
 

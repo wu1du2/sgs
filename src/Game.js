@@ -4,6 +4,8 @@ import generalsData from '../configs/generals.json' with { type: "json" };
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
+const TESTING_GENERAL_LIST = ['界徐盛', '文鸯'];
+
 // Fisher-Yates shuffle
 function shuffle(array) {
   let currentIndex = array.length,  randomIndex;
@@ -40,10 +42,73 @@ const distributeGenerals = () => {
   const generalChangeUsed = {};
   let genIndex = 0;
   ['0', '1', '2'].forEach(pid => {
-    generalOptions[pid] = shuffledGenerals.slice(genIndex, genIndex + 3);
-    generalChangeUsed[pid] = [false, false, false];
-    genIndex += 3;
+    if (pid === '0' && TESTING_GENERAL_LIST.length > 0) {
+      // Ensure player 0 gets testing generals
+      const testingGenerals = ENABLED_GENERALS.filter(g => TESTING_GENERAL_LIST.includes(g.name));
+      const otherGenerals = shuffledGenerals.filter(g => !TESTING_GENERAL_LIST.includes(g.name));
+      
+      // Combine testing generals with random others to make 3 options
+      const options = [...testingGenerals];
+      while (options.length < 3 && otherGenerals.length > 0) {
+        options.push(otherGenerals.pop());
+      }
+      generalOptions[pid] = options.slice(0, 3);
+      
+      // Adjust shuffledGenerals to remove used ones (though simple filtering above handles duplicates for p0, 
+      // we need to ensure p1 and p2 don't get the same ones if we want strict uniqueness, 
+      // but for testing it's fine if we just consume from the main shuffled list for others, 
+      // skipping what p0 took if we want to be precise. 
+      // Simpler approach: Just give p0 what they need, and let others take from the shuffled list, 
+      // filtering out what p0 has to avoid duplicates if necessary.
+      // Given the large pool, collision is rare, but let's be safe.)
+      
+      // Actually, let's just use the main loop but override for p0
+    } else {
+      // For other players, just take from the shuffled list, ensuring no overlap with p0 if we want to be strict
+      // But the original logic just sliced. Let's keep it simple and robust.
+      
+      // To avoid duplicates with P0's forced selection:
+      // We should probably filter out P0's cards from shuffledGenerals before assigning to others.
+      // But since this is a quick testing hack, let's just assign.
+      // If P0 took 'Jie Xu Sheng', and 'Jie Xu Sheng' is also at index 0 of shuffledGenerals, P1 might get it.
+      // Let's do a proper filter.
+    }
   });
+  
+  // Re-implementing to be cleaner
+  const assignedGenerals = new Set();
+  
+  // Assign for Player 0 first
+  const p0Options = [];
+  const testingGenerals = ENABLED_GENERALS.filter(g => TESTING_GENERAL_LIST.includes(g.name));
+  p0Options.push(...testingGenerals);
+  
+  // Fill P0 with randoms if needed
+  let currentIndex = 0;
+  while (p0Options.length < 3 && currentIndex < shuffledGenerals.length) {
+    const gen = shuffledGenerals[currentIndex++];
+    if (!p0Options.find(g => g.id === gen.id)) {
+      p0Options.push(gen);
+    }
+  }
+  generalOptions['0'] = p0Options;
+  p0Options.forEach(g => assignedGenerals.add(g.id));
+  generalChangeUsed['0'] = [false, false, false];
+
+  // Assign for others
+  ['1', '2'].forEach(pid => {
+    const options = [];
+    while (options.length < 3 && currentIndex < shuffledGenerals.length) {
+      const gen = shuffledGenerals[currentIndex++];
+      if (!assignedGenerals.has(gen.id)) {
+        options.push(gen);
+        assignedGenerals.add(gen.id);
+      }
+    }
+    generalOptions[pid] = options;
+    generalChangeUsed[pid] = [false, false, false];
+  });
+
   return { generalOptions, generalChangeUsed };
 };
 
@@ -92,6 +157,8 @@ const drawCards = (G, playerID, count) => {
   G.hands[playerID].push(...cardsToDraw);
   return cardsToDraw;
 };
+
+import { jiexushengSkill } from './skills/jiexusheng.js';
 
 export const CardGame = {
   setup: () => ({
@@ -142,6 +209,11 @@ export const CardGame = {
     harvestCountSelect: { // New state for selecting harvest count
       active: false,
       playerID: null,
+    },
+    pojunSelect: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
     },
   }),
 
@@ -763,6 +835,26 @@ export const CardGame = {
       }
     },
 
+    useQueDi: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (player.hpMax > 0) {
+        player.hpMax -= 1;
+        if (player.hp > player.hpMax) {
+          player.hp = player.hpMax;
+        }
+        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 使用了 却敌，减少了1点体力上限`);
+      }
+    },
+
+    useChouJue: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      player.hpMax += 1;
+      drawCards(G, playerID, 2);
+      const playerName = player.general ? player.general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} 使用了 仇决，增加了1点体力上限并摸了两张牌`);
+    },
+
     useSkill: ({ G, playerID }, skillName) => {
       G.actionLog.push(`Player ${playerID} used skill ${skillName} (not implemented)`);
     },
@@ -784,6 +876,73 @@ export const CardGame = {
         playerID,
         card
       };
+    },
+
+    // Po Jun Skills
+    usePoJun: ({ G, playerID }, targetID) => {
+      G.pojunSelect = {
+        active: true,
+        sourcePlayerID: playerID,
+        targetPlayerID: targetID,
+      };
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
+      G.actionLog.push(`${playerName} activated Po Jun on ${targetName}`);
+    },
+
+    confirmPoJunSelection: ({ G, ctx, playerID }, selectedItems) => {
+      const { sourcePlayerID, targetPlayerID } = G.pojunSelect;
+      
+      if (!G.pojunSelect.active || sourcePlayerID !== playerID) return;
+
+      // Convert selectedItems to the format expected by jiexushengSkill.pojun.action
+      // selectedItems is [{ type: 'hand', index: 0 }, { type: 'equip', slot: 'weapon' }]
+      const selectedCards = {
+        hand: [],
+        equipments: [],
+        judges: []
+      };
+
+      selectedItems.forEach(item => {
+        if (item.type === 'hand') {
+          selectedCards.hand.push(item.index);
+        } else if (item.type === 'equip') {
+          selectedCards.equipments.push(item.slot);
+        } else if (item.type === 'judge') {
+          selectedCards.judges.push(item.slot);
+        }
+      });
+
+      // Execute the skill action
+      const cardsToMove = jiexushengSkill.pojun.action({ G, ctx }, playerID, targetPlayerID, selectedCards);
+
+      // Store cards by targetID
+      if (!G.players[playerID].pojun) {
+          G.players[playerID].pojun = {};
+      }
+      if (!G.players[playerID].pojun[targetPlayerID]) {
+          G.players[playerID].pojun[targetPlayerID] = [];
+      }
+      G.players[playerID].pojun[targetPlayerID].push(...cardsToMove);
+
+      // Reset selection state
+      G.pojunSelect = {
+        active: false,
+        sourcePlayerID: null,
+        targetPlayerID: null,
+      };
+    },
+
+    returnPoJunCards: ({ G, playerID }, targetID) => {
+      if (G.players[playerID].pojun && G.players[playerID].pojun[targetID]) {
+          const cardsToReturn = G.players[playerID].pojun[targetID];
+          G.hands[targetID].push(...cardsToReturn);
+          delete G.players[playerID].pojun[targetID];
+          
+          const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+          const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
+          G.actionLog.push(`${playerName} returned Po Jun cards to ${targetName}`);
+      }
     }
   },
 
