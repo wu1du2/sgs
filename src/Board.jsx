@@ -160,7 +160,7 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0 }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain }) => {
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -195,9 +195,24 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
         flexShrink: 0, // Prevent shrinking
         cursor: isSelectable ? 'pointer' : 'default',
         animation: isSelected ? 'pulse-selected 1.5s infinite' : (isSelectable ? 'pulse 1.5s infinite' : 'none'),
-        transition: 'all 0.3s ease'
+        transition: 'all 0.3s ease',
+        position: 'relative' // Ensure overlay is positioned correctly
       }}
     >
+      {/* Chain Effect Icon */}
+      {isLinked && (
+        <div style={{
+          position: 'absolute',
+          top: '-5px',
+          left: '-5px',
+          zIndex: 10,
+          fontSize: '20px',
+          filter: 'drop-shadow(0 0 2px black)'
+        }}>
+          🔗
+        </div>
+      )}
+
       {/* Avatar & Name Row */}
       <div style={{ display: 'flex', width: '100%', marginBottom: '8px', alignItems: 'center' }}>
         {/* Avatar */}
@@ -385,6 +400,32 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
             </div>
           );
         })}
+        {/* Chain Button */}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleChain && onToggleChain();
+          }}
+          style={{
+            width: '20px',
+            height: '20px',
+            backgroundColor: isLinked ? '#555' : '#333',
+            color: isLinked ? '#fff' : '#888',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            border: isLinked ? '1px solid #fff' : '1px solid #555',
+            boxShadow: isLinked ? '0 0 5px #fff' : 'none',
+            transition: 'all 0.2s'
+          }}
+          title="铁锁连环"
+        >
+          L
+        </div>
       </div>
     </div>
   );
@@ -1184,6 +1225,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     moves.modifyHP(targetId, amount);
   };
 
+  const onToggleChain = (targetId) => {
+    moves.toggleLinked(targetId);
+  };
+
   const onToggleJudgment = (targetId, type) => {
     // Only allow interaction if it's my judgment area and there is a card
     if (targetId === playerID && G.players[targetId].judges[type]) {
@@ -1461,6 +1506,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               onSkillClick={isMe ? onSkillClick : undefined}
               scale={isCompact ? 0.9 : 1}
               handCount={hand.length}
+              isLinked={G.players[id]?.is_linked}
+              onToggleChain={() => onToggleChain(id)}
             />
           </div>
         </React.Fragment>
@@ -1487,6 +1534,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             onToggleJudgment={(type) => onToggleJudgment(id, type)}
             scale={isCompact ? 0.9 : 1}
             handCount={hand.length}
+            isLinked={G.players[id]?.is_linked}
+            onToggleChain={() => onToggleChain(id)}
           />
         )}
         

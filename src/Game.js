@@ -30,6 +30,7 @@ const createPlayerState = () => ({
   score: 0,
   luckCardCount: 10,
   luckCardConfirmed: false,
+  is_linked: false,
   ...createEmptyZones()
 });
 
@@ -171,6 +172,10 @@ export const CardGame = {
     },
     confirmLuckCard: ({ G, playerID }) => {
       G.players[playerID].luckCardConfirmed = true;
+    },
+    toggleLinked: ({ G }, playerID) => {
+      const player = G.players[playerID];
+      player.is_linked = !player.is_linked;
     },
     playerReady: ({ G, playerID }) => {
       if (!G.readyPlayers.includes(playerID)) {
