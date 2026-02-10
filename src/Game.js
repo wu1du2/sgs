@@ -636,6 +636,14 @@ export const CardGame = {
             actionType: 'steal',
             pendingCard: card,
           };
+        } else if (card.name === '借刀杀人') {
+          G.pendingEffect = {
+            active: true,
+            sourcePlayerID: playerID,
+            targetPlayerID: targetID,
+            actionType: 'steal',
+            pendingCard: card,
+          };
         }
       }
     },
