@@ -614,7 +614,41 @@ export const CardGame = {
     },
 
     changeGeneral: ({ G, playerID }, generalId) => {
-      G.actionLog.push(`Player ${playerID} tried to change general (not fully implemented)`);
+      const options = G.generalOptions[playerID];
+      const index = options.findIndex(g => g.id === generalId);
+      
+      if (index === -1) {
+        return;
+      }
+
+      // Check if change already used for this slot
+      if (G.generalChangeUsed[playerID][index]) {
+        return;
+      }
+
+      // Collect all currently used generals to avoid duplicates
+      const usedGeneralIds = new Set();
+      Object.values(G.generalOptions).forEach(playerOptions => {
+        playerOptions.forEach(g => usedGeneralIds.add(g.id));
+      });
+
+      // Find available generals
+      const availableGenerals = ENABLED_GENERALS.filter(g => !usedGeneralIds.has(g.id));
+
+      if (availableGenerals.length === 0) {
+        G.actionLog.push("No more generals available to change");
+        return;
+      }
+
+      // Pick a random one
+      const newGeneral = availableGenerals[Math.floor(Math.random() * availableGenerals.length)];
+
+      // Update state
+      G.generalOptions[playerID][index] = newGeneral;
+      G.generalChangeUsed[playerID][index] = true;
+      
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} changed a general option`);
     },
 
     resolveGame: ({ G }, winnerRole) => {

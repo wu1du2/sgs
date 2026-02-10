@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { Card } from './Card';
 import { SGS_CARDS } from './sgs_data';
 import { calculateDistance } from './Game';
@@ -1101,7 +1102,7 @@ const ActionLog = ({ logs }) => {
   };
 
   if (viewMode === 'expanded') {
-    return (
+    return ReactDOM.createPortal(
       <>
         <div 
           style={{
@@ -1118,19 +1119,18 @@ const ActionLog = ({ logs }) => {
           left: '50%',
           transform: 'translate(-50%, -50%)',
           width: '500px',
-          height: '400px',
+          height: '150px',
           backgroundColor: 'rgba(0, 0, 0, 0.9)',
           border: '2px solid #ffd700',
           borderRadius: '8px',
-          padding: '20px',
+          padding: '10px',
           zIndex: 3000,
           color: 'white',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 0 20px rgba(0,0,0,0.8)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #555', paddingBottom: '10px' }}>
-            <h3 style={{ margin: 0, color: '#ffd700' }}>Action Log</h3>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '5px', borderBottom: '1px solid #555', paddingBottom: '5px' }}>
             <button 
               onClick={() => setViewMode('normal')}
               style={{
@@ -1159,7 +1159,8 @@ const ActionLog = ({ logs }) => {
             )}
           </div>
         </div>
-      </>
+      </>,
+      document.body
     );
   }
 
@@ -1274,32 +1275,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [equipmentMenu, setEquipmentMenu] = React.useState(null); // { slot: string }
   const [judgmentMenu, setJudgmentMenu] = React.useState(null); // { playerID: string, type: string, card: object }
   const [showDiscardPile, setShowDiscardPile] = React.useState(false);
-  const [isFullscreen, setIsFullscreen] = React.useState(false);
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch((err) => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().then(() => {
-          setIsFullscreen(false);
-        });
-      }
-    }
-  };
-
-  // Listen for fullscreen change events
-  React.useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
 
   // Responsive hand width state
   const [maxHandWidth, setMaxHandWidth] = React.useState(
@@ -1517,8 +1492,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     moves.selectGeneral(generalId);
   };
 
+  const [changingGeneral, setChangingGeneral] = React.useState(false);
+
   const onChangeGeneral = (generalId) => {
+    if (changingGeneral) return;
+    setChangingGeneral(true);
     moves.changeGeneral(generalId);
+    setTimeout(() => setChangingGeneral(false), 500);
   };
 
   const onBid = (amount) => {
@@ -1886,28 +1866,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Fullscreen Toggle */}
-      <button
-        onClick={toggleFullscreen}
-        style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          zIndex: 5000,
-          background: 'rgba(0, 0, 0, 0.5)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          borderRadius: '4px',
-          color: 'white',
-          padding: '5px 10px',
-          cursor: 'pointer',
-          fontSize: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '5px'
-        }}
-      >
-        {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-      </button>
       {/* Equipment Menu Overlay */}
       {equipmentMenu && (
         <div style={{
