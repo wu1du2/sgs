@@ -12,7 +12,7 @@ const getSuitColor = (suit) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judgments = {}, onToggleJudgment, scale = 1 }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, scale = 1 }) => {
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -196,7 +196,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
           { label: '乐', key: 'le', color: '#e74c3c' },
           { label: '电', key: 'dian', color: '#9b59b6' }
         ].map((item) => {
-          const isActive = judgments[item.key];
+          const isActive = judges[item.key];
           return (
             <div
               key={item.key}
@@ -561,20 +561,9 @@ const ActionTicker = ({ logs }) => {
           
           if (cardNames.includes(part)) {
             return (
-              <div key={i} style={{
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                padding: '2px 6px',
-                backgroundColor: '#fff',
-                color: '#000',
-                fontWeight: 'bold',
-                fontSize: '14px',
-                boxShadow: '1px 1px 3px rgba(0,0,0,0.3)',
-                display: 'inline-block',
-                fontFamily: 'serif'
-              }}>
+              <span key={i} style={{ color: '#ffd700', fontWeight: 'bold' }}>
                 {part}
-              </div>
+              </span>
             );
           }
           
@@ -636,7 +625,7 @@ const ActionLog = ({ logs }) => {
       if (!part) return null;
       
       if (cardNames.includes(part)) {
-        return <span key={i} style={{ color: '#ffd700', fontWeight: 'bold' }}>[{part}]</span>;
+        return <span key={i} style={{ color: '#ffd700', fontWeight: 'bold' }}>{part}</span>;
       }
       
       if (part.match(/[♠♥♣♦]/)) {
@@ -764,6 +753,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [selectedTargetIds, setSelectedTargetIds] = React.useState([]);
   const [lasers, setLasers] = React.useState([]); // Array of { from: pos, to: pos }
   const [equipmentMenu, setEquipmentMenu] = React.useState(null); // { slot: string }
+  const [showDiscardPile, setShowDiscardPile] = React.useState(false);
 
   // Responsive hand width state
   const [maxHandWidth, setMaxHandWidth] = React.useState(
@@ -939,7 +929,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const general = G.players[id]?.general;
     const role = G.players[id]?.role || 'neutral';
     const equipments = G.players[id]?.equipments || {};
-    const judgments = G.players[id]?.judgments || {};
+    const judges = G.players[id]?.judges || {};
 
     // Target Selection Logic
     const isSelectable = selectedCardIndices.length > 0;
@@ -1081,7 +1071,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               equipments={equipments}
               onEquipClick={onEquipClick}
               onModifyHP={(amount) => onModifyHP(id, amount)}
-              judgments={judgments}
+              judges={judges}
               onToggleJudgment={(type) => onToggleJudgment(id, type)}
               scale={uiScale}
             />
@@ -1106,7 +1096,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             isSelected={isSelected}
             equipments={equipments}
             onModifyHP={(amount) => onModifyHP(id, amount)}
-            judgments={judgments}
+            judges={judges}
             onToggleJudgment={(type) => onToggleJudgment(id, type)}
             scale={uiScale}
           />
@@ -1306,6 +1296,67 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             Deck<br/>{G.deck.length}
           </div>
         </div>
+
+        {/* Discard Pile Button - Below Draw Pile */}
+        <div 
+          onClick={() => setShowDiscardPile(!showDiscardPile)}
+          style={{
+            position: 'absolute',
+            top: '55px',
+            right: '145px',
+            width: '28px',
+            height: '28px',
+            backgroundColor: '#7f8c8d',
+            borderRadius: '4px',
+            border: '2px solid #95a5a6',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            zIndex: 10,
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '12px'
+          }}
+          title="查看弃牌堆"
+        >
+          弃
+        </div>
+
+        {showDiscardPile && (
+          <div style={{
+            position: 'absolute',
+            top: '95px',
+            right: '145px',
+            width: '180px',
+            maxHeight: '200px',
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            border: '1px solid #7f8c8d',
+            borderRadius: '6px',
+            padding: '8px',
+            color: '#ecf0f1',
+            fontSize: '11px',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+            overflow: 'hidden',
+            zIndex: 20
+          }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '6px' }}>
+              弃牌堆 ({(G.discardPile || []).length})
+            </div>
+            <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+              {(G.discardPile || []).length === 0 ? (
+                <div style={{ color: '#95a5a6' }}>空</div>
+              ) : (
+                (G.discardPile || []).map((card, index) => (
+                  <div key={`${card.name}-${index}`} style={{ marginBottom: '2px' }}>
+                    {card.suit} {card.rank} {card.name}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Judgment Button - Above Draw Pile */}
         <div 

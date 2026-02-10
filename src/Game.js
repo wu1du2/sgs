@@ -19,6 +19,18 @@ function shuffle(array) {
   return newArray;
 }
 
+const createEmptyZones = () => ({
+  equipments: { weapon: null, armor: null, plusOne: null, minusOne: null },
+  judges: { bing: false, le: false, dian: false }
+});
+
+const createPlayerState = () => ({
+  general: null,
+  role: 'neutral',
+  score: 0,
+  ...createEmptyZones()
+});
+
 const distributeGenerals = () => {
   const shuffledGenerals = shuffle(ENABLED_GENERALS);
   const generalOptions = {};
@@ -32,18 +44,28 @@ const distributeGenerals = () => {
   return { generalOptions, generalChangeUsed };
 };
 
+const addToDiscardPile = (G, cards) => {
+  if (!cards) return;
+  const toAdd = Array.isArray(cards) ? cards : [cards];
+  const validCards = toAdd.filter(Boolean);
+  if (validCards.length > 0) {
+    G.discardPile.push(...validCards);
+  }
+};
+
 export const CardGame = {
   setup: () => ({
     deck: shuffle(SGS_CARDS),
+    discardPile: [],
     hands: {
       '0': [],
       '1': [],
       '2': [],
     },
     players: {
-      '0': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null }, judgments: { le: false, bing: false, dian: false } },
-      '1': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null }, judgments: { le: false, bing: false, dian: false } },
-      '2': { general: null, role: 'neutral', score: 0, equipments: { weapon: null, armor: null, plusOne: null, minusOne: null }, judgments: { le: false, bing: false, dian: false } },
+      '0': createPlayerState(),
+      '1': createPlayerState(),
+      '2': createPlayerState(),
     },
     generalOptions: {
       '0': [],
@@ -144,8 +166,8 @@ export const CardGame = {
     },
     toggleJudgment: ({ G }, playerID, type) => {
       const player = G.players[playerID];
-      if (player && player.judgments && player.judgments.hasOwnProperty(type)) {
-        player.judgments[type] = !player.judgments[type];
+      if (player && player.judges && player.judges.hasOwnProperty(type)) {
+        player.judges[type] = !player.judges[type];
       }
     },
     resolveGame: ({ G }, winnerRole) => {
@@ -199,6 +221,8 @@ export const CardGame = {
         ['0', '1', '2'].forEach(pid => {
           G.players[pid].general = null;
           G.players[pid].role = 'neutral';
+          G.players[pid].equipments = createEmptyZones().equipments;
+          G.players[pid].judges = createEmptyZones().judges;
         });
 
         // Distribute new generals
@@ -208,6 +232,7 @@ export const CardGame = {
 
         G.landlord = null;
         G.bidAmount = 0;
+        G.discardPile = [];
         G.phase = 'selection';
         G.gameResult = null;
         G.rematchVotes = [];
@@ -276,14 +301,15 @@ export const CardGame = {
       if (currentEquip) {
         // Add to discard pile (not explicitly tracked in this simple version, but we log it)
         // In a full game, we'd have a discard pile array.
-        const logEntry = `${playerName} 弃置了 ${currentEquip.name}`;
+        const logEntry = `${playerName} 弃置了 ${currentEquip.suit}${currentEquip.rank} ${currentEquip.name}`;
         G.actionLog.push(logEntry);
+        addToDiscardPile(G, currentEquip);
       }
 
       // Equip new card
       G.players[playerID].equipments[slot] = card;
 
-      const logEntry = `${playerName} 装备了 ${card.name}`;
+      const logEntry = `${playerName} 装备了 ${card.suit}${card.rank} ${card.name}`;
       G.actionLog.push(logEntry);
       
       G.lastAction = {
@@ -299,9 +325,10 @@ export const CardGame = {
       if (!equipment) return;
 
       G.players[playerID].equipments[slot] = null;
+      addToDiscardPile(G, equipment);
 
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const logEntry = `${playerName} 弃置了 ${equipment.name}`;
+      const logEntry = `${playerName} 弃置了 ${equipment.suit}${equipment.rank} ${equipment.name}`;
       G.actionLog.push(logEntry);
 
       G.lastAction = {
@@ -320,6 +347,7 @@ export const CardGame = {
       // Remove cards from hand
       const newHand = hand.filter((_, index) => !cardIndices.includes(index));
       G.hands[playerID] = newHand;
+      addToDiscardPile(G, cardsPlayed);
 
       G.lastAction = {
         type: 'play',
@@ -330,13 +358,13 @@ export const CardGame = {
 
       // Add to action log
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const cardNames = cardsPlayed.map(c => c.name).join(' ');
+      const cardNames = cardsPlayed.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
       let logEntry = '';
       if (targetIDs && targetIDs.length > 0) {
         const targets = targetIDs.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
-        logEntry = `${playerName} 对 ${targets} 出牌 [${cardNames}]`;
+        logEntry = `${playerName} 对 ${targets} 出牌 ${cardNames}`;
       } else {
-        logEntry = `${playerName} 出牌 [${cardNames}]`;
+        logEntry = `${playerName} 出牌 ${cardNames}`;
       }
       G.actionLog.push(logEntry);
     },
@@ -348,6 +376,7 @@ export const CardGame = {
       
       const newHand = hand.filter((_, index) => !cardIndices.includes(index));
       G.hands[playerID] = newHand;
+      addToDiscardPile(G, cardsDiscarded);
       
       G.lastAction = {
         type: 'discard',
@@ -357,8 +386,8 @@ export const CardGame = {
 
       // Add to action log
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const cardNames = cardsDiscarded.map(c => c.name).join(' ');
-      const logEntry = `${playerName} 弃牌 [${cardNames}]`;
+      const cardNames = cardsDiscarded.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
+      const logEntry = `${playerName} 弃牌 ${cardNames}`;
       G.actionLog.push(logEntry);
     },
     performJudgment: ({ G, playerID }) => {
@@ -367,8 +396,10 @@ export const CardGame = {
       const card = G.deck.pop();
       if (!card) return; // Deck empty
 
+      addToDiscardPile(G, card);
+
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const logEntry = `${playerName} 进行了一次判定 ${card.suit} ${card.rank}`;
+      const logEntry = `${playerName} 进行了一次判定 ${card.suit}${card.rank} ${card.name}`;
       G.actionLog.push(logEntry);
       
       G.lastAction = {
