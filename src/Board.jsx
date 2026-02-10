@@ -159,6 +159,135 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
   );
 };
 
+const HarvestBox = ({ cards, onPick, onClose }) => {
+  const [isMinimized, setIsMinimized] = React.useState(false);
+
+  if (isMinimized) {
+    return (
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        right: '100px',
+        zIndex: 3000,
+      }}>
+        <button
+          onClick={() => setIsMinimized(false)}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#e67e22',
+            color: 'white',
+            border: '2px solid #d35400',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+          }}
+        >
+          五谷丰登 ({cards.length}) ▲
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      pointerEvents: 'none' // Allow clicking through background
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        border: '2px solid #e67e22',
+        width: '80%',
+        maxWidth: '600px',
+        pointerEvents: 'auto', // Re-enable pointer events for the box
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '15px',
+        boxShadow: '0 0 20px rgba(230, 126, 34, 0.5)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, color: '#e67e22' }}>五谷丰登</h3>
+          <button
+            onClick={() => setIsMinimized(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#e67e22',
+              cursor: 'pointer',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              padding: '0 5px'
+            }}
+          >
+            _
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {cards.map((card, index) => (
+            <div
+              key={index}
+              onClick={() => onPick(index)}
+              style={{
+                width: '80px',
+                height: '120px',
+                backgroundColor: '#ecf0f1',
+                borderRadius: '6px',
+                border: '1px solid #bdc3c7',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'transform 0.2s',
+                color: getSuitColor(card.suit)
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
+                {card.suit}
+              </div>
+              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
+                {card.rank}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
+                {card.name}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '8px 20px',
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            结束
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain }) => {
   const getBorderColor = () => {
@@ -1993,6 +2122,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => {}} // No cancel for now as effect is resolving
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
           singleSelection={['过河拆桥', '顺手牵羊'].includes(G.selectCard.pendingCard?.name)}
+        />
+      )}
+
+      {/* Harvest Box */}
+      {G.harvestCards && G.harvestCards.length > 0 && (
+        <HarvestBox
+          cards={G.harvestCards}
+          onPick={(index) => moves.pickHarvestCard(index)}
+          onClose={() => moves.endHarvest()}
         />
       )}
     </div>

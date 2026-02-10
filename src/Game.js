@@ -133,6 +133,7 @@ export const CardGame = {
       actionType: null, // 'discard', 'steal'
       pendingCard: null,
     },
+    harvestCards: [], // Cards for "Harvest" (五谷丰登)
   }),
 
   turn: {
@@ -300,353 +301,125 @@ export const CardGame = {
         nextPlayerID = String((parseInt(nextPlayerID) + 1) % 3);
         attempts++;
       }
-
-      // If everyone has lightning (unlikely with 1 deck but possible in theory if multiple decks), 
-      // we might need a rule. But standard rules say it just moves to next available.
-      // If we looped back to original player, it stays (or is discarded? Rules say it moves to next player. 
-      // If next player has one, skip. If all have one, it probably shouldn't happen in standard play).
-      // For now, if we found a spot, place it.
       
-      if (!G.players[nextPlayerID].judges.dian) {
-        G.players[nextPlayerID].judges.dian = card;
-        const playerName = player.general ? player.general.name : `Player ${playerID}`;
-        const targetName = G.players[nextPlayerID].general ? G.players[nextPlayerID].general.name : `Player ${nextPlayerID}`;
-        G.actionLog.push(`${playerName} moved Lightning to ${targetName}`);
-      } else {
-        // Fallback: discard if no one can take it (shouldn't happen in 3 player with 1 lightning)
+      // If everyone has lightning (unlikely but possible with multiple decks), discard it
+      if (G.players[nextPlayerID].judges.dian) {
         addToDiscardPile(G, card);
-      }
-    },
-    toggleJudgment: ({ G }, playerID, type) => {
-      const player = G.players[playerID];
-      if (player && player.judges && player.judges.hasOwnProperty(type)) {
-        player.judges[type] = !player.judges[type];
-      }
-    },
-    confirm_select_card: ({ G, playerID }, selectedCards) => {
-      const { active, sourcePlayerID, targetPlayerID, actionType, pendingCard } = G.selectCard;
-      
-      if (!active || playerID !== sourcePlayerID) return;
-      
-      const targetPlayer = G.players[targetPlayerID];
-      const sourcePlayer = G.players[sourcePlayerID];
-      
-      if (!targetPlayer || !sourcePlayer) return;
-
-      const cardsToProcess = [];
-
-      // Process each selected card
-      selectedCards.forEach(selection => {
-        // selection: { type: 'hand'|'equip'|'judge', index: number, slot: string, card: object }
-        if (selection.type === 'hand') {
-          // For hand cards, we need to find the card by index or ID. 
-          // Since hand is an array, index is risky if hand changes, but here it's synchronous.
-          // However, the UI should pass the card object or index.
-          // Let's assume selection has index for hand.
-          const card = G.hands[targetPlayerID][selection.index];
-          if (card) {
-            cardsToProcess.push(card);
-            // Remove from hand (we'll do batch removal later to avoid index shift issues if multiple)
-            // Actually, let's mark for removal or handle one by one carefully.
-            // Since we usually select 1 card for these skills, it's fine.
-            // If multiple, we should sort indices descending.
-          }
-        } else if (selection.type === 'equip') {
-          const card = targetPlayer.equipments[selection.slot];
-          if (card) {
-            cardsToProcess.push(card);
-            targetPlayer.equipments[selection.slot] = null;
-          }
-        } else if (selection.type === 'judge') {
-          const card = targetPlayer.judges[selection.slot];
-          if (card) {
-            cardsToProcess.push(card);
-            targetPlayer.judges[selection.slot] = null;
-          }
-        }
-      });
-
-      // Remove hand cards
-      // We need to handle indices carefully.
-      const handIndicesToRemove = selectedCards
-        .filter(s => s.type === 'hand')
-        .map(s => s.index)
-        .sort((a, b) => b - a); // Descending order
-      
-      handIndicesToRemove.forEach(index => {
-        G.hands[targetPlayerID].splice(index, 1);
-      });
-
-      // Perform Action
-      if (actionType === 'discard') {
-        addToDiscardPile(G, cardsToProcess);
-        const cardNames = cardsToProcess.map(c => c.name).join(', ');
-        const sourceName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${sourcePlayerID}`;
-        const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetPlayerID}`;
-        G.actionLog.push(`${sourceName} 弃置了 ${targetName} 的 ${cardNames}`);
-      } else if (actionType === 'steal') {
-        G.hands[sourcePlayerID].push(...cardsToProcess);
-        // Masked log for Snatch
-        const sourceName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${sourcePlayerID}`;
-        const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetPlayerID}`;
-        G.actionLog.push(`${sourceName} 获得了 ${targetName} 的一张牌`);
-      }
-
-      // Reset state
-      G.selectCard = {
-        active: false,
-        sourcePlayerID: null,
-        targetPlayerID: null,
-        actionType: null,
-        pendingCard: null,
-      };
-    },
-    resolveGame: ({ G }, winnerRole) => {
-      const bid = G.bidAmount;
-      const landlordID = G.landlord;
-      
-      if (!landlordID) return; // No landlord yet
-
-      const scoreChanges = {};
-
-      if (winnerRole === 'landlord') {
-        // Landlord wins
-        ['0', '1', '2'].forEach(pid => {
-          if (pid === landlordID) {
-            scoreChanges[pid] = 2 * bid;
-            G.players[pid].score += 2 * bid;
-          } else {
-            scoreChanges[pid] = -bid;
-            G.players[pid].score -= bid;
-          }
-        });
+        G.actionLog.push(`Lightning ${card.name} discarded (no valid target)`);
       } else {
-        // Peasants win
-        ['0', '1', '2'].forEach(pid => {
-          if (pid === landlordID) {
-            scoreChanges[pid] = -2 * bid;
-            G.players[pid].score -= 2 * bid;
-          } else {
-            scoreChanges[pid] = bid;
-            G.players[pid].score += bid;
-          }
-        });
-      }
-
-      G.gameResult = {
-        winnerRole,
-        scoreChanges
-      };
-    },
-    voteRematch: ({ G, playerID }) => {
-      if (!G.rematchVotes.includes(playerID)) {
-        G.rematchVotes.push(playerID);
-      }
-
-      if (G.rematchVotes.length === 3) {
-        // Reset game state but keep scores and players
-        G.deck = shuffle(SGS_CARDS);
-        G.hands = { '0': [], '1': [], '2': [] };
-        
-        // Reset player roles and generals
-        ['0', '1', '2'].forEach(pid => {
-          G.players[pid].general = null;
-          G.players[pid].role = 'neutral';
-          G.players[pid].equipments = createEmptyZones().equipments;
-          G.players[pid].judges = createEmptyZones().judges;
-          G.players[pid].luckCardCount = 10;
-          G.players[pid].luckCardConfirmed = false;
-        });
-
-        // Distribute new generals
-        const { generalOptions, generalChangeUsed } = distributeGenerals();
-        G.generalOptions = generalOptions;
-        G.generalChangeUsed = generalChangeUsed;
-
-        G.landlord = null;
-        G.bidAmount = 0;
-        G.discardPile = [];
-        G.phase = 'selection';
-        G.gameResult = null;
-        G.rematchVotes = [];
-        G.actionLog = [];
+        G.players[nextPlayerID].judges.dian = card;
+        G.actionLog.push(`Lightning moved to Player ${nextPlayerID}`);
       }
     },
-    useSkill: ({ G, playerID }, skillName) => {
+    playCards: ({ G, playerID }, cardIndices, targetIds) => {
+      const hand = G.hands[playerID];
+      const cardsPlayed = cardIndices.map(i => hand[i]);
+      
+      // Remove cards from hand
+      // Sort indices descending to remove correctly
+      [...cardIndices].sort((a, b) => b - a).forEach(index => {
+        hand.splice(index, 1);
+      });
+      
+      // Add to discard pile
+      addToDiscardPile(G, cardsPlayed);
+      
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const logEntry = `${playerName} 发动了 ${skillName}`;
+      const cardNames = cardsPlayed.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
+      
+      let logEntry = `${playerName} played ${cardNames}`;
+      if (targetIds && targetIds.length > 0) {
+        const targetNames = targetIds.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
+        logEntry += ` targeting ${targetNames}`;
+      }
       G.actionLog.push(logEntry);
       
-      G.lastAction = {
-        type: 'useSkill',
-        playerID,
-        skillName
-      };
-    },
-    changeGeneral: ({ G, playerID }, generalIdToReplace) => {
-      const options = G.generalOptions[playerID];
-      const index = options.findIndex(g => g.id === generalIdToReplace);
-      
-      if (index === -1) return;
-      if (G.generalChangeUsed[playerID][index]) return;
-
-      // Find all currently used generals to avoid duplicates
-      const usedGenerals = new Set();
-      Object.values(G.generalOptions).forEach(options => {
-        options.forEach(g => usedGenerals.add(g.id));
-      });
-      Object.values(G.players).forEach(p => {
-        if (p.general) usedGenerals.add(p.general.id);
-      });
-
-      // Find available generals
-      const available = ENABLED_GENERALS.filter(g => !usedGenerals.has(g.id));
-      
-      if (available.length === 0) return;
-
-      // Pick a random one
-      const randomIndex = Math.floor(Math.random() * available.length);
-      const newGeneral = available[randomIndex];
-
-      // Replace
-      options[index] = newGeneral;
-      G.generalChangeUsed[playerID][index] = true;
+      // Handle Card Effects
+      if (cardsPlayed.length === 1) {
+        const card = cardsPlayed[0];
+        if (card.name === '五谷丰登') {
+           const numCards = (targetIds && targetIds.length > 0) ? targetIds.length : 3;
+           const cards = drawCards(G, playerID, numCards);
+           
+           // Revert the draw to hand (pop from hand)
+           if (cards.length > 0) {
+             G.hands[playerID].splice(G.hands[playerID].length - cards.length, cards.length);
+           }
+           G.harvestCards = cards;
+           G.actionLog.push(`${playerName} triggered Harvest (五谷丰登)`);
+        }
+      }
     },
 
     equipCard: ({ G, playerID }, cardIndex) => {
-      if (G.phase !== 'playing') return;
-      
       const hand = G.hands[playerID];
       const card = hand[cardIndex];
       
-      if (!card) return;
-
-      let slot = null;
-      if (card.type === '武器') slot = 'weapon';
-      else if (card.type === '防具') slot = 'armor';
-      else if (card.type === '加一') slot = 'plusOne';
-      else if (card.type === '减一') slot = 'minusOne'; // Note: In data it might be '减一' or '减一马' etc. based on user changes. User said '减一'.
-
-      if (!slot) return;
-
-      // Remove card from hand
-      const newHand = hand.filter((_, index) => index !== cardIndex);
-      G.hands[playerID] = newHand;
-
-      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const currentEquip = G.players[playerID].equipments[slot];
-
-      // Discard existing equipment if any
-      if (currentEquip) {
-        // Add to discard pile (not explicitly tracked in this simple version, but we log it)
-        // In a full game, we'd have a discard pile array.
-        const logEntry = `${playerName} 弃置了 ${currentEquip.suit}${currentEquip.rank} ${currentEquip.name}`;
-        G.actionLog.push(logEntry);
-        addToDiscardPile(G, currentEquip);
+      // Remove from hand
+      hand.splice(cardIndex, 1);
+      
+      // Equip
+      const player = G.players[playerID];
+      let oldCard = null;
+      
+      if (card.type === '武器') {
+        oldCard = player.equipments.weapon;
+        player.equipments.weapon = card;
+      } else if (card.type === '防具') {
+        oldCard = player.equipments.armor;
+        player.equipments.armor = card;
+      } else if (card.type === '加一') {
+        oldCard = player.equipments.plusOne;
+        player.equipments.plusOne = card;
+      } else if (card.type === '减一') {
+        oldCard = player.equipments.minusOne;
+        player.equipments.minusOne = card;
       }
-
-      // Equip new card
-      G.players[playerID].equipments[slot] = card;
-
-      const logEntry = `${playerName} 装备了 ${card.suit}${card.rank} ${card.name}`;
-      G.actionLog.push(logEntry);
       
-      G.lastAction = {
-        type: 'equip',
-        playerID,
-        card
-      };
+      // Discard old equipment if any
+      if (oldCard) {
+        addToDiscardPile(G, oldCard);
+      }
+      
+      const playerName = player.general ? player.general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} equipped ${card.name}`);
     },
-    discardEquipment: ({ G, playerID }, slot) => {
-      if (G.phase !== 'playing') return;
+
+    triggerHarvest: ({ G, playerID }) => {
+      // Draw X cards where X is number of players (3)
+      const numPlayers = 3;
+      const cards = drawCards(G, playerID, numPlayers); // Temporarily draw to player to get cards, but we need to move them to harvestCards
       
-      const equipment = G.players[playerID].equipments[slot];
-      if (!equipment) return;
-
-      G.players[playerID].equipments[slot] = null;
-      addToDiscardPile(G, equipment);
-
+      // Revert the draw to hand (pop from hand)
+      // Use cards.length in case fewer cards were drawn
+      if (cards.length > 0) {
+        G.hands[playerID].splice(G.hands[playerID].length - cards.length, cards.length);
+      }
+      
+      // Put them in harvestCards
+      G.harvestCards = cards;
+      
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const logEntry = `${playerName} 弃置了 ${equipment.suit}${equipment.rank} ${equipment.name}`;
-      G.actionLog.push(logEntry);
-
-      G.lastAction = {
-        type: 'discardEquip',
-        playerID,
-        card: equipment
-      };
+      G.actionLog.push(`${playerName} triggered Harvest (五谷丰登)`);
     },
-    playCards: ({ G, playerID }, cardIndices, targetIDs) => {
-      if (G.phase !== 'playing') return;
-      
-      const hand = G.hands[playerID];
-      // Store cards before removing
-      const cardsPlayed = cardIndices.map(i => hand[i]);
-      
-      // Check for special cards validation BEFORE removing
-      if (cardsPlayed.length === 1 && targetIDs && targetIDs.length === 1) {
-        const card = cardsPlayed[0];
-        const targetID = targetIDs[0];
+    pickHarvestCard: ({ G, playerID }, cardIndex) => {
+      if (G.harvestCards[cardIndex]) {
+        const card = G.harvestCards[cardIndex];
+        G.harvestCards.splice(cardIndex, 1);
+        G.hands[playerID].push(card);
         
-        // Distance check for Snatch removed as per user request
-      }
-
-      // Remove cards from hand
-      const newHand = hand.filter((_, index) => !cardIndices.includes(index));
-      G.hands[playerID] = newHand;
-      addToDiscardPile(G, cardsPlayed);
-
-      G.lastAction = {
-        type: 'play',
-        playerID,
-        cards: cardsPlayed,
-        targetIDs
-      };
-
-      // Add to action log
-      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const cardNames = cardsPlayed.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
-      let logEntry = '';
-      if (targetIDs && targetIDs.length > 0) {
-        const targets = targetIDs.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
-        logEntry = `${playerName} 对 ${targets} 出牌 ${cardNames}`;
-      } else {
-        logEntry = `${playerName} 出牌 ${cardNames}`;
-      }
-      G.actionLog.push(logEntry);
-
-      // Check for special cards
-      if (cardsPlayed.length === 1 && targetIDs && targetIDs.length === 1) {
-        const card = cardsPlayed[0];
-        const targetID = targetIDs[0];
-        
-        if (card.name === '过河拆桥') {
-          G.pendingEffect = {
-            active: true,
-            sourcePlayerID: playerID,
-            targetPlayerID: targetID,
-            actionType: 'discard',
-            pendingCard: card,
-          };
-        } else if (card.name === '顺手牵羊') {
-          G.pendingEffect = {
-            active: true,
-            sourcePlayerID: playerID,
-            targetPlayerID: targetID,
-            actionType: 'steal',
-            pendingCard: card,
-          };
-        } else if (card.name === '借刀杀人') {
-          G.pendingEffect = {
-            active: true,
-            sourcePlayerID: playerID,
-            targetPlayerID: targetID,
-            actionType: 'steal',
-            pendingCard: card,
-          };
-        }
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} picked ${card.name} from Harvest`);
       }
     },
+    endHarvest: ({ G }) => {
+      if (G.harvestCards.length > 0) {
+        addToDiscardPile(G, G.harvestCards);
+        G.actionLog.push(`${G.harvestCards.length} cards from Harvest discarded`);
+        G.harvestCards = [];
+      }
+    },
+
     confirmEffect: ({ G, playerID }) => {
       if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
       
@@ -689,6 +462,187 @@ export const CardGame = {
       const logEntry = `${playerName} 弃牌 ${cardNames}`;
       G.actionLog.push(logEntry);
     },
+    
+    discardEquipment: ({ G, playerID }, slot) => {
+      const player = G.players[playerID];
+      const card = player.equipments[slot];
+      if (card) {
+        player.equipments[slot] = null;
+        addToDiscardPile(G, card);
+        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} discarded ${card.name} from ${slot}`);
+      }
+    },
+
+    confirm_select_card: ({ G, playerID }, selectedItems) => {
+      const { sourcePlayerID, targetPlayerID, actionType, pendingCard } = G.selectCard;
+      
+      if (!G.selectCard.active) return;
+      
+      const targetPlayer = G.players[targetPlayerID];
+      const targetHand = G.hands[targetPlayerID];
+      
+      // Process each selected item
+      selectedItems.forEach(item => {
+        let card = null;
+        
+        if (item.type === 'hand') {
+          // For hand cards, we need to be careful about indices shifting if we remove multiple.
+          // But usually Dismantlement/Snatch is 1 card.
+          // If multiple, we should sort indices descending.
+          // But here we iterate.
+          // Actually, if we remove one, the index of others might change.
+          // But let's assume single selection for now as per 'singleSelection' prop in Board.jsx.
+          // Board.jsx sets singleSelection={['过河拆桥', '顺手牵羊'].includes(...)}
+          // So it is single selection.
+          
+          card = targetHand[item.index];
+          if (card) {
+             if (actionType === 'discard') {
+               targetHand.splice(item.index, 1);
+               addToDiscardPile(G, card);
+               G.actionLog.push(`Player ${playerID} discarded a card from Player ${targetPlayerID}'s hand`);
+             } else if (actionType === 'steal') {
+               targetHand.splice(item.index, 1);
+               G.hands[playerID].push(card);
+               G.actionLog.push(`Player ${playerID} stole a card from Player ${targetPlayerID}'s hand`);
+             }
+          }
+        } else if (item.type === 'equip') {
+          card = targetPlayer.equipments[item.slot];
+          if (card) {
+            targetPlayer.equipments[item.slot] = null;
+            if (actionType === 'discard') {
+              addToDiscardPile(G, card);
+              G.actionLog.push(`Player ${playerID} discarded ${card.name} from Player ${targetPlayerID}'s equipment`);
+            } else if (actionType === 'steal') {
+              G.hands[playerID].push(card);
+              G.actionLog.push(`Player ${playerID} stole ${card.name} from Player ${targetPlayerID}'s equipment`);
+            }
+          }
+        } else if (item.type === 'judge') {
+          card = targetPlayer.judges[item.slot];
+          if (card) {
+            targetPlayer.judges[item.slot] = null;
+            if (actionType === 'discard') {
+              addToDiscardPile(G, card);
+              G.actionLog.push(`Player ${playerID} discarded ${card.name} from Player ${targetPlayerID}'s judgment area`);
+            } else if (actionType === 'steal') {
+              G.hands[playerID].push(card);
+              G.actionLog.push(`Player ${playerID} stole ${card.name} from Player ${targetPlayerID}'s judgment area`);
+            }
+          }
+        }
+      });
+      
+      // Reset selectCard state
+      G.selectCard = {
+        active: false,
+        sourcePlayerID: null,
+        targetPlayerID: null,
+        actionType: null,
+        pendingCard: null,
+      };
+    },
+
+    changeGeneral: ({ G, playerID }, generalId) => {
+      G.actionLog.push(`Player ${playerID} tried to change general (not fully implemented)`);
+    },
+
+    resolveGame: ({ G }, winnerRole) => {
+      const scoreChanges = {};
+      const baseScore = G.bidAmount || 1; // Default to 1 if no bid
+      
+      // Calculate score changes
+      ['0', '1', '2'].forEach(pid => {
+        const player = G.players[pid];
+        const isWinner = player.role === winnerRole;
+        
+        if (isWinner) {
+          // Winner gets points
+          if (player.role === 'landlord') {
+            scoreChanges[pid] = 2 * baseScore;
+          } else {
+            scoreChanges[pid] = 1 * baseScore;
+          }
+        } else {
+          // Loser loses points
+          if (player.role === 'landlord') {
+             scoreChanges[pid] = -2 * baseScore;
+          } else {
+             scoreChanges[pid] = -1 * baseScore;
+          }
+        }
+        
+        // Update player score
+        player.score += scoreChanges[pid];
+      });
+
+      G.gameResult = { 
+        winner: winnerRole,
+        scoreChanges
+      };
+      G.phase = 'gameover';
+    },
+
+    voteRematch: ({ G, playerID }) => {
+      if (!G.rematchVotes.includes(playerID)) {
+        G.rematchVotes.push(playerID);
+      }
+      if (G.rematchVotes.length === 3) {
+        G.actionLog.push(`All players voted for rematch`);
+        
+        // Reset Game State for new round
+        
+        // 1. Shuffle deck
+        G.deck = shuffle(SGS_CARDS.map((c, i) => ({ ...c, id: `card-${i}` })));
+        G.discardPile = [];
+        
+        // 2. Reset hands
+        G.hands = { '0': [], '1': [], '2': [] };
+        
+        // 3. Reset players (keep scores)
+        ['0', '1', '2'].forEach(pid => {
+          const currentScore = G.players[pid].score;
+          G.players[pid] = createPlayerState();
+          G.players[pid].score = currentScore;
+        });
+        
+        // 4. Reset other game state
+        G.generalOptions = { '0': [], '1': [], '2': [] };
+        G.generalChangeUsed = { '0': [false, false, false], '1': [false, false, false], '2': [false, false, false] };
+        
+        // Since all players voted for rematch, we can skip the lobby wait and go directly to selection
+        G.readyPlayers = ['0', '1', '2'];
+        G.phase = 'selection';
+        
+        // Distribute generals immediately
+        const { generalOptions, generalChangeUsed } = distributeGenerals();
+        G.generalOptions = generalOptions;
+        G.generalChangeUsed = generalChangeUsed;
+
+        G.landlord = null;
+        G.bidAmount = 0;
+        G.gameResult = null;
+        G.rematchVotes = [];
+        G.lastAction = null;
+        G.actionLog = [];
+        G.pendingEffect = null;
+        G.selectCard = {
+          active: false,
+          sourcePlayerID: null,
+          targetPlayerID: null,
+          actionType: null,
+          pendingCard: null,
+        };
+        G.harvestCards = [];
+      }
+    },
+
+    useSkill: ({ G, playerID }, skillName) => {
+      G.actionLog.push(`Player ${playerID} used skill ${skillName} (not implemented)`);
+    },
+
     performJudgment: ({ G, playerID }) => {
       if (G.phase !== 'playing') return;
       
