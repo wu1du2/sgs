@@ -46,6 +46,26 @@ const distributeGenerals = () => {
   return { generalOptions, generalChangeUsed };
 };
 
+export const calculateDistance = (G, sourceID, targetID) => {
+  // In 3 player game, everyone is adjacent (distance 1)
+  let dist = 1;
+  
+  const source = G.players[sourceID];
+  const target = G.players[targetID];
+  
+  // Source -1 mount (reduces distance to others)
+  if (source.equipments.minusOne) {
+    dist -= 1;
+  }
+  
+  // Target +1 mount (increases distance from others)
+  if (target.equipments.plusOne) {
+    dist += 1;
+  }
+  
+  return dist;
+};
+
 const addToDiscardPile = (G, cards) => {
   if (!cards) return;
   const toAdd = Array.isArray(cards) ? cards : [cards];
@@ -360,10 +380,10 @@ export const CardGame = {
         G.actionLog.push(`${sourceName} 弃置了 ${targetName} 的 ${cardNames}`);
       } else if (actionType === 'steal') {
         G.hands[sourcePlayerID].push(...cardsToProcess);
-        const cardNames = cardsToProcess.map(c => c.name).join(', ');
+        // Masked log for Snatch
         const sourceName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${sourcePlayerID}`;
         const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetPlayerID}`;
-        G.actionLog.push(`${sourceName} 获得了 ${targetName} 的 ${cardNames}`);
+        G.actionLog.push(`${sourceName} 获得了 ${targetName} 的一张牌`);
       }
 
       // Reset state
@@ -557,6 +577,14 @@ export const CardGame = {
       // Store cards before removing
       const cardsPlayed = cardIndices.map(i => hand[i]);
       
+      // Check for special cards validation BEFORE removing
+      if (cardsPlayed.length === 1 && targetIDs && targetIDs.length === 1) {
+        const card = cardsPlayed[0];
+        const targetID = targetIDs[0];
+        
+        // Distance check for Snatch removed as per user request
+      }
+
       // Remove cards from hand
       const newHand = hand.filter((_, index) => !cardIndices.includes(index));
       G.hands[playerID] = newHand;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from './Card';
 import { SGS_CARDS } from './sgs_data';
+import { calculateDistance } from './Game';
 
 // Helper for suit colors
 const getSuitColor = (suit) => {
@@ -11,7 +12,7 @@ const getSuitColor = (suit) => {
   return '#fff';
 };
 
-const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title }) => {
+const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title, singleSelection }) => {
   const [selected, setSelected] = React.useState([]);
 
   const toggleSelection = (item) => {
@@ -19,7 +20,11 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
     if (exists) {
       setSelected(selected.filter(s => s !== exists));
     } else {
-      setSelected([...selected, item]);
+      if (singleSelection) {
+        setSelected([item]);
+      } else {
+        setSelected([...selected, item]);
+      }
     }
   };
 
@@ -1092,6 +1097,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         setSelectedTargetIds([]);
         return;
       }
+
+      // Handle Snatch (顺手牵羊)
+      if (card.name === '顺手牵羊') {
+        if (selectedTargetIds.length !== 1) {
+          alert("请选择一名目标玩家");
+          return;
+        }
+        // Distance check removed as per user request
+      }
     }
 
     if (selectedTargetIds.length > 0) {
@@ -1808,6 +1822,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onConfirm={(selected) => moves.confirm_select_card(selected)}
           onCancel={() => {}} // No cancel for now as effect is resolving
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
+          singleSelection={['过河拆桥', '顺手牵羊'].includes(G.selectCard.pendingCard?.name)}
         />
       )}
     </div>
