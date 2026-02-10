@@ -949,6 +949,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       }
     }
 
+    const isCompact = typeof window !== 'undefined' && window.innerWidth <= 700;
+
     const areaStyle = {
       position: 'absolute',
       display: 'flex',
@@ -956,8 +958,26 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       alignItems: 'center',
       transition: 'all 0.3s ease',
       ...(position === 'bottom' && { bottom: '20px', left: '50%', transform: 'translateX(-50%)', width: '100%', pointerEvents: 'none' }), // Add width and pointerEvents
-      ...(position === 'left' && { top: '40%', left: '20px', transform: 'translateY(-50%)' }),
-      ...(position === 'right' && { top: '30%', right: '20px', transform: 'translateY(-50%)' }),
+      ...(position === 'left' && (isCompact ? {
+        top: '60px',
+        left: '5px',
+        transform: 'none',
+        alignItems: 'flex-start'
+      } : {
+        top: '40%',
+        left: '20px',
+        transform: 'translateY(-50%)'
+      })),
+      ...(position === 'right' && (isCompact ? {
+        top: '40px',
+        right: '5px',
+        transform: 'none',
+        alignItems: 'flex-end'
+      } : {
+        top: '30%',
+        right: '20px',
+        transform: 'translateY(-50%)'
+      })),
     };
 
     // Player Info Component
@@ -1049,8 +1069,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           </div>
           <div style={{
             position: 'absolute',
-            bottom: '20px',
-            right: '20px',
+            bottom: isCompact ? '5px' : '20px',
+            right: isCompact ? '5px' : '20px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
