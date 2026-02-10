@@ -181,7 +181,7 @@ export const CardGame = {
       if (!G.readyPlayers.includes(playerID)) {
         G.readyPlayers.push(playerID);
       }
-      if (G.readyPlayers.length === 3) {
+      if (G.readyPlayers.length === 3 && G.phase === 'lobby') {
         // Start selection phase
         G.phase = 'selection';
         // Distribute 3 random generals to each player
