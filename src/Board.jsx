@@ -12,7 +12,7 @@ const getSuitColor = (suit) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, scale = 1 }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, scale = 1, handCount = 0 }) => {
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -121,9 +121,9 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
               </button>
             </div>
           </div>
-          {/* Role Label */}
-          <div style={{ fontSize: '10px', color: role === 'landlord' ? '#ffaaaa' : '#aaffaa', marginTop: '2px' }}>
-            {role === 'landlord' ? 'Landlord' : 'Peasant'}
+          {/* Hand Count */}
+          <div style={{ fontSize: '12px', color: '#fff', marginTop: '2px', fontWeight: 'bold' }}>
+            手牌 {handCount}
           </div>
         </div>
       </div>
@@ -999,21 +999,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                 pointerEvents: 'auto' // Enable clicks
               }}>
                 <button 
-                  onClick={handlePlayCards}
-                  style={{
-                    padding: '8px 20px',
-                    backgroundColor: '#e74c3c',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
-                  }}
-                >
-                  出牌
-                </button>
-                <button 
                   onClick={handleEquipCard}
                   style={{
                     padding: '8px 20px',
@@ -1027,6 +1012,21 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                   }}
                 >
                   装备
+                </button>
+                <button 
+                  onClick={handlePlayCards}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#e74c3c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  出牌
                 </button>
                 <button 
                   onClick={handleDiscardCards}
@@ -1099,12 +1099,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             judges={judges}
             onToggleJudgment={(type) => onToggleJudgment(id, type)}
             scale={uiScale}
+            handCount={hand.length}
           />
         )}
         
         <PlayerInfo />
-        
-        <HandCards />
       </div>
     );
   };
