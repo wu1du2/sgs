@@ -21,7 +21,7 @@ function shuffle(array) {
 
 const createEmptyZones = () => ({
   equipments: { weapon: null, armor: null, plusOne: null, minusOne: null },
-  judges: { bing: false, le: false, dian: false }
+  judges: { bing: null, le: null, dian: null }
 });
 
 const createPlayerState = () => ({
@@ -55,7 +55,7 @@ const addToDiscardPile = (G, cards) => {
 
 export const CardGame = {
   setup: () => ({
-    deck: shuffle(SGS_CARDS),
+    deck: shuffle(SGS_CARDS.map((c, i) => ({ ...c, id: `card-${i}` }))),
     discardPile: [],
     hands: {
       '0': [],
@@ -162,6 +162,72 @@ export const CardGame = {
         } else {
            general.hp = Math.max(general.hp + amount, 0);
         }
+      }
+    },
+    playCardToJudgment: ({ G, playerID }, { card, targetPlayerID, type }) => {
+      // Remove card from hand
+      const hand = G.hands[playerID];
+      const cardIndex = hand.findIndex(c => c.id === card.id);
+      if (cardIndex !== -1) {
+        hand.splice(cardIndex, 1);
+      }
+
+      // Add to target's judgment area
+      // type should be 'bing', 'le', or 'dian'
+      if (G.players[targetPlayerID]) {
+        G.players[targetPlayerID].judges[type] = card;
+        
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        const targetName = G.players[targetPlayerID].general ? G.players[targetPlayerID].general.name : `Player ${targetPlayerID}`;
+        G.actionLog.push(`${playerName} used ${card.name} on ${targetName}`);
+      }
+    },
+    discardJudgmentCard: ({ G, playerID }, type) => {
+      const player = G.players[playerID];
+      if (player && player.judges[type]) {
+        const card = player.judges[type];
+        player.judges[type] = null;
+        addToDiscardPile(G, card);
+        
+        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} discarded ${card.name} from judgment area`);
+      }
+    },
+    moveLightning: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      const card = player.judges.dian;
+      
+      if (!card) return;
+
+      // Remove from current player
+      player.judges.dian = null;
+
+      // Find next player (counter-clockwise: 0 -> 1 -> 2 -> 0)
+      // Assuming playerIDs are '0', '1', '2'
+      let nextPlayerID = String((parseInt(playerID) + 1) % 3);
+      
+      // Check if next player already has lightning
+      // If so, skip to the next one
+      let attempts = 0;
+      while (G.players[nextPlayerID].judges.dian && attempts < 3) {
+        nextPlayerID = String((parseInt(nextPlayerID) + 1) % 3);
+        attempts++;
+      }
+
+      // If everyone has lightning (unlikely with 1 deck but possible in theory if multiple decks), 
+      // we might need a rule. But standard rules say it just moves to next available.
+      // If we looped back to original player, it stays (or is discarded? Rules say it moves to next player. 
+      // If next player has one, skip. If all have one, it probably shouldn't happen in standard play).
+      // For now, if we found a spot, place it.
+      
+      if (!G.players[nextPlayerID].judges.dian) {
+        G.players[nextPlayerID].judges.dian = card;
+        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+        const targetName = G.players[nextPlayerID].general ? G.players[nextPlayerID].general.name : `Player ${nextPlayerID}`;
+        G.actionLog.push(`${playerName} moved Lightning to ${targetName}`);
+      } else {
+        // Fallback: discard if no one can take it (shouldn't happen in 3 player with 1 lightning)
+        addToDiscardPile(G, card);
       }
     },
     toggleJudgment: ({ G }, playerID, type) => {

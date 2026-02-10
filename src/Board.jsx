@@ -203,7 +203,8 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
           { label: '乐', key: 'le', color: '#e74c3c' },
           { label: '电', key: 'dian', color: '#9b59b6' }
         ].map((item) => {
-          const isActive = judges[item.key];
+          const card = judges[item.key];
+          const isActive = !!card;
           return (
             <div
               key={item.key}
@@ -219,18 +220,20 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '12px',
+                fontSize: '10px',
                 fontWeight: 'bold',
                 color: 'white',
                 borderRadius: '4px',
-                cursor: 'pointer',
+                cursor: isActive ? 'pointer' : 'default',
                 border: isActive ? '1px solid white' : '1px solid transparent',
                 boxShadow: isActive ? `0 0 5px ${item.color}` : 'none',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap'
               }}
-              title={`Toggle ${item.label}`}
+              title={isActive ? `${card.suit}${card.rank} ${card.name}` : item.label}
             >
-              {item.label}
+              {isActive ? `${card.suit}${card.rank}` : item.label}
             </div>
           );
         })}
@@ -760,6 +763,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [selectedTargetIds, setSelectedTargetIds] = React.useState([]);
   const [lasers, setLasers] = React.useState([]); // Array of { from: pos, to: pos }
   const [equipmentMenu, setEquipmentMenu] = React.useState(null); // { slot: string }
+  const [judgmentMenu, setJudgmentMenu] = React.useState(null); // { playerID: string, type: string, card: object }
   const [showDiscardPile, setShowDiscardPile] = React.useState(false);
 
   // Responsive hand width state
@@ -847,8 +851,45 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     if (selectedCardIndices.length === 1) {
       const cardIndex = selectedCardIndices[0];
       const card = G.hands[playerID][cardIndex];
+      
       if (['武器', '防具', '加一', '减一'].includes(card.type)) {
         handleEquipCard();
+        return;
+      }
+
+      // Handle Indulgence (乐) and Supply Shortage (兵)
+      if (['乐不思蜀', '兵粮寸断'].includes(card.name)) {
+        if (selectedTargetIds.length !== 1) {
+          alert("请选择一名目标玩家");
+          return;
+        }
+        const targetID = selectedTargetIds[0];
+        const type = card.name === '乐不思蜀' ? 'le' : 'bing';
+        
+        // Check if target already has this judgment
+        if (G.players[targetID].judges[type]) {
+          alert("目标判定区已有该牌");
+          return;
+        }
+
+        moves.playCardToJudgment({ card, targetPlayerID: targetID, type });
+        setSelectedCardIndices([]);
+        setSelectedTargetIds([]);
+        return;
+      }
+
+      // Handle Lightning (闪电)
+      if (card.name === '闪电') {
+        // Lightning is played to self
+        const type = 'dian';
+        if (G.players[playerID].judges[type]) {
+          alert("判定区已有闪电");
+          return;
+        }
+        
+        moves.playCardToJudgment({ card, targetPlayerID: playerID, type });
+        setSelectedCardIndices([]);
+        setSelectedTargetIds([]);
         return;
       }
     }
@@ -930,7 +971,28 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onToggleJudgment = (targetId, type) => {
-    moves.toggleJudgment(targetId, type);
+    // Only allow interaction if it's my judgment area and there is a card
+    if (targetId === playerID && G.players[targetId].judges[type]) {
+      setJudgmentMenu({
+        playerID: targetId,
+        type,
+        card: G.players[targetId].judges[type]
+      });
+    }
+  };
+
+  const handleDiscardJudgment = () => {
+    if (judgmentMenu) {
+      moves.discardJudgmentCard(judgmentMenu.type);
+      setJudgmentMenu(null);
+    }
+  };
+
+  const handleMoveLightning = () => {
+    if (judgmentMenu && judgmentMenu.type === 'dian') {
+      moves.moveLightning();
+      setJudgmentMenu(null);
+    }
   };
 
   const onPerformJudgment = () => {
@@ -1183,6 +1245,81 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             </button>
             <button
               onClick={() => setEquipmentMenu(null)}
+              style={{
+                padding: '10px',
+                backgroundColor: '#95a5a6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Judgment Menu Overlay */}
+      {judgmentMenu && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          zIndex: 4000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }} onClick={() => setJudgmentMenu(null)}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '20px',
+            borderRadius: '8px',
+            border: '2px solid #ffd700',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            minWidth: '200px'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ color: '#ffd700', margin: '0 0 10px 0', textAlign: 'center' }}>
+              {judgmentMenu.card.name} 操作
+            </h3>
+            
+            {judgmentMenu.type === 'dian' && (
+              <button
+                onClick={handleMoveLightning}
+                style={{
+                  padding: '10px',
+                  backgroundColor: '#3498db',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                移动
+              </button>
+            )}
+
+            <button
+              onClick={handleDiscardJudgment}
+              style={{
+                padding: '10px',
+                backgroundColor: '#e74c3c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              弃置
+            </button>
+            
+            <button
+              onClick={() => setJudgmentMenu(null)}
               style={{
                 padding: '10px',
                 backgroundColor: '#95a5a6',
