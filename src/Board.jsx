@@ -288,6 +288,58 @@ const HarvestBox = ({ cards, onPick, onClose }) => {
   );
 };
 
+const HarvestCountSelector = ({ onSelect }) => {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '30px',
+        borderRadius: '15px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        alignItems: 'center',
+        boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+      }}>
+        <h2 style={{ margin: 0, color: '#f1c40f' }}>选择翻牌数量</h2>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          {[1, 2, 3].map(num => (
+            <button
+              key={num}
+              onClick={() => onSelect(num)}
+              style={{
+                width: '60px',
+                height: '60px',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                backgroundColor: '#3498db',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'transform 0.1s',
+              }}
+              onMouseOver={(e) => e.target.style.transform = 'scale(1.1)'}
+              onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain }) => {
   const getBorderColor = () => {
@@ -2122,6 +2174,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => {}} // No cancel for now as effect is resolving
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
           singleSelection={['过河拆桥', '顺手牵羊'].includes(G.selectCard.pendingCard?.name)}
+        />
+      )}
+
+      {/* Harvest Count Selector */}
+      {G.harvestCountSelect && G.harvestCountSelect.active && G.harvestCountSelect.playerID === playerID && (
+        <HarvestCountSelector
+          onSelect={(count) => moves.selectHarvestCount(count)}
         />
       )}
 

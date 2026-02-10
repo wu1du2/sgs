@@ -134,6 +134,10 @@ export const CardGame = {
       pendingCard: null,
     },
     harvestCards: [], // Cards for "Harvest" (五谷丰登)
+    harvestCountSelect: { // New state for selecting harvest count
+      active: false,
+      playerID: null,
+    },
   }),
 
   turn: {
@@ -338,17 +342,31 @@ export const CardGame = {
       if (cardsPlayed.length === 1) {
         const card = cardsPlayed[0];
         if (card.name === '五谷丰登') {
-           const numCards = (targetIds && targetIds.length > 0) ? targetIds.length : 3;
-           const cards = drawCards(G, playerID, numCards);
-           
-           // Revert the draw to hand (pop from hand)
-           if (cards.length > 0) {
-             G.hands[playerID].splice(G.hands[playerID].length - cards.length, cards.length);
-           }
-           G.harvestCards = cards;
-           G.actionLog.push(`${playerName} triggered Harvest (五谷丰登)`);
+           G.harvestCountSelect = {
+             active: true,
+             playerID: playerID
+           };
+           G.actionLog.push(`${playerName} played Harvest (五谷丰登), waiting for count selection`);
         }
       }
+    },
+
+    selectHarvestCount: ({ G, playerID }, count) => {
+      if (!G.harvestCountSelect.active || G.harvestCountSelect.playerID !== playerID) return;
+      
+      const numCards = count;
+      const cards = drawCards(G, playerID, numCards);
+      
+      // Revert the draw to hand (pop from hand)
+      if (cards.length > 0) {
+        G.hands[playerID].splice(G.hands[playerID].length - cards.length, cards.length);
+      }
+      G.harvestCards = cards;
+      
+      G.harvestCountSelect = { active: false, playerID: null };
+      
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} selected ${count} cards for Harvest`);
     },
 
     equipCard: ({ G, playerID }, cardIndex) => {
