@@ -1371,6 +1371,26 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (activeSkill === '椎锋') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.useZhuiFeng(targetId);
+      setActiveSkill(null);
+      return;
+    }
+
+    if (activeSkill === '冲坚') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.useChongJian(targetId);
+      setActiveSkill(null);
+      return;
+    }
+
     if (selectedCardIndices.length > 0) {
        if (selectedTargetIds.includes(targetId)) {
          setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
@@ -1442,6 +1462,14 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       if (card.name === '火攻') {
         if (selectedTargetIds.length !== 1) {
           alert("请选择一名目标玩家");
+          return;
+        }
+      }
+
+      // Handle Peach (桃)
+      if (card.name === '桃') {
+        if (G.players[playerID].hp >= G.players[playerID].hpMax) {
+          alert("满血不能吃桃");
           return;
         }
       }
@@ -1573,6 +1601,24 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         setActiveSkill(null); // Toggle off
       } else {
         setActiveSkill('破军');
+      }
+      return;
+    }
+
+    if (skillName === '椎锋') {
+      if (activeSkill === '椎锋') {
+        setActiveSkill(null);
+      } else {
+        setActiveSkill('椎锋');
+      }
+      return;
+    }
+
+    if (skillName === '冲坚') {
+      if (activeSkill === '冲坚') {
+        setActiveSkill(null);
+      } else {
+        setActiveSkill('冲坚');
       }
       return;
     }

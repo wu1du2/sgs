@@ -463,7 +463,13 @@ export const CardGame = {
             addToDiscardPile(G, card);
             
             // Handle Card Effects for Regular Cards
-            if (card.name === '五谷丰登') {
+            if (card.name === '桃') {
+               const player = G.players[playerID];
+               if (player.hp < player.hpMax) {
+                 player.hp = Math.min(player.hp + 1, player.hpMax);
+                 G.actionLog.push(`${playerName} used Peach, HP +1`);
+               }
+            } else if (card.name === '五谷丰登') {
                G.harvestCountSelect = {
                  active: true,
                  playerID: playerID
@@ -685,21 +691,16 @@ export const CardGame = {
       const sourcePlayerName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${playerID}`;
       const targetPlayerName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetPlayerID}`;
 
-      // Process each selected item
-      selectedItems.forEach(item => {
-        let card = null;
-        
-        if (item.type === 'hand') {
-          // For hand cards, we need to be careful about indices shifting if we remove multiple.
-          // But usually Dismantlement/Snatch is 1 card.
-          // If multiple, we should sort indices descending.
-          // But here we iterate.
-          // Actually, if we remove one, the index of others might change.
-          // But let's assume single selection for now as per 'singleSelection' prop in Board.jsx.
-          // Board.jsx sets singleSelection={['过河拆桥', '顺手牵羊'].includes(...)}
-          // So it is single selection.
-          
-          card = targetHand[item.index];
+      // Separate items by type
+      const handItems = selectedItems.filter(item => item.type === 'hand');
+      const otherItems = selectedItems.filter(item => item.type !== 'hand');
+
+      // Sort hand items by index descending to avoid shifting issues
+      handItems.sort((a, b) => b.index - a.index);
+
+      // Process hand items
+      handItems.forEach(item => {
+          const card = targetHand[item.index];
           if (card) {
              if (actionType === 'discard') {
                targetHand.splice(item.index, 1);
@@ -711,7 +712,13 @@ export const CardGame = {
                G.actionLog.push(`${sourcePlayerName} stole a card from ${targetPlayerName}'s hand`);
              }
           }
-        } else if (item.type === 'equip') {
+      });
+
+      // Process other items (equip, judge)
+      otherItems.forEach(item => {
+        let card = null;
+        
+        if (item.type === 'equip') {
           card = targetPlayer.equipments[item.slot];
           if (card) {
             targetPlayer.equipments[item.slot] = null;
@@ -748,7 +755,7 @@ export const CardGame = {
       };
       
       // If there was a pending card (the Snatch/Dismantle itself), discard it now
-      if (pendingCard) {
+      if (pendingCard && !['椎锋', '冲坚'].includes(pendingCard.name)) {
         addToDiscardPile(G, pendingCard);
       }
     },
@@ -886,6 +893,12 @@ export const CardGame = {
     },
     useChouJue: ({ G, playerID }) => {
       wenyangSkill.useChouJue({ G, playerID }, drawCards);
+    },
+    useZhuiFeng: ({ G, playerID }, targetID) => {
+      wenyangSkill.useZhuiFeng({ G, playerID }, targetID);
+    },
+    useChongJian: ({ G, playerID }, targetID) => {
+      wenyangSkill.useChongJian({ G, playerID }, targetID);
     },
 
     useSkill: ({ G, playerID }, skillName) => {
