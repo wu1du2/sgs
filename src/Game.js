@@ -398,9 +398,6 @@ export const CardGame = {
         hand.splice(index, 1);
       });
       
-      // Add to discard pile
-      addToDiscardPile(G, cardsPlayed);
-      
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
       const cardNames = cardsPlayed.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
       
@@ -411,34 +408,87 @@ export const CardGame = {
       }
       G.actionLog.push(logEntry);
       
-      // Handle Card Effects
-      if (cardsPlayed.length === 1) {
-        const card = cardsPlayed[0];
-        if (card.name === '五谷丰登') {
-           G.harvestCountSelect = {
-             active: true,
-             playerID: playerID
-           };
-           G.actionLog.push(`${playerName} played Harvest (五谷丰登), waiting for count selection`);
-        } else if (['顺手牵羊', '过河拆桥', '火攻', '借刀杀人'].includes(card.name)) {
-           if (targetIds && targetIds.length === 1) {
-              let actionType = '';
-              if (card.name === '顺手牵羊') actionType = 'steal';
-              else if (card.name === '过河拆桥') actionType = 'discard';
-              else if (card.name === '火攻') actionType = 'fire_attack';
-              else if (card.name === '借刀杀人') actionType = 'collateral';
-
-              G.pendingEffect = {
-                 active: true,
-                 sourcePlayerID: playerID,
-                 targetPlayerID: targetIds[0],
-                 actionType: actionType,
-                 pendingCard: card
-              };
-              G.actionLog.push(`${playerName} played ${card.name}, waiting for effect confirmation`);
-           }
+      // Iterate through played cards to handle destination (Discard vs Equip vs Judge)
+      cardsPlayed.forEach(card => {
+        // 1. Equipment
+        if (['武器', '防具', '加一', '减一'].includes(card.type)) {
+            const player = G.players[playerID];
+            let slot = '';
+            if (card.type === '武器') slot = 'weapon';
+            else if (card.type === '防具') slot = 'armor';
+            else if (card.type === '加一') slot = 'plusOne';
+            else if (card.type === '减一') slot = 'minusOne';
+            
+            const oldCard = player.equipments[slot];
+            if (oldCard) {
+                addToDiscardPile(G, oldCard);
+            }
+            player.equipments[slot] = card;
+            G.actionLog.push(`${playerName} equipped ${card.name}`);
+        } 
+        // 2. Delayed Scrolls (Judgments)
+        else if (['乐', '兵', '电'].includes(card.type)) {
+            let targetID = null;
+            let judgeSlot = '';
+            
+            if (card.type === '电') { // Lightning
+                targetID = playerID; // Lightning is put on self
+                judgeSlot = 'dian';
+            } else if (card.type === '乐') { // Indulgence
+                targetID = targetIds && targetIds.length > 0 ? targetIds[0] : null;
+                judgeSlot = 'le';
+            } else if (card.type === '兵') { // Supply Shortage
+                targetID = targetIds && targetIds.length > 0 ? targetIds[0] : null;
+                judgeSlot = 'bing';
+            }
+            
+            if (targetID !== null) {
+                const targetPlayer = G.players[targetID];
+                // Check if slot is empty
+                if (targetPlayer.judges[judgeSlot]) {
+                    addToDiscardPile(G, card);
+                    G.actionLog.push(`Cannot play ${card.name}, judgment slot occupied. Card discarded.`);
+                } else {
+                    targetPlayer.judges[judgeSlot] = card;
+                    const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetID}`;
+                    G.actionLog.push(`${playerName} placed ${card.name} on ${targetName}'s judgment area`);
+                }
+            } else {
+                addToDiscardPile(G, card);
+                G.actionLog.push(`No target for ${card.name}, discarded.`);
+            }
         }
-      }
+        // 3. Regular Cards (Basic, Scroll)
+        else {
+            addToDiscardPile(G, card);
+            
+            // Handle Card Effects for Regular Cards
+            if (card.name === '五谷丰登') {
+               G.harvestCountSelect = {
+                 active: true,
+                 playerID: playerID
+               };
+               G.actionLog.push(`${playerName} played Harvest (五谷丰登), waiting for count selection`);
+            } else if (['顺手牵羊', '过河拆桥', '火攻', '借刀杀人'].includes(card.name)) {
+               if (targetIds && targetIds.length === 1) {
+                  let actionType = '';
+                  if (card.name === '顺手牵羊') actionType = 'steal';
+                  else if (card.name === '过河拆桥') actionType = 'discard';
+                  else if (card.name === '火攻') actionType = 'fire_attack';
+                  else if (card.name === '借刀杀人') actionType = 'collateral';
+
+                  G.pendingEffect = {
+                     active: true,
+                     sourcePlayerID: playerID,
+                     targetPlayerID: targetIds[0],
+                     actionType: actionType,
+                     pendingCard: card
+                  };
+                  G.actionLog.push(`${playerName} played ${card.name}, waiting for effect confirmation`);
+               }
+            }
+        }
+      });
     },
 
     selectHarvestCount: ({ G, playerID }, count) => {
