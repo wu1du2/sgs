@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Card } from './Card';
 import { SGS_CARDS } from './sgs_data';
 import { calculateDistance } from './Game';
+import { caochunSkill } from './skills/caochun';
 
 // Helper for suit colors
 const getSuitColor = (suit) => {
@@ -1553,6 +1554,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const [activeSkill, setActiveSkill] = React.useState(null);
+  const [shanJiaState, setShanJiaState] = React.useState(3);
 
   const onModifyHP = (targetId, amount) => {
     moves.modifyHP(targetId, amount);
@@ -1596,6 +1598,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     // This caused a bug where '却敌' and '仇决' were not matching due to trailing spaces/invisible chars
     const skillName = rawSkillName.trim();
     console.log('onSkillClick called with:', skillName, 'length:', skillName.length);
+
+    if (skillName.startsWith(caochunSkill.shanjia.name)) {
+      setShanJiaState(prev => caochunSkill.shanjia.cycleState(prev));
+      return;
+    }
+
     if (skillName === '破军') {
       if (activeSkill === '破军') {
         setActiveSkill(null); // Toggle off
@@ -1651,6 +1659,27 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const role = player?.role || 'neutral';
     const equipments = player?.equipments || {};
     const judges = player?.judges || {};
+
+    let displaySkills = general ? general.skills : ["Strike", "Dodge"];
+    if (isMe && general) {
+      if (general.skills && general.skills.includes(caochunSkill.shanjia.name)) {
+        displaySkills = general.skills.map(s => {
+          if (s === caochunSkill.shanjia.name) {
+            return caochunSkill.shanjia.getDisplayName(shanJiaState);
+          }
+          return s;
+        });
+      }
+      
+      if (general.name === '骆统') {
+        displaySkills = general.skills.map(s => {
+          if (s.startsWith('勤政')) {
+            return `勤政${player.qz_cnt || 0}`;
+          }
+          return s;
+        });
+      }
+    }
 
     // Target Selection Logic
     const isSelectable = selectedCardIndices.length > 0;
@@ -1914,7 +1943,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               name={general ? general.name : "My Hero"} 
               hp={player?.hp ?? (general ? general.hp : 4)}
               hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
-              skills={general ? general.skills : ["Strike", "Dodge"]}
+              skills={displaySkills}
               portrait={general ? general.portrait : null}
               isMe={true} 
               role={role}

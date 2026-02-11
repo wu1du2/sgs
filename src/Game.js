@@ -1,10 +1,12 @@
 import { SGS_CARDS } from './sgs_data.js';
 import generalsData from '../configs/generals.json' with { type: "json" };
 
+import { luotongSkill } from './skills/luotong.js';
+
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['界徐盛', '文鸯'];
+const TESTING_GENERAL_LIST = ['曹纯', '骆统'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -33,6 +35,7 @@ const createPlayerState = () => ({
   luckCardCount: 10,
   luckCardConfirmed: false,
   is_linked: false,
+  qz_cnt: 0, // Qin Zheng counter for Luo Tong
   ...createEmptyZones()
 });
 
@@ -337,6 +340,15 @@ export const CardGame = {
         hand.splice(cardIndex, 1);
       }
 
+      // Luo Tong Skill: Qin Zheng
+      if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
+          G.players[playerID].qz_cnt += 1;
+          const logs = luotongSkill.qinzheng.trigger(G, playerID);
+          if (logs && logs.length > 0) {
+              G.actionLog.push(...logs);
+          }
+      }
+
       // Add to target's judgment area
       // type should be 'bing', 'le', or 'dian'
       if (G.players[targetPlayerID]) {
@@ -407,6 +419,15 @@ export const CardGame = {
         logEntry += ` targeting ${targetNames}`;
       }
       G.actionLog.push(logEntry);
+
+      // Luo Tong Skill: Qin Zheng
+      if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
+          G.players[playerID].qz_cnt += 1;
+          const logs = luotongSkill.qinzheng.trigger(G, playerID);
+          if (logs && logs.length > 0) {
+              G.actionLog.push(...logs);
+          }
+      }
       
       // Iterate through played cards to handle destination (Discard vs Equip vs Judge)
       cardsPlayed.forEach(card => {
@@ -521,6 +542,15 @@ export const CardGame = {
       
       // Remove from hand
       hand.splice(cardIndex, 1);
+
+      // Luo Tong Skill: Qin Zheng
+      if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
+          G.players[playerID].qz_cnt += 1;
+          const logs = luotongSkill.qinzheng.trigger(G, playerID);
+          if (logs && logs.length > 0) {
+              G.actionLog.push(...logs);
+          }
+      }
       
       // Equip
       const player = G.players[playerID];
