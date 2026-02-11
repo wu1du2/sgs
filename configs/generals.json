@@ -531,7 +531,7 @@
     "portrait": "https://patchwiki.biligame.com/images/msgs/8/8a/1pmauycb9hsyd6q15h3o0m8xadsadxf.jpg",
     "skills_description": [
       "自书:①其他角色的结束阶段结束时，你将本回合获得的牌置入弃牌堆；",
-      "应援:当你于回合内使用牌结算结束置入弃牌堆时，你可以将之交给一名其他角色（每种牌名的牌每回合限一次）。重做"
+      "应援:当你于回合内使用牌结算结束置入弃牌堆时，你可以将之交给一名其他角色（每种牌名的牌每回合限一次）。"
     ],
     "enable": true
   },

@@ -175,6 +175,136 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
   );
 };
 
+const KangkaiCardModal = ({ hand, equipments, onConfirm, onCancel }) => {
+  const [selected, setSelected] = React.useState(null);
+
+  const selectHand = (index) => {
+    setSelected({ type: 'hand', index });
+  };
+
+  const selectEquip = (slot) => {
+    setSelected({ type: 'equip', slot });
+  };
+
+  const isSelected = (type, value) => {
+    if (!selected) return false;
+    if (type !== selected.type) return false;
+    return type === 'hand' ? selected.index === value : selected.slot === value;
+  };
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        maxHeight: '80%',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {hand.map((card, index) => (
+            <div
+              key={`hand-${index}`}
+              onClick={() => selectHand(index)}
+              style={{
+                width: '80px',
+                height: '120px',
+                backgroundColor: '#ecf0f1',
+                borderRadius: '6px',
+                border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #bdc3c7',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                color: getSuitColor(card.suit),
+                transform: isSelected('hand', index) ? 'scale(1.08)' : 'scale(1)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
+                {card.suit}
+              </div>
+              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
+                {card.rank}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
+                {card.name}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {Object.entries(equipments).map(([slot, card]) => {
+            if (!card) return null;
+            return (
+              <div
+                key={`equip-${slot}`}
+                onClick={() => selectEquip(slot)}
+                style={{
+                  padding: '10px',
+                  backgroundColor: isSelected('equip', slot) ? 'rgba(0, 255, 255, 0.3)' : '#444',
+                  border: isSelected('equip', slot) ? '3px solid #00ffff' : '1px solid #aaa',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  color: 'white'
+                }}
+              >
+                {card.name} ({slot})
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={() => onConfirm(selected)}
+            disabled={!selected}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: selected ? '#4CAF50' : '#555',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: selected ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const FireAttackShowCardModal = ({ hand, onConfirm, onCancel }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
@@ -2117,6 +2247,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (activeSkill === '慷忾') {
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
+      } else {
+        setSelectedTargetIds([targetId]);
+      }
+      return;
+    }
+
     if (activeSkill === '破军') {
       if (targetId === playerID) {
         alert("不能选择自己");
@@ -2416,6 +2555,19 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       } else {
         setActiveSkill('义争');
         setSelectedTargetIds([]);
+      }
+      return;
+    }
+
+    if (skillName === '慷忾') {
+      if (activeSkill === '慷忾') {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+        moves.cancelKangkai();
+      } else {
+        setActiveSkill('慷忾');
+        setSelectedTargetIds([]);
+        moves.activateKangkai();
       }
       return;
     }
@@ -3196,8 +3348,34 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               确定
             </button>
           )}
+          {activeSkill === '慷忾' && selectedTargetIds.length > 0 && (
+            <button 
+              onClick={() => {
+                if (selectedTargetIds.length !== 1) {
+                  alert("请选择一名目标");
+                  return;
+                }
+                moves.confirmKangkaiTarget(selectedTargetIds[0]);
+                setActiveSkill(null);
+                setSelectedTargetIds([]);
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          )}
           <button 
             onClick={() => {
+              if (activeSkill === '慷忾') {
+                moves.cancelKangkai();
+              }
               setActiveSkill(null);
               setSelectedTargetIds([]);
             }}
@@ -3403,6 +3581,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => moves.cancelPoJunSelection()}
           title="Po Jun: Select cards to move"
           singleSelection={false}
+        />
+      )}
+
+      {G.kangkaiSelect && G.kangkaiSelect.active && G.kangkaiSelect.stage === 'card_selection' && G.kangkaiSelect.sourcePlayerID === playerID && (
+        <KangkaiCardModal
+          hand={G.hands[playerID]}
+          equipments={G.players[playerID].equipments}
+          onConfirm={(selected) => moves.confirmKangkaiCard(selected)}
+          onCancel={() => moves.cancelKangkai()}
         />
       )}
 

@@ -8,11 +8,12 @@ import { jiexushengSkill } from './skills/jiexusheng.js';
 import { wenyangSkill } from './skills/wenyang.js';
 import { shiweiyanSkill } from './skills/shiweiyan.js';
 import { yangbiaoSkill } from './skills/yangbiao.js';
+import { caoangSkill } from './skills/caoang.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['界钟会', '神甘宁', '杨彪'];
+const TESTING_GENERAL_LIST = ['界钟会', '神甘宁', '杨彪', '曹昂'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -249,6 +250,12 @@ export const CardGame = {
       sourcePlayerID: null,
       targetPlayerID: null,
       stage: null, // 'target_selection'
+    },
+    kangkaiSelect: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      stage: null,
     },
     jiezhonghuiQuanJiSelect: {
       active: false,
@@ -906,6 +913,18 @@ export const CardGame = {
     },
     useZhaohan: ({ G, playerID }) => {
         yangbiaoSkill.zhaohan.action({ G, playerID });
+    },
+    activateKangkai: ({ G, playerID }) => {
+        caoangSkill.kangkai.activate({ G, playerID });
+    },
+    confirmKangkaiTarget: ({ G, playerID }, targetID) => {
+        caoangSkill.kangkai.confirmTarget({ G, playerID }, targetID);
+    },
+    confirmKangkaiCard: ({ G, playerID }, selection) => {
+        caoangSkill.kangkai.confirmCard({ G, playerID }, selection);
+    },
+    cancelKangkai: ({ G, playerID }) => {
+        caoangSkill.kangkai.cancel({ G, playerID });
     },
 
     // Cao Chun Skills
