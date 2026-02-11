@@ -2976,6 +2976,33 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           判
         </div>
 
+        {/* Shuffle Button - Between Judge and Discard */}
+        <div 
+          onClick={() => moves.shuffleDeck()}
+          style={{
+            position: 'absolute',
+            top: '0px',
+            left: '-40px',
+            width: '28px',
+            height: '28px',
+            backgroundColor: '#e67e22',
+            borderRadius: '4px',
+            border: '2px solid #d35400',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            zIndex: 10,
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '12px'
+          }}
+          title="洗牌"
+        >
+          洗
+        </div>
+
         {/* Discard Pile Button - Left of Deck */}
         <div 
           onClick={() => setShowDiscardPile(!showDiscardPile)}

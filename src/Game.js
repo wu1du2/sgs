@@ -567,6 +567,13 @@ export const CardGame = {
       G.actionLog.push(`${playerName} discarded ${cardNames}`);
     },
 
+    shuffleDeck: ({ G }) => {
+      const combined = [...G.deck, ...G.discardPile];
+      G.deck = shuffle(combined);
+      G.discardPile = [];
+      G.actionLog.push(`Deck shuffled (merged with discard pile). Total cards: ${G.deck.length}`);
+    },
+
     selectHarvestCount: ({ G, playerID }, count) => {
       if (!G.harvestCountSelect.active || G.harvestCountSelect.playerID !== playerID) return;
       
