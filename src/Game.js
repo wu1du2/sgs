@@ -325,12 +325,19 @@ export const CardGame = {
 
       G.deck = shuffle(G.deck);
 
-      const cardIndex = G.deck.findIndex(c => targetType.includes(c.type));
+      const delayedScrolls = ['乐不思蜀', '兵粮寸断', '闪电'];
+      const cardIndex = G.deck.findIndex(c => {
+        if (!targetType.includes(c.type)) return false;
+        if (option !== 'scroll') return true;
+        return !delayedScrolls.includes(c.name);
+      });
       
       if (cardIndex !== -1) {
         const card = G.deck.splice(cardIndex, 1)[0];
         G.hands[playerID].push(card);
-        G.actionLog.push(`Player ${playerID} 获得了 ${card.name}`);
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        const typeName = option === 'basic' ? '基本' : option === 'equip' ? '装备' : '锦囊';
+        G.actionLog.push(`${playerName} 获得了一张${typeName}牌`);
       } else {
         G.actionLog.push(emptyMessage);
       }
