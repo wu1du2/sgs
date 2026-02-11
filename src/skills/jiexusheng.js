@@ -26,10 +26,15 @@ export const jiexushengSkill = {
         action: ({ G, ctx }, playerID, targetID, selectedCards = { hand: [], equipments: [] }) => {
             const target = G.players[targetID];
             const targetHand = G.hands[targetID];
+            const source = G.players[playerID];
             
-            // Initialize pojunCards array if it doesn't exist
-            if (!target.pojunCards) {
-                target.pojunCards = [];
+            // Initialize pojun object on source player if it doesn't exist
+            if (!source.pojun) {
+                source.pojun = {};
+            }
+            // Initialize array for this target if it doesn't exist
+            if (!source.pojun[targetID]) {
+                source.pojun[targetID] = [];
             }
 
             const cardsToMove = [];
@@ -66,6 +71,9 @@ export const jiexushengSkill = {
                 });
             }
 
+            // Add cards to source's pojun area for this target
+            source.pojun[targetID].push(...cardsToMove);
+
             console.log(`Player ${playerID} used Po Jun on Player ${targetID}. Moved ${cardsToMove.length} cards.`);
             
             return cardsToMove;
@@ -73,10 +81,28 @@ export const jiexushengSkill = {
         
         /**
          * Helper to return cards at end of turn
-         * Should be called at turn end
+         * Should be called at turn end or manually
          */
-        returnCards: ({ G }, targetID) => {
-            // Logic moved to Game.js to handle storage structure
+        returnCards: ({ G, playerID }, targetID) => {
+            const source = G.players[playerID];
+            if (!source || !source.pojun || !source.pojun[targetID]) return;
+
+            const cards = source.pojun[targetID];
+            if (cards.length === 0) return;
+
+            const targetHand = G.hands[targetID];
+            
+            // Return all cards to hand
+            cards.forEach(card => {
+                // Remove extra properties
+                const { originalType, originalSlot, ...cleanCard } = card;
+                targetHand.push(cleanCard);
+            });
+
+            // Clear cards for this target
+            delete source.pojun[targetID];
+            
+            G.actionLog.push(`Player ${targetID} retrieved cards from Po Jun.`);
         }
     }
 };

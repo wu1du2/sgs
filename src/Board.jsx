@@ -4,6 +4,7 @@ import { Card } from './Card';
 import { SGS_CARDS } from './sgs_data';
 import { calculateDistance } from './Game';
 import { caochunSkill } from './skills/caochun';
+import { yangbiaoSkill } from './skills/yangbiao';
 
 // Helper for suit colors
 const getSuitColor = (suit) => {
@@ -2114,6 +2115,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName.startsWith(caochunSkill.shanjia.name)) {
       setShanJiaState(prev => caochunSkill.shanjia.cycleState(prev));
+      setActiveSkill('缮甲');
+      return;
+    }
+
+    if (skillName.startsWith('昭汉')) {
+      moves.useZhaohan();
       return;
     }
 
@@ -2228,6 +2235,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         displaySkills = general.skills.map(s => {
           if (s.startsWith('勤政')) {
             return `勤政${player.qz_cnt || 0}`;
+          }
+          return s;
+        });
+      }
+
+      if (general.name === '杨彪') {
+        displaySkills = general.skills.map(s => {
+          if (s.startsWith('昭汉')) {
+            return yangbiaoSkill.zhaohan.getDisplayName(player.zhaohanCount);
           }
           return s;
         });
@@ -2825,6 +2841,24 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           gap: '10px'
         }}>
           <span>请选择 {activeSkill} 的目标</span>
+          {activeSkill === '缮甲' && (
+            <button 
+              onClick={() => {
+                moves.confirmShanjia(shanJiaState);
+                setActiveSkill(null);
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定 (弃{shanJiaState}张)
+            </button>
+          )}
           {activeSkill === '破军' && selectedTargetIds.length > 0 && (
             <button 
               onClick={() => {
