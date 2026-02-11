@@ -5,6 +5,7 @@ import { SGS_CARDS } from './sgs_data';
 import { calculateDistance } from './Game';
 import { caochunSkill } from './skills/caochun';
 import { yangbiaoSkill } from './skills/yangbiao';
+import { shenluxunSkill } from './skills/shenluxun';
 
 // Helper for suit colors
 const getSuitColor = (suit) => {
@@ -2548,6 +2549,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (skillName.startsWith('军略')) {
+      moves.shenluxunJunlueAdd();
+      return;
+    }
+
     if (skillName === '义争') {
       if (activeSkill === '义争') {
         setActiveSkill(null);
@@ -2574,6 +2580,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName === '让节') {
       moves.useRangjie();
+      return;
+    }
+
+    if (skillName === '摧克') {
+      moves.shenluxunResetJunlue();
+      return;
+    }
+
+    if (skillName === '绽火') {
+      moves.shenluxunResetJunlue();
       return;
     }
 
@@ -2697,6 +2713,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         displaySkills = general.skills.map(s => {
           if (s.startsWith('昭汉')) {
             return yangbiaoSkill.zhaohan.getDisplayName(player.zhaohanCount);
+          }
+          return s;
+        });
+      }
+
+      if (general.name === '神陆逊') {
+        displaySkills = general.skills.map(s => {
+          if (s.startsWith('军略')) {
+            return shenluxunSkill.junlue.getDisplayName(player.junlueCount);
           }
           return s;
         });

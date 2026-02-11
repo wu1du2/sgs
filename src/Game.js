@@ -9,11 +9,12 @@ import { wenyangSkill } from './skills/wenyang.js';
 import { shiweiyanSkill } from './skills/shiweiyan.js';
 import { yangbiaoSkill } from './skills/yangbiao.js';
 import { caoangSkill } from './skills/caoang.js';
+import { shenluxunSkill } from './skills/shenluxun.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['界钟会', '神甘宁', '杨彪', '曹昂'];
+const TESTING_GENERAL_LIST = ['曹昂', '神陆逊'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -51,6 +52,7 @@ const createPlayerState = () => ({
   luckCardConfirmed: false,
   is_linked: false,
   qz_cnt: 0, // Qin Zheng counter for Luo Tong
+  junlueCount: 0,
   quan: [], // For Jie Zhonghui
   hp: 4,
   hpMax: 4,
@@ -920,6 +922,12 @@ export const CardGame = {
     },
     useZhaohan: ({ G, playerID }) => {
         yangbiaoSkill.zhaohan.action({ G, playerID });
+    },
+    shenluxunJunlueAdd: ({ G, playerID }) => {
+        shenluxunSkill.junlue.add({ G, playerID });
+    },
+    shenluxunResetJunlue: ({ G, playerID }) => {
+        shenluxunSkill.junlue.reset({ G, playerID });
     },
     activateKangkai: ({ G, playerID }) => {
         caoangSkill.kangkai.activate({ G, playerID });
