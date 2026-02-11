@@ -12,7 +12,7 @@ import { yangbiaoSkill } from './skills/yangbiao.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['杨彪', '界徐盛', '曹纯'];
+const TESTING_GENERAL_LIST = ['界钟会', '神甘宁'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -548,6 +548,25 @@ export const CardGame = {
       });
     },
 
+    discardCards: ({ G, playerID }, cardIndices) => {
+      const hand = G.hands[playerID];
+      const cardsDiscarded = [];
+      
+      // Remove cards from hand
+      // Sort indices descending to remove correctly
+      [...cardIndices].sort((a, b) => b - a).forEach(index => {
+        cardsDiscarded.push(hand[index]);
+        hand.splice(index, 1);
+      });
+      
+      // Add to discard pile
+      addToDiscardPile(G, cardsDiscarded);
+      
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const cardNames = cardsDiscarded.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
+      G.actionLog.push(`${playerName} discarded ${cardNames}`);
+    },
+
     selectHarvestCount: ({ G, playerID }, count) => {
       if (!G.harvestCountSelect.active || G.harvestCountSelect.playerID !== playerID) return;
       
@@ -564,6 +583,35 @@ export const CardGame = {
       
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
       G.actionLog.push(`${playerName} selected ${count} cards for Harvest`);
+    },
+
+    pickHarvestCard: ({ G, playerID }, index) => {
+      if (!G.harvestCards || !G.harvestCards[index]) return;
+      
+      const card = G.harvestCards[index];
+      
+      // Add to player's hand
+      G.hands[playerID].push(card);
+      
+      // Remove from harvest pool
+      G.harvestCards.splice(index, 1);
+      
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} picked ${card.suit}${card.rank} ${card.name} from Harvest`);
+      
+      // If no cards left, clear harvest state
+      if (G.harvestCards.length === 0) {
+        G.harvestCards = [];
+      }
+    },
+    
+    endHarvest: ({ G }) => {
+       // Discard remaining cards
+       if (G.harvestCards.length > 0) {
+           addToDiscardPile(G, G.harvestCards);
+           G.actionLog.push(`${G.harvestCards.length} remaining Harvest cards discarded`);
+       }
+       G.harvestCards = [];
     },
 
     equipCard: ({ G, playerID }, cardIndex) => {
@@ -792,9 +840,10 @@ export const CardGame = {
 
     // Generic Card Selection (used by Wen Yang, etc.)
     confirm_select_card: ({ G, playerID }, selected) => {
-        if (!G.selectCard || !G.selectCard.active || G.selectCard.playerID !== playerID) return;
+        if (!G.selectCard || !G.selectCard.active || G.selectCard.sourcePlayerID !== playerID) return;
 
-        const { actionType, targetID } = G.selectCard;
+        const { actionType, targetPlayerID } = G.selectCard;
+        const targetID = targetPlayerID; // Alias for compatibility
         
         if (actionType === 'steal') {
             // Handle steal action (like Shun Shou Qian Yang)
@@ -829,15 +878,130 @@ export const CardGame = {
                     G.actionLog.push(`Player ${playerID} stole a card from Player ${targetID}`);
                 }
             }
+        } else if (actionType === 'discard') {
+            // Handle discard action (like Guo He Chai Qiao)
+            if (selected.length > 0) {
+                const item = selected[0];
+                const targetPlayer = G.players[targetID];
+                const targetHand = G.hands[targetID];
+                let card = null;
+
+                if (item.type === 'hand') {
+                    // Discard from hand
+                    if (item.index >= 0 && item.index < targetHand.length) {
+                        card = targetHand.splice(item.index, 1)[0];
+                    }
+                } else if (item.type === 'equip') {
+                    // Discard equipment
+                    if (targetPlayer.equipments[item.slot]) {
+                        card = targetPlayer.equipments[item.slot];
+                        targetPlayer.equipments[item.slot] = null;
+                    }
+                } else if (item.type === 'judge') {
+                    // Discard judgment
+                    if (targetPlayer.judges[item.slot]) {
+                        card = targetPlayer.judges[item.slot];
+                        delete targetPlayer.judges[item.slot];
+                    }
+                }
+
+                if (card) {
+                    addToDiscardPile(G, card);
+                    G.actionLog.push(`Player ${playerID} discarded a card from Player ${targetID}`);
+                }
+            }
+        } else if (actionType === 'collateral') {
+            // Handle Collateral (借刀杀人) - Obtain the selected card
+            if (selected.length > 0) {
+                const item = selected[0];
+                const targetPlayer = G.players[targetID];
+                const targetHand = G.hands[targetID];
+                let card = null;
+
+                if (item.type === 'hand') {
+                    // Steal from hand (Should usually be weapon for collateral, but allowing flexible selection)
+                    if (item.index >= 0 && item.index < targetHand.length) {
+                        card = targetHand.splice(item.index, 1)[0];
+                    }
+                } else if (item.type === 'equip') {
+                    // Steal equipment (Usually weapon)
+                    if (targetPlayer.equipments[item.slot]) {
+                        card = targetPlayer.equipments[item.slot];
+                        targetPlayer.equipments[item.slot] = null;
+                    }
+                }
+
+                if (card) {
+                    // Add to current player's hand
+                    G.hands[playerID].push(card);
+                    G.actionLog.push(`Player ${playerID} obtained ${card.name} from Player ${targetID} via Collateral`);
+                }
+            }
         }
 
         // Reset selection state
-        G.selectCard = { active: false, playerID: null, targetID: null, actionType: null };
+        G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
     },
 
     cancel_select_card: ({ G, playerID }) => {
-        if (!G.selectCard || !G.selectCard.active || G.selectCard.playerID !== playerID) return;
-        G.selectCard = { active: false, playerID: null, targetID: null, actionType: null };
+        if (!G.selectCard || !G.selectCard.active || G.selectCard.sourcePlayerID !== playerID) return;
+        G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
+    },
+
+    confirmEffect: ({ G, playerID }) => {
+        if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
+
+        const { actionType, targetPlayerID, pendingCard } = G.pendingEffect;
+        
+        if (actionType === 'steal' || actionType === 'discard' || actionType === 'collateral') {
+             G.selectCard = {
+                 active: true,
+                 sourcePlayerID: playerID,
+                 targetPlayerID: targetPlayerID,
+                 actionType: actionType,
+                 pendingCard: pendingCard
+             };
+        } else if (actionType === 'fire_attack') {
+             G.fireAttackShowCard = {
+                 active: true,
+                 sourcePlayerID: playerID,
+                 targetPlayerID: targetPlayerID
+             };
+        } else {
+             G.actionLog.push(`Player ${playerID} confirmed effect for ${pendingCard.name} (Logic not fully implemented)`);
+        }
+        
+        G.pendingEffect = null;
+    },
+
+    confirmFireAttackShowCard: ({ G, playerID }, index) => {
+        if (!G.fireAttackShowCard || !G.fireAttackShowCard.active || G.fireAttackShowCard.targetPlayerID !== playerID) return;
+        
+        const hand = G.hands[playerID];
+        if (index < 0 || index >= hand.length) return;
+        
+        const card = hand[index];
+        const sourceID = G.fireAttackShowCard.sourcePlayerID;
+        const targetID = playerID;
+        
+        const sourceName = G.players[sourceID].general ? G.players[sourceID].general.name : `Player ${sourceID}`;
+        const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
+        
+        G.actionLog.push(`${targetName} showed ${card.suit}${card.rank} ${card.name} to ${sourceName} for Fire Attack`);
+        
+        G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
+    },
+
+    cancelFireAttackShowCard: ({ G, playerID }) => {
+         if (!G.fireAttackShowCard || !G.fireAttackShowCard.active || G.fireAttackShowCard.targetPlayerID !== playerID) return;
+         G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
+    },
+
+    cancelEffect: ({ G, playerID }) => {
+        if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
+        
+        G.actionLog.push(`Player ${playerID} cancelled/disabled effect for ${G.pendingEffect.pendingCard.name}`);
+        G.pendingEffect = null;
     },
 
     changeGeneral: ({ G, playerID }, generalId) => {

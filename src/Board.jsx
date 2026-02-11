@@ -2115,7 +2115,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName.startsWith(caochunSkill.shanjia.name)) {
       setShanJiaState(prev => caochunSkill.shanjia.cycleState(prev));
-      setActiveSkill('缮甲');
+      // Removed setActiveSkill('缮甲') to prevent target selection prompt
       return;
     }
 
@@ -3049,7 +3049,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onConfirm={(selected) => moves.confirm_select_card(selected)}
           onCancel={() => moves.cancel_select_card()}
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
-          singleSelection={['过河拆桥', '顺手牵羊'].includes(G.selectCard.pendingCard?.name)}
+          singleSelection={['过河拆桥', '顺手牵羊', '借刀杀人'].includes(G.selectCard.pendingCard?.name)}
         />
       )}
 
