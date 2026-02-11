@@ -266,6 +266,12 @@ export const CardGame = {
       targetCard: null,
       skillName: null,
     },
+    rangjieSelect: {
+      active: false,
+      playerID: null,
+      stage: null,
+    },
+    rangjieTempCard: null,
   }),
 
   turn: {
@@ -289,6 +295,79 @@ export const CardGame = {
         G.actionLog.push(`${playerName} 摸牌`);
       }
     },
+    rangjieChooseOption: ({ G, playerID }, option) => {
+      if (option === 'cancel') {
+        G.rangjieSelect.active = false;
+        G.rangjieSelect.stage = null;
+        return;
+      }
+
+      if (option === 'move') {
+        G.rangjieSelect.stage = 'fetch';
+        return;
+      }
+
+      let targetType = [];
+      let emptyMessage = '';
+      if (option === 'scroll') targetType = ['锦囊'];
+      if (option === 'basic') targetType = ['基本'];
+      if (option === 'equip') targetType = ['武器', '防具', '加一', '减一'];
+      if (option === 'scroll') emptyMessage = '牌堆没有锦囊牌';
+      if (option === 'basic') emptyMessage = '牌堆没有基本牌';
+      if (option === 'equip') emptyMessage = '牌堆没有装备牌';
+
+      G.deck = shuffle(G.deck);
+
+      const cardIndex = G.deck.findIndex(c => targetType.includes(c.type));
+      
+      if (cardIndex !== -1) {
+        const card = G.deck.splice(cardIndex, 1)[0];
+        G.hands[playerID].push(card);
+        G.actionLog.push(`Player ${playerID} 获得了 ${card.name}`);
+      } else {
+        G.actionLog.push(emptyMessage);
+      }
+      
+      G.rangjieSelect.active = false;
+      G.rangjieSelect.stage = null;
+    },
+
+    rangjieFetchCard: ({ G }, { targetPlayerID, zone, slot }) => {
+        const targetPlayer = G.players[targetPlayerID];
+        let card = null;
+
+        if (zone === 'equip') {
+            card = targetPlayer.equipments[slot];
+            targetPlayer.equipments[slot] = null;
+        } else if (zone === 'judge') {
+            card = targetPlayer.judges[slot];
+            targetPlayer.judges[slot] = null;
+        }
+
+        if (card) {
+            G.rangjieTempCard = card;
+            G.rangjieSelect.stage = 'put';
+        }
+    },
+    
+    rangjiePutCard: ({ G }, { targetPlayerID, zone, slot }) => {
+        const targetPlayer = G.players[targetPlayerID];
+        const card = G.rangjieTempCard;
+        
+        if (zone === 'equip') {
+             targetPlayer.equipments[slot] = card;
+        } else if (zone === 'judge') {
+             targetPlayer.judges[slot] = card;
+        }
+        
+        G.rangjieTempCard = null;
+        G.rangjieSelect.active = false;
+        G.rangjieSelect.stage = null;
+    },
+    useRangjie: ({ G, playerID }) => {
+        yangbiaoSkill.rangjie.action({ G, playerID });
+    },
+    
     useLuckCard: ({ G, playerID }) => {
       const player = G.players[playerID];
       if (player.luckCardCount > 0 && !player.luckCardConfirmed) {

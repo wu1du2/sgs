@@ -66,5 +66,15 @@ export const yangbiaoSkill = {
                 return G.players[pid].hp <= myHP;
             });
         }
+    },
+
+    rangjie: {
+        name: "让节",
+        description: "点击后，弹出四个选项：拿锦囊，拿基本，拿装备，移动牌，（取消）。",
+        action: ({ G, playerID }) => {
+            G.rangjieSelect.active = true;
+            G.rangjieSelect.stage = 'menu';
+            G.rangjieSelect.playerID = playerID;
+        }
     }
 };

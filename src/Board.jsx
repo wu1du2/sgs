@@ -1542,6 +1542,175 @@ const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel }) => {
   );
 };
 
+const RangjieMenu = ({ onChoose }) => {
+  const btnStyle = {
+    padding: '15px 30px',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    backgroundColor: '#3498db',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    width: '200px',
+    transition: 'all 0.2s'
+  };
+
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+    }}>
+      <div style={{ 
+        display: 'flex', flexDirection: 'column', gap: '15px', 
+        backgroundColor: '#2c3e50', padding: '30px', borderRadius: '15px',
+        boxShadow: '0 0 20px rgba(0,0,0,0.5)', border: '1px solid #34495e'
+      }}>
+        <h3 style={{ color: '#ecf0f1', textAlign: 'center', margin: '0 0 10px 0' }}>让节：选择操作</h3>
+        <button onClick={() => onChoose('scroll')} style={btnStyle}>拿锦囊</button>
+        <button onClick={() => onChoose('basic')} style={btnStyle}>拿基本</button>
+        <button onClick={() => onChoose('equip')} style={btnStyle}>拿装备</button>
+        <button onClick={() => onChoose('move')} style={btnStyle}>移动牌</button>
+        <button onClick={() => onChoose('cancel')} style={{...btnStyle, backgroundColor: '#7f8c8d'}}>取消</button>
+      </div>
+    </div>
+  );
+};
+
+const RangjieMoveModal = ({ G, playerID, onFetchConfirm, onPutConfirm }) => {
+  const stage = G.rangjieSelect.stage;
+  const tempCard = G.rangjieTempCard;
+  const [selectedTarget, setSelectedTarget] = React.useState(null);
+
+  React.useEffect(() => {
+    setSelectedTarget(null);
+  }, [stage]);
+
+  const getSlotCompat = (card) => {
+    if (!card) return null;
+    if (card.type === '武器') return { zone: 'equip', slot: 'weapon' };
+    if (card.type === '防具') return { zone: 'equip', slot: 'armor' };
+    if (card.type === '加一') return { zone: 'equip', slot: 'plusOne' };
+    if (card.type === '减一') return { zone: 'equip', slot: 'minusOne' };
+    if (card.type === '乐') return { zone: 'judge', slot: 'le' };
+    if (card.type === '兵') return { zone: 'judge', slot: 'bing' };
+    if (card.type === '电') return { zone: 'judge', slot: 'dian' };
+    return null;
+  };
+
+  const compat = tempCard ? getSlotCompat(tempCard) : null;
+  const isSelected = (pid, zone, slot) => {
+    return selectedTarget && selectedTarget.targetPlayerID === pid && selectedTarget.zone === zone && selectedTarget.slot === slot;
+  };
+
+  const onConfirm = () => {
+    if (!selectedTarget) return;
+    if (stage === 'fetch') {
+      onFetchConfirm(selectedTarget);
+    } else {
+      onPutConfirm(selectedTarget);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 3000,
+      color: 'white'
+    }}>
+      <h2 style={{ color: '#ffd700' }}>
+        {stage === 'fetch' ? '请选择一张牌移动到暂存区' : `请选择一个空位放置 ${tempCard.name}`}
+      </h2>
+      
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center', padding: '20px', width: '100%', overflowY: 'auto' }}>
+        {Object.entries(G.players).map(([pid, p]) => (
+          <div key={pid} style={{ 
+            border: '1px solid #555', padding: '10px', borderRadius: '8px', 
+            backgroundColor: 'rgba(255,255,255,0.05)', minWidth: '250px'
+          }}>
+            <h3 style={{ margin: '0 0 10px 0', color: pid === playerID ? '#2ecc71' : '#aaa' }}>
+              {p.general ? p.general.name : `Player ${pid}`}
+            </h3>
+            
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontSize: '12px', color: '#888', marginBottom: '5px' }}>装备区</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                {['weapon', 'armor', 'plusOne', 'minusOne'].map(slot => {
+                  const card = p.equipments[slot];
+                  const isClickable = stage === 'fetch' ? !!card : (!card && compat?.zone === 'equip' && compat?.slot === slot);
+                  
+                  return (
+                    <div 
+                      key={slot}
+                      onClick={() => isClickable && setSelectedTarget({ targetPlayerID: pid, zone: 'equip', slot })}
+                      style={{
+                        padding: '8px',
+                        border: isSelected(pid, 'equip', slot) ? '2px solid #ffd700' : (isClickable ? '1px dashed #00ffff' : '1px solid #444'),
+                        backgroundColor: card ? '#333' : 'transparent',
+                        cursor: isClickable ? 'pointer' : 'default',
+                        fontSize: '12px',
+                        textAlign: 'center',
+                        opacity: isClickable ? 1 : 0.5
+                      }}
+                    >
+                      {card ? card.name : slot}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '12px', color: '#888', marginBottom: '5px' }}>判定区</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5px' }}>
+                {['le', 'bing', 'dian'].map(slot => {
+                  const card = p.judges[slot];
+                  const isClickable = stage === 'fetch' ? !!card : (!card && compat?.zone === 'judge' && compat?.slot === slot);
+
+                  return (
+                    <div 
+                      key={slot}
+                      onClick={() => isClickable && setSelectedTarget({ targetPlayerID: pid, zone: 'judge', slot })}
+                      style={{
+                        padding: '8px',
+                        border: isSelected(pid, 'judge', slot) ? '2px solid #ffd700' : (isClickable ? '1px dashed #ff00ff' : '1px solid #444'),
+                        backgroundColor: card ? '#333' : 'transparent',
+                        cursor: isClickable ? 'pointer' : 'default',
+                        fontSize: '12px',
+                        textAlign: 'center',
+                        opacity: isClickable ? 1 : 0.5
+                      }}
+                    >
+                      {card ? card.name : slot}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button 
+        onClick={onConfirm}
+        disabled={!selectedTarget}
+        style={{
+          marginTop: '20px',
+          padding: '10px 30px',
+          backgroundColor: selectedTarget ? '#2ecc71' : '#555',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: selectedTarget ? 'pointer' : 'not-allowed',
+          fontSize: '16px'
+        }}
+      >
+        确定
+      </button>
+    </div>
+  );
+};
+
 const QuanJiSelectionModal = ({ hand, onConfirm, onCancel }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
@@ -2251,6 +2420,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (skillName === '让节') {
+      moves.useRangjie();
+      return;
+    }
+
     if (skillName === '破军') {
       if (activeSkill === '破军') {
         setActiveSkill(null); // Toggle off
@@ -2876,6 +3050,19 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           changeUsed={G.generalChangeUsed[playerID] || [false, false, false]}
           onBid={onBid}
           landlord={G.landlord}
+        />
+      )}
+
+      {G.rangjieSelect && G.rangjieSelect.active && G.rangjieSelect.playerID === playerID && G.rangjieSelect.stage === 'menu' && (
+        <RangjieMenu onChoose={(option) => moves.rangjieChooseOption(option)} />
+      )}
+
+      {G.rangjieSelect && G.rangjieSelect.active && G.rangjieSelect.playerID === playerID && (G.rangjieSelect.stage === 'fetch' || G.rangjieSelect.stage === 'put') && (
+        <RangjieMoveModal 
+          G={G} 
+          playerID={playerID} 
+          onFetchConfirm={({ targetPlayerID, zone, slot }) => moves.rangjieFetchCard({ targetPlayerID, zone, slot })} 
+          onPutConfirm={({ targetPlayerID, zone, slot }) => moves.rangjiePutCard({ targetPlayerID, zone, slot })} 
         />
       )}
 
