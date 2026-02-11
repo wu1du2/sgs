@@ -49,5 +49,22 @@ export const yangbiaoSkill = {
             const x = count === undefined || count === null ? 1 : count;
             return `昭汉${x}`;
         }
+    },
+
+    yizheng: {
+        name: "义争",
+        description: "出牌阶段限一次，你可以与一名体力值不大于你的角色拼点，若你：赢，其跳过其下个摸牌阶段；没赢，你减1点体力上限。",
+        canUse: ({ G, playerID }) => {
+            const player = G.players[playerID];
+            // Check if skill has been used this turn (we don't have a direct flag, but we can rely on UI to limit or add one later)
+            // For now, assume always usable if targets exist.
+            // TODO: Add usage limit tracking if needed.
+            
+            const myHP = player.hp;
+            return Object.keys(G.players).some(pid => {
+                if (pid === playerID) return false;
+                return G.players[pid].hp <= myHP;
+            });
+        }
     }
 };

@@ -12,7 +12,7 @@ import { yangbiaoSkill } from './skills/yangbiao.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['界钟会', '神甘宁'];
+const TESTING_GENERAL_LIST = ['界钟会', '神甘宁', '杨彪'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -28,6 +28,14 @@ function shuffle(array) {
 
   return newArray;
 }
+
+const getCardValue = (rank) => {
+  if (rank === 'A') return 1;
+  if (rank === 'J') return 11;
+  if (rank === 'Q') return 12;
+  if (rank === 'K') return 13;
+  return parseInt(rank);
+};
 
 const createEmptyZones = () => ({
   equipments: { weapon: null, armor: null, plusOne: null, minusOne: null },
@@ -46,6 +54,7 @@ const createPlayerState = () => ({
   hp: 4,
   hpMax: 4,
   is_turned_over: false,
+  skipNextDraw: false,
   pojun: {},
   ...createEmptyZones()
 });
@@ -249,6 +258,14 @@ export const CardGame = {
       active: false,
       playerID: null,
     },
+    pindian: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      sourceCard: null,
+      targetCard: null,
+      skillName: null,
+    },
   }),
 
   turn: {
@@ -259,6 +276,13 @@ export const CardGame = {
 
   moves: {
     drawCard: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (player.skipNextDraw) {
+        player.skipNextDraw = false;
+        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} skips draw phase`);
+        return;
+      }
       const cards = drawCards(G, playerID, 1);
       if (cards.length > 0) {
         const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
@@ -572,6 +596,86 @@ export const CardGame = {
       G.deck = shuffle(combined);
       G.discardPile = [];
       G.actionLog.push(`Deck shuffled (merged with discard pile). Total cards: ${G.deck.length}`);
+    },
+
+    initiatePinDian: ({ G, playerID }, { targetID, skillName }) => {
+      G.pindian = {
+        active: true,
+        sourcePlayerID: playerID,
+        targetPlayerID: targetID,
+        sourceCard: null,
+        targetCard: null,
+        skillName: skillName,
+      };
+      const sourceName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
+      G.actionLog.push(`${sourceName} initiated Pin Dian against ${targetName}`);
+    },
+
+    selectPinDianCard: ({ G, playerID }, cardIndex) => {
+      const pindian = G.pindian;
+      if (!pindian.active) return;
+      
+      // Determine if source or target
+      let isSource = false;
+      if (playerID === pindian.sourcePlayerID) isSource = true;
+      else if (playerID === pindian.targetPlayerID) isSource = false;
+      else return; // Not involved
+
+      const hand = G.hands[playerID];
+      if (cardIndex < 0 || cardIndex >= hand.length) return;
+      
+      const card = hand[cardIndex];
+      hand.splice(cardIndex, 1); // Remove from hand
+      
+      if (isSource) {
+        pindian.sourceCard = card;
+      } else {
+        pindian.targetCard = card;
+      }
+      
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} selected a card for Pin Dian`);
+      
+      // Check if both selected
+      if (pindian.sourceCard && pindian.targetCard) {
+        // Resolve
+        const val1 = getCardValue(pindian.sourceCard.rank);
+        const val2 = getCardValue(pindian.targetCard.rank);
+        
+        addToDiscardPile(G, [pindian.sourceCard, pindian.targetCard]);
+        
+        const sourceName = G.players[pindian.sourcePlayerID].general ? G.players[pindian.sourcePlayerID].general.name : `Player ${pindian.sourcePlayerID}`;
+        const targetName = G.players[pindian.targetPlayerID].general ? G.players[pindian.targetPlayerID].general.name : `Player ${pindian.targetPlayerID}`;
+        
+        G.actionLog.push(`Pin Dian Comparison: ${pindian.sourceCard.rank} (${val1}) vs ${pindian.targetCard.rank} (${val2})`);
+        
+        if (val1 > val2) {
+             G.actionLog.push(`${sourceName} wins Pin Dian!`);
+             if (pindian.skillName === '义争') {
+                 G.players[pindian.targetPlayerID].skipNextDraw = true;
+                 G.actionLog.push(`${targetName} will skip next draw phase`);
+             }
+        } else {
+             G.actionLog.push(`${sourceName} did not win Pin Dian.`);
+             if (pindian.skillName === '义争') {
+                 const player = G.players[pindian.sourcePlayerID];
+                 player.hpMax = Math.max(0, player.hpMax - 1);
+                 if (player.hp > player.hpMax) player.hp = player.hpMax;
+                 G.actionLog.push(`${sourceName} lost Pin Dian (Yi Zheng), Max HP -1`);
+             }
+        }
+        
+        // Reset
+        G.pindian = {
+          active: false,
+          sourcePlayerID: null,
+          targetPlayerID: null,
+          sourceCard: null,
+          targetCard: null,
+          skillName: null,
+        };
+      }
     },
 
     selectHarvestCount: ({ G, playerID }, count) => {

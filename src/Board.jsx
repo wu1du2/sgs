@@ -1747,6 +1747,87 @@ const QuanViewModal = ({ cards, onClose }) => {
   );
 };
 
+const PinDianModal = ({ hand, onConfirm, title }) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(null);
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <h3>{title || "请选择一张手牌进行拼点"}</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {hand.map((card, index) => (
+            <div
+              key={index}
+              onClick={() => setSelectedIndex(index)}
+              style={{
+                width: '80px',
+                height: '120px',
+                backgroundColor: '#ecf0f1',
+                borderRadius: '6px',
+                border: selectedIndex === index ? '3px solid #e74c3c' : '1px solid #bdc3c7',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                color: getSuitColor(card.suit),
+                transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
+                {card.suit}
+              </div>
+              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
+                {card.rank}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
+                {card.name}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button 
+            onClick={() => onConfirm(selectedIndex)} 
+            disabled={selectedIndex === null}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: selectedIndex !== null ? '#e74c3c' : '#555', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: selectedIndex !== null ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -1849,6 +1930,24 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onHeroClick = (targetId) => {
+    if (activeSkill === '义争') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      // Validation: Target HP <= My HP
+      const myPlayer = G.players[playerID];
+      const targetPlayer = G.players[targetId];
+      if (targetPlayer.hp > myPlayer.hp) {
+           alert("目标体力值必须不大于你");
+           return;
+      }
+      
+      moves.initiatePinDian({ targetID: targetId, skillName: '义争' });
+      setActiveSkill(null);
+      return;
+    }
+
     if (activeSkill === '破军') {
       if (targetId === playerID) {
         alert("不能选择自己");
@@ -2070,6 +2169,23 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [showZhuangShiModal, setShowZhuangShiModal] = React.useState(false);
   const [shanJiaState, setShanJiaState] = React.useState(3);
 
+  // Pin Dian Modal Logic
+  let showPinDianModal = false;
+  let pinDianTitle = "";
+  if (G.pindian && G.pindian.active) {
+    if (G.pindian.sourceCard === null) {
+      if (playerID === G.pindian.sourcePlayerID) {
+        showPinDianModal = true;
+        pinDianTitle = "请选择用于拼点的卡牌";
+      }
+    } else if (G.pindian.targetCard === null) {
+      if (playerID === G.pindian.targetPlayerID) {
+        showPinDianModal = true;
+        pinDianTitle = "请选择用于拼点的卡牌 (对方已出牌)";
+      }
+    }
+  }
+
   const onModifyHP = (targetId, amount) => {
     moves.modifyHP(targetId, amount);
   };
@@ -2121,6 +2237,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName.startsWith('昭汉')) {
       moves.useZhaohan();
+      return;
+    }
+
+    if (skillName === '义争') {
+      if (activeSkill === '义争') {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+      } else {
+        setActiveSkill('义争');
+        setSelectedTargetIds([]);
+      }
       return;
     }
 
@@ -3135,6 +3262,14 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             setShowZhuangShiModal(false);
           }}
           onCancel={() => setShowZhuangShiModal(false)}
+        />
+      )}
+
+      {showPinDianModal && (
+        <PinDianModal 
+          hand={G.hands[playerID]} 
+          title={pinDianTitle}
+          onConfirm={(index) => moves.selectPinDianCard(index)}
         />
       )}
     </div>
