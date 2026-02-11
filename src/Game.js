@@ -6,7 +6,7 @@ import { luotongSkill } from './skills/luotong.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['曹纯', '骆统'];
+const TESTING_GENERAL_LIST = ['曹纯', '骆统', '势魏延'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -163,6 +163,7 @@ const drawCards = (G, playerID, count) => {
 
 import { jiexushengSkill } from './skills/jiexusheng.js';
 import { wenyangSkill } from './skills/wenyang.js';
+import { shiweiyanSkill } from './skills/shiweiyan.js';
 
 export const CardGame = {
   setup: () => ({
@@ -954,17 +955,11 @@ export const CardGame = {
       };
     },
 
-    // Po Jun Skills
-    usePoJun: ({ G, playerID }, targetID) => {
-      G.pojunSelect = {
-        active: true,
-        sourcePlayerID: playerID,
-        targetPlayerID: targetID,
-      };
-      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
-      G.actionLog.push(`${playerName} activated Po Jun on ${targetName}`);
-    },
+    // Shi Wei Yan Skills
+    confirmZhuangShi: shiweiyanSkill.confirmZhuangShi,
+
+    // Jie Xu Sheng Skills
+    usePoJun: jiexushengSkill.usePoJun,
 
     confirmPoJunSelection: ({ G, ctx, playerID }, selectedItems) => {
       const { sourcePlayerID, targetPlayerID } = G.pojunSelect;

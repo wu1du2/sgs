@@ -423,6 +423,116 @@ const HarvestCountSelector = ({ onSelect }) => {
   );
 };
 
+const ZhuangShiModal = ({ onConfirm, onCancel }) => {
+  const [x, setX] = React.useState(0);
+  const [y, setY] = React.useState(0);
+
+  const options = Array.from({ length: 11 }, (_, i) => i); // 0 to 10
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '15px',
+        borderRadius: '8px',
+        width: '250px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '15px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+      }}>
+        <h3 style={{ margin: '0 0 5px 0', textAlign: 'center', color: '#ffd700' }}>壮誓</h3>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <label style={{ fontSize: '14px', color: '#ddd' }}>无距离限制&不可被响应 (x):</label>
+          <select 
+            value={x} 
+            onChange={(e) => setX(parseInt(e.target.value))}
+            style={{ 
+              width: '100%', 
+              padding: '8px', 
+              borderRadius: '4px',
+              border: '1px solid #555',
+              backgroundColor: '#444',
+              color: 'white',
+              fontSize: '14px',
+              outline: 'none'
+            }}
+          >
+            {options.map(val => (
+              <option key={`x-${val}`} value={val}>{val}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <label style={{ fontSize: '14px', color: '#ddd' }}>不计入次数 (y):</label>
+          <select 
+            value={y} 
+            onChange={(e) => setY(parseInt(e.target.value))}
+            style={{ 
+              width: '100%', 
+              padding: '8px', 
+              borderRadius: '4px',
+              border: '1px solid #555',
+              backgroundColor: '#444',
+              color: 'white',
+              fontSize: '14px',
+              outline: 'none'
+            }}
+          >
+            {options.map(val => (
+              <option key={`y-${val}`} value={val}>{val}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+          <button 
+            onClick={onCancel} 
+            style={{ 
+              padding: '6px 12px', 
+              cursor: 'pointer',
+              backgroundColor: '#666',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}
+          >
+            取消
+          </button>
+          <button 
+            onClick={() => onConfirm(x, y)} 
+            style={{ 
+              padding: '6px 12px', 
+              backgroundColor: '#4CAF50', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain }) => {
   const getBorderColor = () => {
@@ -1554,6 +1664,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const [activeSkill, setActiveSkill] = React.useState(null);
+  const [showZhuangShiModal, setShowZhuangShiModal] = React.useState(false);
   const [shanJiaState, setShanJiaState] = React.useState(3);
 
   const onModifyHP = (targetId, amount) => {
@@ -1642,6 +1753,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       if (window.confirm('是否确定增加一点体力上限？')) {
         moves.useChouJue();
       }
+      return;
+    }
+
+    if (skillName === '壮誓') {
+      setShowZhuangShiModal(true);
       return;
     }
 
@@ -2429,6 +2545,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           cards={G.harvestCards}
           onPick={(index) => moves.pickHarvestCard(index)}
           onClose={() => moves.endHarvest()}
+        />
+      )}
+
+      {/* ZhuangShi Modal */}
+      {showZhuangShiModal && (
+        <ZhuangShiModal 
+          onConfirm={(x, y) => {
+            moves.confirmZhuangShi(x, y);
+            setShowZhuangShiModal(false);
+          }}
+          onCancel={() => setShowZhuangShiModal(false)}
         />
       )}
     </div>
