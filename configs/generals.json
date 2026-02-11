@@ -287,7 +287,7 @@
       "潜龙:①游戏开始时，你获得20点“道心|blue”值（你至多拥有99点“道心|blue”值）；",
       "卫统:游戏开始时，若场上有其他魏势力角色且你拥有“潜龙”，则你因“潜龙”于游戏开始时获得的“道心|blue”值修改为60。|经典技能台词=手无实权难卫统，朦胧成睡，睡去还惊。aHR0cHM6Ly8xZHJ2Lm1zL3UvYy8wY2RiMjhhMmUzMzIxZDVlL0VlbVZRaWkyTGw1Tm1PbXJtekFaeGhnQnpfcE54VmJjcnFFcnZ1RU94NHpsRlE"
     ],
-    "enable": true
+    "enable": false
   },
   {
     "id": "十常侍",

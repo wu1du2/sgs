@@ -3,11 +3,12 @@ import generalsData from '../configs/generals.json' with { type: "json" };
 
 import { luotongSkill } from './skills/luotong.js';
 import { shenganningSkill } from './skills/shenganning.js';
+import { jiezhonghuiSkill } from './skills/jiezhonghui.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['神甘宁', '界徐盛'];
+const TESTING_GENERAL_LIST = ['神甘宁', '界徐盛', '界钟会'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -37,6 +38,7 @@ const createPlayerState = () => ({
   luckCardConfirmed: false,
   is_linked: false,
   qz_cnt: 0, // Qin Zheng counter for Luo Tong
+  quan: [], // For Jie Zhonghui
   ...createEmptyZones()
 });
 
@@ -232,6 +234,14 @@ export const CardGame = {
       sourcePlayerID: null,
       targetPlayerID: null,
       stage: null, // 'target_selection'
+    },
+    jiezhonghuiQuanJiSelect: {
+      active: false,
+      playerID: null,
+    },
+    jiezhonghuiPaiYiSelect: {
+      active: false,
+      playerID: null,
     },
   }),
 
@@ -599,494 +609,56 @@ export const CardGame = {
       const cards = drawCards(G, playerID, numPlayers); // Temporarily draw to player to get cards, but we need to move them to harvestCards
       
       // Revert the draw to hand (pop from hand)
-      // Use cards.length in case fewer cards were drawn
       if (cards.length > 0) {
         G.hands[playerID].splice(G.hands[playerID].length - cards.length, cards.length);
       }
-      
-      // Put them in harvestCards
       G.harvestCards = cards;
+      
+      G.harvestCountSelect = { active: false, playerID: null };
       
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
       G.actionLog.push(`${playerName} triggered Harvest (五谷丰登)`);
     },
-    pickHarvestCard: ({ G, playerID }, cardIndex) => {
-      if (G.harvestCards[cardIndex]) {
-        const card = G.harvestCards[cardIndex];
-        G.harvestCards.splice(cardIndex, 1);
-        G.hands[playerID].push(card);
-        
-        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-        G.actionLog.push(`${playerName} picked ${card.name} from Harvest`);
-      }
-    },
-    endHarvest: ({ G }) => {
-      if (G.harvestCards.length > 0) {
-        addToDiscardPile(G, G.harvestCards);
-        G.actionLog.push(`${G.harvestCards.length} cards from Harvest discarded`);
-        G.harvestCards = [];
-      }
-    },
 
-    confirmEffect: ({ G, playerID }) => {
-      if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
-      
-      const { actionType, sourcePlayerID, targetPlayerID, pendingCard } = G.pendingEffect;
-
-      if (actionType === 'fire_attack') {
-         G.fireAttackShowCard = {
+    // Jie Zhonghui Skills
+    jiezhonghuiQuanJi: ({ G, playerID }) => {
+        // User requested manual draw, so we only open the selection modal
+        G.jiezhonghuiQuanJiSelect = {
             active: true,
-            sourcePlayerID,
-            targetPlayerID
-         };
-         const targetName = G.players[targetPlayerID].general ? G.players[targetPlayerID].general.name : `Player ${targetPlayerID}`;
-         G.actionLog.push(`Fire Attack effective, ${targetName} must show a card`);
-      } else if (actionType === 'collateral') {
-         // For Collateral (借刀杀人), if the target doesn't slash, we steal their weapon.
-         // Since we don't have the "Ask to Slash" UI yet, we default to the "Steal Weapon" penalty.
-         // We reuse the 'steal' action type for the selection phase.
-         G.selectCard = {
+            playerID: playerID
+        };
+    },
+    jiezhonghuiQuanJiConfirm: ({ G, playerID }, cardIndex) => {
+        const card = jiezhonghuiSkill.quanji.addToQuan(G, playerID, cardIndex);
+        if (card) {
+            G.actionLog.push(`Player ${playerID} put ${card.name} into Quan`);
+        }
+        G.jiezhonghuiQuanJiSelect = { active: false, playerID: null };
+    },
+    jiezhonghuiQuanJiCancel: ({ G }) => {
+        G.jiezhonghuiQuanJiSelect = { active: false, playerID: null };
+    },
+
+    jiezhonghuiZiLi: ({ G, playerID }) => {
+        jiezhonghuiSkill.zili.action(G, playerID);
+        G.actionLog.push(`Player ${playerID} used Zi Li, Max HP -1`);
+    },
+
+    jiezhonghuiPaiYi: ({ G, playerID }) => {
+        G.jiezhonghuiPaiYiSelect = {
             active: true,
-            sourcePlayerID,
-            targetPlayerID,
-            actionType: 'steal',
-            pendingCard,
-         };
-         G.actionLog.push(`Collateral effective, proceeding to steal weapon`);
-      } else {
-        // Transfer pending effect to selectCard to start the interaction
-        G.selectCard = {
-          active: true,
-          sourcePlayerID,
-          targetPlayerID,
-          actionType,
-          pendingCard,
+            playerID: playerID
         };
-      }
-      
-      G.pendingEffect = null;
     },
-    cancelEffect: ({ G, playerID }) => {
-      if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
-      
-      // Just clear the pending effect
-      G.pendingEffect = null;
-    },
-    confirmFireAttackShowCard: ({ G, playerID }, cardIndex) => {
-       if (!G.fireAttackShowCard.active || G.fireAttackShowCard.targetPlayerID !== playerID) return;
-       
-       const hand = G.hands[playerID];
-       const card = hand[cardIndex];
-       
-       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-       G.actionLog.push(`${playerName} 展示了一张 ${card.suit}${card.rank} ${card.name}`);
-       
-       // Reset state
-       G.fireAttackShowCard = {
-          active: false,
-          sourcePlayerID: null,
-          targetPlayerID: null
-       };
-    },
-
-    cancelFireAttackShowCard: ({ G, playerID }) => {
-       if (!G.fireAttackShowCard.active || G.fireAttackShowCard.targetPlayerID !== playerID) return;
-       
-       G.fireAttackShowCard = {
-          active: false,
-          sourcePlayerID: null,
-          targetPlayerID: null
-       };
-       G.actionLog.push(`Player ${playerID} cancelled showing card`);
-    },
-
-    discardCards: ({ G, playerID }, cardIndices) => {
-      if (G.phase !== 'playing') return;
-      
-      const hand = G.hands[playerID];
-      const cardsDiscarded = cardIndices.map(i => hand[i]);
-      
-      const newHand = hand.filter((_, index) => !cardIndices.includes(index));
-      G.hands[playerID] = newHand;
-      addToDiscardPile(G, cardsDiscarded);
-      
-      G.lastAction = {
-        type: 'discard',
-        playerID,
-        cards: cardsDiscarded
-      };
-
-      // Add to action log
-      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const cardNames = cardsDiscarded.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
-      const logEntry = `${playerName} 弃牌 ${cardNames}`;
-      G.actionLog.push(logEntry);
-    },
-    
-    discardEquipment: ({ G, playerID }, slot) => {
-      const player = G.players[playerID];
-      const card = player.equipments[slot];
-      if (card) {
-        player.equipments[slot] = null;
-        addToDiscardPile(G, card);
-        const playerName = player.general ? player.general.name : `Player ${playerID}`;
-        G.actionLog.push(`${playerName} discarded ${card.name} from ${slot}`);
-      }
-    },
-
-    confirm_select_card: ({ G, playerID }, selectedItems) => {
-      const { sourcePlayerID, targetPlayerID, actionType, pendingCard } = G.selectCard;
-      
-      if (!G.selectCard.active) return;
-      
-      const targetPlayer = G.players[targetPlayerID];
-      const targetHand = G.hands[targetPlayerID];
-      
-      const sourcePlayer = G.players[playerID];
-      const sourcePlayerName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${playerID}`;
-      const targetPlayerName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetPlayerID}`;
-
-      // Separate items by type
-      const handItems = selectedItems.filter(item => item.type === 'hand');
-      const otherItems = selectedItems.filter(item => item.type !== 'hand');
-
-      // Sort hand items by index descending to avoid shifting issues
-      handItems.sort((a, b) => b.index - a.index);
-
-      // Process hand items
-      handItems.forEach(item => {
-          const card = targetHand[item.index];
-          if (card) {
-             if (actionType === 'discard') {
-               targetHand.splice(item.index, 1);
-               addToDiscardPile(G, card);
-               G.actionLog.push(`${sourcePlayerName} discarded a card from ${targetPlayerName}'s hand`);
-             } else if (actionType === 'steal') {
-               targetHand.splice(item.index, 1);
-               G.hands[playerID].push(card);
-               G.actionLog.push(`${sourcePlayerName} stole a card from ${targetPlayerName}'s hand`);
-             }
-          }
-      });
-
-      // Process other items (equip, judge)
-      otherItems.forEach(item => {
-        let card = null;
-        
-        if (item.type === 'equip') {
-          card = targetPlayer.equipments[item.slot];
-          if (card) {
-            targetPlayer.equipments[item.slot] = null;
-            if (actionType === 'discard') {
-              addToDiscardPile(G, card);
-              G.actionLog.push(`${sourcePlayerName} discarded ${card.name} from ${targetPlayerName}'s equipment`);
-            } else if (actionType === 'steal') {
-              G.hands[playerID].push(card);
-              G.actionLog.push(`${sourcePlayerName} stole ${card.name} from ${targetPlayerName}'s equipment`);
-            }
-          }
-        } else if (item.type === 'judge') {
-          card = targetPlayer.judges[item.slot];
-          if (card) {
-            targetPlayer.judges[item.slot] = null;
-            if (actionType === 'discard') {
-              addToDiscardPile(G, card);
-              G.actionLog.push(`${sourcePlayerName} discarded ${card.name} from ${targetPlayerName}'s judgment area`);
-            } else if (actionType === 'steal') {
-              G.hands[playerID].push(card);
-              G.actionLog.push(`${sourcePlayerName} stole ${card.name} from ${targetPlayerName}'s judgment area`);
-            }
-          }
+    jiezhonghuiPaiYiConfirm: ({ G, playerID }, cardIndexInQuan) => {
+        const card = jiezhonghuiSkill.paiyi.discardFromQuan(G, playerID, cardIndexInQuan);
+        if (card) {
+            G.actionLog.push(`Player ${playerID} used Pai Yi, discarded ${card.name} from Quan`);
         }
-      });
-      
-      // Reset selection state
-      G.selectCard = {
-        active: false,
-        sourcePlayerID: null,
-        targetPlayerID: null,
-        actionType: null,
-        pendingCard: null,
-      };
-      
-      // If there was a pending card (the Snatch/Dismantle itself), discard it now
-      if (pendingCard && !['椎锋', '冲坚'].includes(pendingCard.name)) {
-        addToDiscardPile(G, pendingCard);
-      }
+        G.jiezhonghuiPaiYiSelect = { active: false, playerID: null };
     },
-
-    cancel_select_card: ({ G, playerID }) => {
-      if (!G.selectCard.active || G.selectCard.sourcePlayerID !== playerID) return;
-      
-      const { pendingCard } = G.selectCard;
-      
-      // Return card to hand if it was a real card played
-      if (pendingCard && pendingCard.suit && pendingCard.rank) {
-         G.hands[playerID].push(pendingCard);
-      }
-
-      G.selectCard = {
-        active: false,
-        sourcePlayerID: null,
-        targetPlayerID: null,
-        actionType: null,
-        pendingCard: null,
-      };
-      
-      G.actionLog.push(`Player ${playerID} cancelled card selection`);
+    jiezhonghuiPaiYiCancel: ({ G }) => {
+        G.jiezhonghuiPaiYiSelect = { active: false, playerID: null };
     },
-
-    cancelPoJunSelection: ({ G, playerID }) => {
-      if (!G.pojunSelect.active || G.pojunSelect.sourcePlayerID !== playerID) return;
-      
-      G.pojunSelect = {
-        active: false,
-        sourcePlayerID: null,
-        targetPlayerID: null
-      };
-      
-      G.actionLog.push(`Player ${playerID} cancelled Po Jun selection`);
-    },
-
-    changeGeneral: ({ G, playerID }, generalId) => {
-      const options = G.generalOptions[playerID];
-      const index = options.findIndex(g => g.id === generalId);
-      
-      if (index === -1) {
-        return;
-      }
-
-      // Check if change already used for this slot
-      if (G.generalChangeUsed[playerID][index]) {
-        return;
-      }
-
-      // Collect all currently used generals to avoid duplicates
-      const usedGeneralIds = new Set();
-      Object.values(G.generalOptions).forEach(playerOptions => {
-        playerOptions.forEach(g => usedGeneralIds.add(g.id));
-      });
-
-      // Find available generals
-      const availableGenerals = ENABLED_GENERALS.filter(g => !usedGeneralIds.has(g.id));
-
-      if (availableGenerals.length === 0) {
-        G.actionLog.push("No more generals available to change");
-        return;
-      }
-
-      // Pick a random one
-      const newGeneral = availableGenerals[Math.floor(Math.random() * availableGenerals.length)];
-
-      // Update state
-      G.generalOptions[playerID][index] = newGeneral;
-      G.generalChangeUsed[playerID][index] = true;
-      
-      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      G.actionLog.push(`${playerName} changed a general option`);
-    },
-
-    resolveGame: ({ G }, winnerRole) => {
-      const scoreChanges = {};
-      const baseScore = G.bidAmount || 1; // Default to 1 if no bid
-      
-      // Calculate score changes
-      ['0', '1', '2'].forEach(pid => {
-        const player = G.players[pid];
-        const isWinner = player.role === winnerRole;
-        
-        if (isWinner) {
-          // Winner gets points
-          if (player.role === 'landlord') {
-            scoreChanges[pid] = 2 * baseScore;
-          } else {
-            scoreChanges[pid] = 1 * baseScore;
-          }
-        } else {
-          // Loser loses points
-          if (player.role === 'landlord') {
-             scoreChanges[pid] = -2 * baseScore;
-          } else {
-             scoreChanges[pid] = -1 * baseScore;
-          }
-        }
-        
-        // Update player score
-        player.score += scoreChanges[pid];
-      });
-
-      G.gameResult = { 
-        winner: winnerRole,
-        scoreChanges
-      };
-      G.phase = 'gameover';
-    },
-
-    voteRematch: ({ G, playerID }) => {
-      if (!G.rematchVotes.includes(playerID)) {
-        G.rematchVotes.push(playerID);
-      }
-      if (G.rematchVotes.length === 3) {
-        G.actionLog.push(`All players voted for rematch`);
-        
-        // Reset Game State for new round
-        
-        // 1. Shuffle deck
-        G.deck = shuffle(SGS_CARDS.map((c, i) => ({ ...c, id: `card-${i}` })));
-        G.discardPile = [];
-        
-        // 2. Reset hands
-        G.hands = { '0': [], '1': [], '2': [] };
-        
-        // 3. Reset players (keep scores)
-        ['0', '1', '2'].forEach(pid => {
-          const currentScore = G.players[pid].score;
-          G.players[pid] = createPlayerState();
-          G.players[pid].score = currentScore;
-        });
-        
-        // 4. Reset other game state
-        G.generalOptions = { '0': [], '1': [], '2': [] };
-        G.generalChangeUsed = { '0': [false, false, false], '1': [false, false, false], '2': [false, false, false] };
-        
-        // Since all players voted for rematch, we can skip the lobby wait and go directly to selection
-        G.readyPlayers = ['0', '1', '2'];
-        G.phase = 'selection';
-        
-        // Distribute generals immediately
-        const { generalOptions, generalChangeUsed } = distributeGenerals();
-        G.generalOptions = generalOptions;
-        G.generalChangeUsed = generalChangeUsed;
-
-        G.landlord = null;
-        G.bidAmount = 0;
-        G.gameResult = null;
-        G.rematchVotes = [];
-        G.lastAction = null;
-        G.actionLog = [];
-        G.pendingEffect = null;
-        G.selectCard = {
-          active: false,
-          sourcePlayerID: null,
-          targetPlayerID: null,
-          actionType: null,
-          pendingCard: null,
-        };
-        G.harvestCards = [];
-      }
-    },
-
-    useQueDi: ({ G, playerID }) => {
-      wenyangSkill.useQueDi({ G, playerID }, drawCards);
-    },
-    useChouJue: ({ G, playerID }) => {
-      wenyangSkill.useChouJue({ G, playerID }, drawCards);
-    },
-    useZhuiFeng: ({ G, playerID }, targetID) => {
-      wenyangSkill.useZhuiFeng({ G, playerID }, targetID);
-    },
-    useChongJian: ({ G, playerID }, targetID) => {
-      wenyangSkill.useChongJian({ G, playerID }, targetID);
-    },
-
-    useSkill: ({ G, playerID }, skillName) => {
-      G.actionLog.push(`Player ${playerID} used skill ${skillName} (not implemented)`);
-    },
-
-    performJudgment: ({ G, playerID }) => {
-      if (G.phase !== 'playing') return;
-      
-      const card = G.deck.pop();
-      if (!card) return; // Deck empty
-
-      addToDiscardPile(G, card);
-
-      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const logEntry = `${playerName} 进行了一次判定 ${card.suit}${card.rank} ${card.name}`;
-      G.actionLog.push(logEntry);
-      
-      G.lastAction = {
-        type: 'judgment',
-        playerID,
-        card
-      };
-    },
-
-    // Shi Wei Yan Skills
-    confirmZhuangShi: shiweiyanSkill.confirmZhuangShi,
-
-    // Jie Xu Sheng Skills
-    usePoJun: jiexushengSkill.usePoJun,
-
-    confirmPoJunSelection: ({ G, ctx, playerID }, selectedItems) => {
-      const { sourcePlayerID, targetPlayerID } = G.pojunSelect;
-      
-      if (!G.pojunSelect.active || sourcePlayerID !== playerID) return;
-
-      // Convert selectedItems to the format expected by jiexushengSkill.pojun.action
-      // selectedItems is [{ type: 'hand', index: 0 }, { type: 'equip', slot: 'weapon' }]
-      const selectedCards = {
-        hand: [],
-        equipments: [],
-        judges: []
-      };
-
-      selectedItems.forEach(item => {
-        if (item.type === 'hand') {
-          selectedCards.hand.push(item.index);
-        } else if (item.type === 'equip') {
-          selectedCards.equipments.push(item.slot);
-        } else if (item.type === 'judge') {
-          selectedCards.judges.push(item.slot);
-        }
-      });
-
-      // Execute the skill action
-      const cardsToMove = jiexushengSkill.pojun.action({ G, ctx }, playerID, targetPlayerID, selectedCards);
-
-      // Store cards by targetID
-      if (!G.players[playerID].pojun) {
-          G.players[playerID].pojun = {};
-      }
-      if (!G.players[playerID].pojun[targetPlayerID]) {
-          G.players[playerID].pojun[targetPlayerID] = [];
-      }
-      G.players[playerID].pojun[targetPlayerID].push(...cardsToMove);
-
-      // Reset selection state
-      G.pojunSelect = {
-        active: false,
-        sourcePlayerID: null,
-        targetPlayerID: null,
-      };
-    },
-
-    returnPoJunCards: ({ G, playerID }, targetID) => {
-      if (G.players[playerID].pojun && G.players[playerID].pojun[targetID]) {
-          const cardsToReturn = G.players[playerID].pojun[targetID];
-          G.hands[targetID].push(...cardsToReturn);
-          delete G.players[playerID].pojun[targetID];
-          
-          const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-          const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
-          G.actionLog.push(`${playerName} returned Po Jun cards to ${targetName}`);
-      }
-    },
-
-    // Shen Gan Ning Skills
-    activatePoxi: shenganningSkill.poxi.activate,
-    selectPoxiTarget: shenganningSkill.poxi.selectTarget,
-    confirmPoxi: shenganningSkill.poxi.confirm,
-    cancelPoxi: shenganningSkill.poxi.cancel,
-
-    activateJieying: shenganningSkill.jieying.activate,
-    selectJieyingTarget: shenganningSkill.jieying.selectTarget,
-    cancelJieying: shenganningSkill.jieying.cancel,
-  },
-
-  endIf: ({ G }) => {
-    if (G.deck.length === 0) {
-      return { winner: 'Draw' }; // Just a placeholder
-    }
   },
 };

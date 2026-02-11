@@ -1541,6 +1541,211 @@ const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel }) => {
   );
 };
 
+const QuanJiSelectionModal = ({ hand, onConfirm, onCancel }) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(null);
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <h3>请选择一张手牌置于“权”上</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {hand.map((card, index) => (
+            <div
+              key={index}
+              onClick={() => setSelectedIndex(index)}
+              style={{
+                transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
+                border: selectedIndex === index ? '3px solid #00ffff' : 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Card card={card} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={() => selectedIndex !== null && onConfirm(selectedIndex)}
+            disabled={selectedIndex === null}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: selectedIndex !== null ? '#2ecc71' : '#7f8c8d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: selectedIndex !== null ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PaiYiSelectionModal = ({ quan, onConfirm, onCancel }) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(null);
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <h3>请选择一张“权”弃置</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {quan.map((card, index) => (
+            <div
+              key={index}
+              onClick={() => setSelectedIndex(index)}
+              style={{
+                transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
+                border: selectedIndex === index ? '3px solid #00ffff' : 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Card card={card} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={() => selectedIndex !== null && onConfirm(selectedIndex)}
+            disabled={selectedIndex === null}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: selectedIndex !== null ? '#2ecc71' : '#7f8c8d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: selectedIndex !== null ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const QuanViewModal = ({ cards, onClose }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }} onClick={onClose}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }} onClick={e => e.stopPropagation()}>
+        <h3>“权” ({cards.length})</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {cards.map((card, index) => (
+            <div key={index}>
+              <Card card={card} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            关闭
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -1557,6 +1762,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [equipmentMenu, setEquipmentMenu] = React.useState(null); // { slot: string }
   const [judgmentMenu, setJudgmentMenu] = React.useState(null); // { playerID: string, type: string, card: object }
   const [showDiscardPile, setShowDiscardPile] = React.useState(false);
+  const [quanView, setQuanView] = React.useState({ active: false, cards: [] });
 
   // Responsive hand width state
   const [maxHandWidth, setMaxHandWidth] = React.useState(
@@ -1977,6 +2183,21 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (skillName === '权计') {
+      moves.jiezhonghuiQuanJi();
+      return;
+    }
+
+    if (skillName === '自立') {
+      moves.jiezhonghuiZiLi();
+      return;
+    }
+
+    if (skillName === '排异') {
+      moves.jiezhonghuiPaiYi();
+      return;
+    }
+
     moves.useSkill(skillName);
   };
 
@@ -2272,6 +2493,23 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                     </button>
                 );
             })}
+            {/* Quan Area for Jie Zhonghui */}
+            {player.quan && player.quan.length > 0 && (
+              <div 
+                onClick={() => setQuanView({ active: true, cards: player.quan })}
+                style={{
+                  marginBottom: '5px',
+                  backgroundColor: '#8e44ad',
+                  color: 'white',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  cursor: 'pointer'
+              }}>
+                权 {player.quan.length}
+              </div>
+            )}
             <HeroArea 
               name={general ? general.name : "My Hero"} 
               hp={player?.hp ?? (general ? general.hp : 4)}
@@ -2495,6 +2733,32 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           changeUsed={G.generalChangeUsed[playerID] || [false, false, false]}
           onBid={onBid}
           landlord={G.landlord}
+        />
+      )}
+
+      {/* Jie Zhonghui Quan Ji Selection */}
+      {G.jiezhonghuiQuanJiSelect && G.jiezhonghuiQuanJiSelect.active && G.jiezhonghuiQuanJiSelect.playerID === playerID && (
+        <QuanJiSelectionModal
+          hand={G.hands[playerID]}
+          onConfirm={(index) => moves.jiezhonghuiQuanJiConfirm(index)}
+          onCancel={() => moves.jiezhonghuiQuanJiCancel()}
+        />
+      )}
+
+      {/* Jie Zhonghui Pai Yi Selection */}
+      {G.jiezhonghuiPaiYiSelect && G.jiezhonghuiPaiYiSelect.active && G.jiezhonghuiPaiYiSelect.playerID === playerID && (
+        <PaiYiSelectionModal
+          quan={G.players[playerID].quan || []}
+          onConfirm={(index) => moves.jiezhonghuiPaiYiConfirm(index)}
+          onCancel={() => moves.jiezhonghuiPaiYiCancel()}
+        />
+      )}
+
+      {/* Quan View Modal */}
+      {quanView.active && (
+        <QuanViewModal
+          cards={quanView.cards}
+          onClose={() => setQuanView({ active: false, cards: [] })}
         />
       )}
       
