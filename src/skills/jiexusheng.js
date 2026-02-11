@@ -1,4 +1,17 @@
 export const jiexushengSkill = {
+    usePoJun: ({ G, playerID }, targetID) => {
+        const target = G.players[targetID];
+        const hp = target.hp;
+        
+        G.pojunSelect = {
+            active: true,
+            sourcePlayerID: playerID,
+            targetPlayerID: targetID,
+            limit: hp
+        };
+        
+        G.actionLog.push(`Player ${playerID} used Po Jun on Player ${targetID}`);
+    },
     pojun: {
         name: "破军",
         description: "当你使用【杀】指定一名角色为目标后，你可以将该角色的至多X张牌置于其武将牌上（X为该角色的体力值），然后当前回合结束时，其获得武将牌上的牌。",

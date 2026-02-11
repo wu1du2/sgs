@@ -142,6 +142,19 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button 
+            onClick={onCancel} 
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: '#f44336', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Cancel
+          </button>
+          <button 
             onClick={() => onConfirm(selected)} 
             disabled={selected.length === 0}
             style={{ 
@@ -161,7 +174,7 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
   );
 };
 
-const FireAttackShowCardModal = ({ hand, onConfirm }) => {
+const FireAttackShowCardModal = ({ hand, onConfirm, onCancel }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -221,7 +234,20 @@ const FireAttackShowCardModal = ({ hand, onConfirm }) => {
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button 
+            onClick={onCancel}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: '#95a5a6', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
           <button 
             onClick={() => onConfirm(selectedIndex)} 
             disabled={selectedIndex === null}
@@ -1371,6 +1397,150 @@ const ActionLog = ({ logs }) => {
   );
 };
 
+const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel }) => {
+  const [selectedMyCards, setSelectedMyCards] = React.useState([]);
+  const [selectedTargetCards, setSelectedTargetCards] = React.useState([]);
+
+  const toggleMyCard = (index) => {
+    if (selectedMyCards.includes(index)) {
+      setSelectedMyCards(selectedMyCards.filter(i => i !== index));
+    } else {
+      if (selectedMyCards.length + selectedTargetCards.length < 4) {
+        setSelectedMyCards([...selectedMyCards, index]);
+      }
+    }
+  };
+
+  const toggleTargetCard = (index) => {
+    if (selectedTargetCards.includes(index)) {
+      setSelectedTargetCards(selectedTargetCards.filter(i => i !== index));
+    } else {
+      if (selectedMyCards.length + selectedTargetCards.length < 4) {
+        setSelectedTargetCards([...selectedTargetCards, index]);
+      }
+    }
+  };
+
+  const totalSelected = selectedMyCards.length + selectedTargetCards.length;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '90%',
+        maxWidth: '1000px',
+        maxHeight: '90%',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        {/* Target Hand Cards */}
+        <div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            {targetHand.map((card, index) => (
+              <div
+                key={`target-${index}`}
+                onClick={() => toggleTargetCard(index)}
+                style={{
+                  width: '60px',
+                  height: '90px',
+                  backgroundColor: selectedTargetCards.includes(index) ? 'rgba(255, 0, 0, 0.3)' : '#ecf0f1',
+                  border: selectedTargetCards.includes(index) ? '3px solid #e74c3c' : '1px solid #bdc3c7',
+                  borderRadius: '5px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: getSuitColor(card.suit),
+                  position: 'relative'
+                }}
+              >
+                <div style={{ position: 'absolute', top: '2px', left: '2px', fontSize: '10px' }}>{card.suit}</div>
+                <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px' }}>{card.rank}</div>
+                <div style={{ fontSize: '10px', textAlign: 'center' }}>{card.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* My Hand Cards */}
+        <div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            {myHand.map((card, index) => (
+              <div
+                key={`my-${index}`}
+                onClick={() => toggleMyCard(index)}
+                style={{
+                  width: '60px',
+                  height: '90px',
+                  backgroundColor: selectedMyCards.includes(index) ? 'rgba(255, 0, 0, 0.3)' : '#ecf0f1',
+                  border: selectedMyCards.includes(index) ? '3px solid #e74c3c' : '1px solid #bdc3c7',
+                  borderRadius: '5px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: getSuitColor(card.suit),
+                  position: 'relative'
+                }}
+              >
+                <div style={{ position: 'absolute', top: '2px', left: '2px', fontSize: '10px' }}>{card.suit}</div>
+                <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px' }}>{card.rank}</div>
+                <div style={{ fontSize: '10px', textAlign: 'center' }}>{card.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button 
+            onClick={onCancel}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: '#95a5a6', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+          <button 
+            onClick={() => onConfirm(selectedMyCards, selectedTargetCards)} 
+            disabled={totalSelected > 4}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: totalSelected <= 4 ? '#e74c3c' : '#555', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: totalSelected <= 4 ? 'pointer' : 'not-allowed'
+            }}
+          >
+            弃牌
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -1477,8 +1647,14 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         alert("不能选择自己");
         return;
       }
-      moves.usePoJun(targetId);
-      setActiveSkill(null);
+      
+      // Toggle selection for Po Jun
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
+      } else {
+        // Po Jun targets a single player
+        setSelectedTargetIds([targetId]);
+      }
       return;
     }
 
@@ -1499,6 +1675,26 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       }
       moves.useChongJian(targetId);
       setActiveSkill(null);
+      return;
+    }
+
+    // Poxi Target Selection
+    if (G.poxiSelect && G.poxiSelect.active && G.poxiSelect.stage === 'target_selection') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.selectPoxiTarget(targetId);
+      return;
+    }
+
+    // Jieying Target Selection
+    if (G.jieyingSelect && G.jieyingSelect.active && G.jieyingSelect.stage === 'target_selection') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.selectJieyingTarget(targetId);
       return;
     }
 
@@ -1718,8 +1914,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     if (skillName === '破军') {
       if (activeSkill === '破军') {
         setActiveSkill(null); // Toggle off
+        setSelectedTargetIds([]);
       } else {
         setActiveSkill('破军');
+        setSelectedTargetIds([]);
       }
       return;
     }
@@ -1758,6 +1956,24 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName === '壮誓') {
       setShowZhuangShiModal(true);
+      return;
+    }
+
+    if (skillName === '魄袭') {
+      if (G.poxiSelect && G.poxiSelect.active) {
+        moves.cancelPoxi();
+      } else {
+        moves.activatePoxi();
+      }
+      return;
+    }
+
+    if (skillName === '劫营') {
+      if (G.jieyingSelect && G.jieyingSelect.active) {
+        moves.cancelJieying();
+      } else {
+        moves.activateJieying();
+      }
       return;
     }
 
@@ -1947,6 +2163,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               position: 'relative',
               zIndex: 20
             }}>
+              {/* Shen Gan Ning Skills - Removed as they are now triggered via HeroArea */}
               {selectedCardIndices.length > 0 && (
                 <>
                   <button 
@@ -2344,8 +2561,34 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           gap: '10px'
         }}>
           <span>请选择 {activeSkill} 的目标</span>
+          {activeSkill === '破军' && selectedTargetIds.length > 0 && (
+            <button 
+              onClick={() => {
+                if (selectedTargetIds.length !== 1) {
+                  alert("请选择一名目标");
+                  return;
+                }
+                moves.usePoJun(selectedTargetIds[0]);
+                setActiveSkill(null);
+                setSelectedTargetIds([]);
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          )}
           <button 
-            onClick={() => setActiveSkill(null)}
+            onClick={() => {
+              setActiveSkill(null);
+              setSelectedTargetIds([]);
+            }}
             style={{
               padding: '5px 10px',
               backgroundColor: '#e74c3c',
@@ -2506,7 +2749,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           targetPlayer={G.players[G.selectCard.targetPlayerID]}
           targetHand={G.hands[G.selectCard.targetPlayerID]}
           onConfirm={(selected) => moves.confirm_select_card(selected)}
-          onCancel={() => {}} // No cancel for now as effect is resolving
+          onCancel={() => moves.cancel_select_card()}
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
           singleSelection={['过河拆桥', '顺手牵羊'].includes(G.selectCard.pendingCard?.name)}
         />
@@ -2518,7 +2761,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           targetPlayer={G.players[G.pojunSelect.targetPlayerID]}
           targetHand={G.hands[G.pojunSelect.targetPlayerID]}
           onConfirm={(selected) => moves.confirmPoJunSelection(selected)}
-          onCancel={() => {}} 
+          onCancel={() => moves.cancelPoJunSelection()}
           title="Po Jun: Select cards to move"
           singleSelection={false}
         />
@@ -2529,6 +2772,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         <FireAttackShowCardModal
           hand={G.hands[playerID]}
           onConfirm={(index) => moves.confirmFireAttackShowCard(index)}
+          onCancel={() => moves.cancelFireAttackShowCard()}
         />
       )}
 
@@ -2545,6 +2789,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           cards={G.harvestCards}
           onPick={(index) => moves.pickHarvestCard(index)}
           onClose={() => moves.endHarvest()}
+        />
+      )}
+
+      {/* Poxi Modal */}
+      {G.poxiSelect && G.poxiSelect.active && G.poxiSelect.stage === 'card_selection' && G.poxiSelect.sourcePlayerID === playerID && (
+        <PoxiModal
+          myHand={G.hands[playerID]}
+          targetHand={G.hands[G.poxiSelect.targetPlayerID]}
+          onConfirm={(myCards, targetCards) => moves.confirmPoxi(myCards, targetCards)}
+          onCancel={() => moves.cancelPoxi()}
         />
       )}
 

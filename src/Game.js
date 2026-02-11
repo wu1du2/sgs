@@ -2,11 +2,12 @@ import { SGS_CARDS } from './sgs_data.js';
 import generalsData from '../configs/generals.json' with { type: "json" };
 
 import { luotongSkill } from './skills/luotong.js';
+import { shenganningSkill } from './skills/shenganning.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['曹纯', '骆统', '势魏延'];
+const TESTING_GENERAL_LIST = ['神甘宁', '界徐盛'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -219,6 +220,18 @@ export const CardGame = {
       active: false,
       sourcePlayerID: null,
       targetPlayerID: null,
+    },
+    poxiSelect: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      stage: null, // 'target_selection', 'card_selection'
+    },
+    jieyingSelect: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      stage: null, // 'target_selection'
     },
   }),
 
@@ -676,6 +689,17 @@ export const CardGame = {
        };
     },
 
+    cancelFireAttackShowCard: ({ G, playerID }) => {
+       if (!G.fireAttackShowCard.active || G.fireAttackShowCard.targetPlayerID !== playerID) return;
+       
+       G.fireAttackShowCard = {
+          active: false,
+          sourcePlayerID: null,
+          targetPlayerID: null
+       };
+       G.actionLog.push(`Player ${playerID} cancelled showing card`);
+    },
+
     discardCards: ({ G, playerID }, cardIndices) => {
       if (G.phase !== 'playing') return;
       
@@ -789,6 +813,39 @@ export const CardGame = {
       if (pendingCard && !['椎锋', '冲坚'].includes(pendingCard.name)) {
         addToDiscardPile(G, pendingCard);
       }
+    },
+
+    cancel_select_card: ({ G, playerID }) => {
+      if (!G.selectCard.active || G.selectCard.sourcePlayerID !== playerID) return;
+      
+      const { pendingCard } = G.selectCard;
+      
+      // Return card to hand if it was a real card played
+      if (pendingCard && pendingCard.suit && pendingCard.rank) {
+         G.hands[playerID].push(pendingCard);
+      }
+
+      G.selectCard = {
+        active: false,
+        sourcePlayerID: null,
+        targetPlayerID: null,
+        actionType: null,
+        pendingCard: null,
+      };
+      
+      G.actionLog.push(`Player ${playerID} cancelled card selection`);
+    },
+
+    cancelPoJunSelection: ({ G, playerID }) => {
+      if (!G.pojunSelect.active || G.pojunSelect.sourcePlayerID !== playerID) return;
+      
+      G.pojunSelect = {
+        active: false,
+        sourcePlayerID: null,
+        targetPlayerID: null
+      };
+      
+      G.actionLog.push(`Player ${playerID} cancelled Po Jun selection`);
     },
 
     changeGeneral: ({ G, playerID }, generalId) => {
@@ -1014,7 +1071,17 @@ export const CardGame = {
           const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
           G.actionLog.push(`${playerName} returned Po Jun cards to ${targetName}`);
       }
-    }
+    },
+
+    // Shen Gan Ning Skills
+    activatePoxi: shenganningSkill.poxi.activate,
+    selectPoxiTarget: shenganningSkill.poxi.selectTarget,
+    confirmPoxi: shenganningSkill.poxi.confirm,
+    cancelPoxi: shenganningSkill.poxi.cancel,
+
+    activateJieying: shenganningSkill.jieying.activate,
+    selectJieyingTarget: shenganningSkill.jieying.selectTarget,
+    cancelJieying: shenganningSkill.jieying.cancel,
   },
 
   endIf: ({ G }) => {
