@@ -62,11 +62,10 @@ const createPlayerState = () => ({
   ...createEmptyZones()
 });
 
-const distributeGenerals = (G) => {
+const distributeGenerals = () => {
   const shuffledGenerals = shuffle(ENABLED_GENERALS);
   const generalOptions = {};
   const generalChangeUsed = {};
-  let genIndex = 0;
   ['0', '1', '2'].forEach(pid => {
     if (pid === '0' && TESTING_GENERAL_LIST.length > 0) {
       // Ensure player 0 gets testing generals
@@ -707,6 +706,19 @@ export const CardGame = {
       G.actionLog.push(`Deck shuffled (merged with discard pile). Total cards: ${G.deck.length}`);
     },
 
+    discardEquipment: ({ G, playerID }, slot) => {
+      const player = G.players[playerID];
+      if (!player.equipments[slot]) return;
+      
+      const card = player.equipments[slot];
+      player.equipments[slot] = null;
+      
+      addToDiscardPile(G, card);
+      
+      const playerName = player.general ? player.general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} discarded equipment ${card.name}`);
+    },
+
     initiatePinDian: ({ G, playerID }, { targetID, skillName }) => {
       G.pindian = {
         active: true,
@@ -1227,7 +1239,7 @@ export const CardGame = {
                     // Steal judgment
                     if (targetPlayer.judges[item.slot]) {
                         card = targetPlayer.judges[item.slot];
-                        delete targetPlayer.judges[item.slot];
+                        targetPlayer.judges[item.slot] = null;
                     }
                 }
 
@@ -1259,7 +1271,7 @@ export const CardGame = {
                     // Discard judgment
                     if (targetPlayer.judges[item.slot]) {
                         card = targetPlayer.judges[item.slot];
-                        delete targetPlayer.judges[item.slot];
+                        targetPlayer.judges[item.slot] = null;
                     }
                 }
 

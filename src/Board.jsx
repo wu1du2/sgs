@@ -2,7 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Card } from './Card';
 import { SGS_CARDS } from './sgs_data';
-import { calculateDistance } from './Game';
 import { caochunSkill } from './skills/caochun';
 import { yangbiaoSkill } from './skills/yangbiao';
 import { shenluxunSkill } from './skills/shenluxun';
