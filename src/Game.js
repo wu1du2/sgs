@@ -317,6 +317,24 @@ export const CardGame = {
   },
 
   moves: {
+    performJudgment: ({ G, playerID }) => {
+      // Draw judgment card
+      if (G.deck.length === 0) {
+        if (G.discardPile.length > 0) {
+            G.deck = shuffle(G.discardPile);
+            G.discardPile = [];
+        } else {
+             G.actionLog.push("Deck and discard pile empty, cannot judge.");
+             return;
+        }
+      }
+      const drawnCard = G.deck.pop();
+      addToDiscardPile(G, drawnCard);
+      
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} performed a judgment: drew ${drawnCard.suit}${drawnCard.rank} ${drawnCard.name}`);
+    },
+
     drawCard: ({ G, playerID }) => {
       const player = G.players[playerID];
       if (player.skipNextDraw) {
