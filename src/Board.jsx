@@ -2386,6 +2386,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [mizhaoTargetA, setMizhaoTargetA] = React.useState(null);
   const [mizhaoTargetB, setMizhaoTargetB] = React.useState(null);
 
+  // Prevent double clicks
+  const processingAction = React.useRef(false);
+  const handleSafeAction = (action) => {
+    if (processingAction.current) return;
+    processingAction.current = true;
+    action();
+    setTimeout(() => {
+      processingAction.current = false;
+    }, 500);
+  };
+
   // Responsive hand width state
   const [maxHandWidth, setMaxHandWidth] = React.useState(
     typeof window !== 'undefined' ? Math.min(600, window.innerWidth - 40) : 600
@@ -2455,7 +2466,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const onClickDraw = () => {
     if (G.phase === 'playing') {
-      moves.drawCard();
+      handleSafeAction(() => moves.drawCard());
     }
   };
 
@@ -2745,13 +2756,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     moves.selectGeneral(generalId);
   };
 
-  const [changingGeneral, setChangingGeneral] = React.useState(false);
-
   const onChangeGeneral = (generalId) => {
-    if (changingGeneral) return;
-    setChangingGeneral(true);
-    moves.changeGeneral(generalId);
-    setTimeout(() => setChangingGeneral(false), 500);
+    handleSafeAction(() => moves.changeGeneral(generalId));
   };
 
   const onBid = (amount) => {
@@ -3166,7 +3172,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             {showLuckCardUI && (
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', pointerEvents: 'auto', position: 'relative', zIndex: 20 }}>
                 <button
-                  onClick={() => moves.useLuckCard()}
+                  onClick={() => handleSafeAction(() => moves.useLuckCard())}
                   disabled={luckCardCount <= 0}
                   style={{
                     padding: '5px 10px',

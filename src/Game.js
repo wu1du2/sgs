@@ -17,7 +17,7 @@ import { jielubuSkill } from './skills/jielubu.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['界吕布', '马良', '神陆逊', '刘协'];
+const TESTING_GENERAL_LIST = [];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
