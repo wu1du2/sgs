@@ -23,7 +23,7 @@ import { xizhicaiSkill } from './skills/xizhicai.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ["刘焉", "神赵云", "戏志才"];
+const TESTING_GENERAL_LIST = [];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
