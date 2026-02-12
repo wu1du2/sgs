@@ -10,11 +10,12 @@ import { shiweiyanSkill } from './skills/shiweiyan.js';
 import { yangbiaoSkill } from './skills/yangbiao.js';
 import { caoangSkill } from './skills/caoang.js';
 import { shenluxunSkill } from './skills/shenluxun.js';
+import { zhangxiuSkill } from './skills/zhangxiu.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['曹昂', '神陆逊', '刘协'];
+const TESTING_GENERAL_LIST = ['张绣', '神陆逊', '刘协'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -294,6 +295,13 @@ export const CardGame = {
       stage: null,
     },
     rangjieTempCard: null,
+    congjianSelect: {
+      active: false,
+      stage: null,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      selectedCard: null,
+    },
   }),
 
   turn: {
@@ -395,6 +403,62 @@ export const CardGame = {
     },
     useRangjie: ({ G, playerID }) => {
         yangbiaoSkill.rangjie.action({ G, playerID });
+    },
+    useCongJian: ({ G, playerID }) => {
+        zhangxiuSkill.congjian.action({ G, playerID });
+    },
+    selectCongJianTarget: ({ G }, targetPlayerID) => {
+        if (G.congjianSelect.active && G.congjianSelect.stage === 'target_selection') {
+            G.congjianSelect.targetPlayerID = targetPlayerID;
+        }
+    },
+    confirmCongJianTarget: ({ G }) => {
+        if (G.congjianSelect.active && G.congjianSelect.stage === 'target_selection' && G.congjianSelect.targetPlayerID) {
+            G.congjianSelect.stage = 'card_selection';
+        }
+    },
+    cancelCongJian: ({ G }) => {
+        G.congjianSelect.active = false;
+        G.congjianSelect.stage = null;
+        G.congjianSelect.sourcePlayerID = null;
+        G.congjianSelect.targetPlayerID = null;
+        G.congjianSelect.selectedCard = null;
+    },
+    selectCongJianCard: ({ G }, cardData) => {
+         if (G.congjianSelect.active && G.congjianSelect.stage === 'card_selection') {
+             G.congjianSelect.selectedCard = cardData;
+         }
+    },
+    confirmCongJianCard: ({ G }) => {
+        const { sourcePlayerID, targetPlayerID, selectedCard } = G.congjianSelect;
+        if (!selectedCard) return;
+
+        const { type, index, slot } = selectedCard;
+        
+        const sourcePlayer = G.players[sourcePlayerID];
+        const targetHand = G.hands[targetPlayerID];
+        let cardToMove = null;
+
+        if (type === 'hand') {
+            cardToMove = G.hands[sourcePlayerID].splice(index, 1)[0];
+        } else if (type === 'equip') {
+            cardToMove = sourcePlayer.equipments[slot];
+            sourcePlayer.equipments[slot] = null;
+        }
+
+        if (cardToMove) {
+            targetHand.push(cardToMove);
+            const sourceName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${sourcePlayerID}`;
+            const targetName = G.players[targetPlayerID].general ? G.players[targetPlayerID].general.name : `Player ${targetPlayerID}`;
+            G.actionLog.push(`${sourceName} gave a card to ${targetName} via Cong Jian`);
+        }
+
+        // Reset state
+        G.congjianSelect.active = false;
+        G.congjianSelect.stage = null;
+        G.congjianSelect.sourcePlayerID = null;
+        G.congjianSelect.targetPlayerID = null;
+        G.congjianSelect.selectedCard = null;
     },
     
     useLuckCard: ({ G, playerID }) => {

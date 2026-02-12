@@ -2127,6 +2127,127 @@ const PinDianModal = ({ hand, onConfirm, title }) => {
   );
 };
 
+const CongJianModal = ({ hand, equipments, selectedCard, onSelect, onConfirm, onCancel }) => {
+  const isSelected = (type, value) => {
+    if (!selectedCard) return false;
+    if (type !== selectedCard.type) return false;
+    return type === 'hand' ? selectedCard.index === value : selectedCard.slot === value;
+  };
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        maxHeight: '80%',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <h3 style={{ textAlign: 'center' }}>请选择一张牌交给目标</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {hand.map((card, index) => (
+            <div
+              key={`hand-${index}`}
+              onClick={() => onSelect({ type: 'hand', index })}
+              style={{
+                width: '80px',
+                height: '120px',
+                backgroundColor: '#ecf0f1',
+                borderRadius: '6px',
+                border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #bdc3c7',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                color: getSuitColor(card.suit),
+                transform: isSelected('hand', index) ? 'scale(1.08)' : 'scale(1)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
+                {card.suit}
+              </div>
+              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
+                {card.rank}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
+                {card.name}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {Object.entries(equipments).map(([slot, card]) => {
+            if (!card) return null;
+            return (
+              <div
+                key={`equip-${slot}`}
+                onClick={() => onSelect({ type: 'equip', slot })}
+                style={{
+                  padding: '10px',
+                  backgroundColor: isSelected('equip', slot) ? 'rgba(0, 255, 255, 0.3)' : '#444',
+                  border: isSelected('equip', slot) ? '3px solid #00ffff' : '1px solid #aaa',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  color: 'white'
+                }}
+              >
+                {card.name} ({slot})
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={!selectedCard}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: selectedCard ? '#4CAF50' : '#555',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: selectedCard ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MiZhaoPinDianModal = ({ hand, onConfirm, title }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
@@ -2418,6 +2539,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    // CongJian Target Selection
+    if (G.congjianSelect && G.congjianSelect.active && G.congjianSelect.stage === 'target_selection') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.selectCongJianTarget(targetId);
+      return;
+    }
+
     if (selectedCardIndices.length > 0) {
        if (selectedTargetIds.includes(targetId)) {
          setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
@@ -2701,6 +2832,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName === '让节') {
       moves.useRangjie();
+      return;
+    }
+
+    if (skillName === '从谏') {
+      moves.useCongJian();
       return;
     }
 
@@ -3845,6 +3981,63 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onPick={(index) => moves.pickHarvestCard(index)}
           onClose={() => moves.endHarvest()}
         />
+      )}
+
+      {/* CongJian Modal */}
+      {G.congjianSelect && G.congjianSelect.active && G.congjianSelect.stage === 'card_selection' && G.congjianSelect.sourcePlayerID === playerID && (
+        <CongJianModal
+          hand={G.hands[playerID]}
+          equipments={G.players[playerID].equipments}
+          selectedCard={G.congjianSelect.selectedCard}
+          onSelect={(cardData) => moves.selectCongJianCard(cardData)}
+          onConfirm={() => moves.confirmCongJianCard()}
+          onCancel={() => moves.cancelCongJian()}
+        />
+      )}
+      
+      {/* CongJian Target Confirm */}
+      {G.congjianSelect && G.congjianSelect.active && G.congjianSelect.stage === 'target_selection' && G.congjianSelect.sourcePlayerID === playerID && (
+        <div style={{
+          position: 'fixed',
+          bottom: '250px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '20px',
+          zIndex: 2000
+        }}>
+           <button
+             onClick={() => moves.confirmCongJianTarget()}
+             disabled={!G.congjianSelect.targetPlayerID}
+             style={{
+               padding: '10px 30px',
+               backgroundColor: G.congjianSelect.targetPlayerID ? '#4CAF50' : '#555',
+               color: 'white',
+               border: 'none',
+               borderRadius: '5px',
+               fontSize: '18px',
+               cursor: G.congjianSelect.targetPlayerID ? 'pointer' : 'not-allowed',
+               boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+             }}
+           >
+             确定目标
+           </button>
+           <button
+             onClick={() => moves.cancelCongJian()}
+             style={{
+               padding: '10px 30px',
+               backgroundColor: '#f44336',
+               color: 'white',
+               border: 'none',
+               borderRadius: '5px',
+               fontSize: '18px',
+               cursor: 'pointer',
+               boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+             }}
+           >
+             取消
+           </button>
+        </div>
       )}
 
       {/* Poxi Modal */}
