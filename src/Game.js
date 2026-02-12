@@ -14,11 +14,12 @@ import { zhangxiuSkill } from './skills/zhangxiu.js';
 import { maliangSkill } from './skills/maliang.js';
 import { jielubuSkill } from './skills/jielubu.js';
 import { shitaishiciSkill } from './skills/shitaishici.js';
+import { jiejushouSkill } from './skills/jiejushou.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ["势太史慈"];
+const TESTING_GENERAL_LIST = ["界沮授"];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -63,6 +64,7 @@ const createPlayerState = () => ({
   is_turned_over: false,
   skipNextDraw: false,
   pojun: {},
+  jianying: { suit: null, rank: null }, // For Jie Jushou
   ...createEmptyZones()
 });
 
@@ -165,6 +167,23 @@ const addToDiscardPile = (G, cards) => {
   if (!cards) return;
   const toAdd = Array.isArray(cards) ? cards : [cards];
   const validCards = toAdd.filter(Boolean);
+  
+  // Restore original names for Jianying cards
+  validCards.forEach(c => {
+      if (c._originalName) {
+          c.name = c._originalName;
+          delete c._originalName;
+      }
+      if (c._originalType) {
+          c.type = c._originalType;
+          delete c._originalType;
+      }
+      if (c._originalSuit) {
+          c.suit = c._originalSuit;
+          delete c._originalSuit;
+      }
+  });
+
   if (validCards.length > 0) {
     G.discardPile.push(...validCards);
   }
@@ -255,6 +274,12 @@ export const CardGame = {
       sourcePlayerID: null,
       targetPlayerID: null,
       stage: null, // 'target_selection'
+    },
+    jianyingSelect: {
+        active: false,
+        stage: null, // 'card_selection', 'name_selection'
+        selectedIndex: null,
+        playerID: null
     },
     kangkaiSelect: {
       active: false,
@@ -666,6 +691,19 @@ export const CardGame = {
       const hand = G.hands[playerID];
       const cardsPlayed = cardIndices.map(i => hand[i]);
       
+      // Record for Jie Jushou (Jianying)
+      if (G.players[playerID].general && G.players[playerID].general.name === '界沮授' && cardsPlayed.length > 0) {
+          // Record the last played card (taking the first one if multiple, though usually 1)
+          // Note: If Jianying modifies the card name/type, the suit/rank usually stays same.
+          // We record AFTER modification if it was modified by Jianying, but Jianying modifies name not suit/rank.
+          // So it's fine.
+          const lastCard = cardsPlayed[0];
+          G.players[playerID].jianying = {
+              suit: lastCard.suit,
+              rank: lastCard.rank
+          };
+      }
+
       // Remove cards from hand
       // Sort indices descending to remove correctly
       [...cardIndices].sort((a, b) => b - a).forEach(index => {
@@ -1589,6 +1627,70 @@ export const CardGame = {
     },
     liyuObtainCard: ({ G, playerID }, targetID, selectedCards) => {
         jielubuSkill.liyuObtainCard({ G, playerID }, targetID, selectedCards);
+    },
+
+    // Jie Jushou Skills
+    activateJianying: ({ G, playerID }) => {
+        G.jianyingSelect = {
+            active: true,
+            stage: 'card_selection',
+            selectedIndex: null,
+            playerID: playerID
+        };
+    },
+    selectJianyingCard: ({ G, playerID }, cardIndex) => {
+        if (!G.jianyingSelect.active || G.jianyingSelect.playerID !== playerID) return;
+        G.jianyingSelect.selectedIndex = cardIndex;
+        G.jianyingSelect.stage = 'name_selection';
+    },
+    selectJianyingName: ({ G, playerID }, newName) => {
+        if (!G.jianyingSelect.active || G.jianyingSelect.playerID !== playerID) return;
+        const index = G.jianyingSelect.selectedIndex;
+        const hand = G.hands[playerID];
+        
+        if (index >= 0 && index < hand.length) {
+            const card = hand[index];
+            // Save original info
+            card._originalName = card.name;
+            card._originalType = card.type;
+            
+            // Check for previous suit and modify if exists
+            const previousJianying = G.players[playerID].jianying;
+            if (previousJianying && previousJianying.suit) {
+                card._originalSuit = card.suit;
+                card.suit = previousJianying.suit;
+            }
+
+            // Modify
+            card.name = newName;
+            card.type = '基本'; // All 3 options (Kill, Wine, Peach) are Basic cards
+            
+            // Execute play logic
+            // We reuse playCards. Note that playCards expects cardIndices.
+            // Since we modified the card IN PLACE in the hand, playCards will see the modified version.
+            // We pass empty targets array. If '杀' needs target, it will likely be discarded or just played without target.
+            // The requirement "execute the logic of playing this card" is satisfied by invoking the standard play function.
+            CardGame.moves.playCards({ G, playerID }, [index], []);
+            
+            const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+            G.actionLog.push(`${playerName} activated Jianying: played ${card._originalName} as ${newName}`);
+        }
+        
+        // Reset
+        G.jianyingSelect = {
+            active: false,
+            stage: null,
+            selectedIndex: null,
+            playerID: null
+        };
+    },
+    cancelJianying: ({ G, playerID }) => {
+        G.jianyingSelect = {
+            active: false,
+            stage: null,
+            selectedIndex: null,
+            playerID: null
+        };
     },
   },
 };

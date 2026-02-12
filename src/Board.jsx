@@ -15,7 +15,7 @@ const getSuitColor = (suit) => {
   return '#fff';
 };
 
-const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title, singleSelection }) => {
+const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title, singleSelection, revealHand }) => {
   const [selected, setSelected] = React.useState([]);
 
   const toggleSelection = (item) => {
@@ -70,20 +70,30 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
                 style={{
                   width: '60px',
                   height: '90px',
-                  backgroundColor: isSelected('hand', index) ? 'rgba(0, 255, 255, 0.3)' : '#555',
+                  backgroundColor: isSelected('hand', index) ? 'rgba(0, 255, 255, 0.3)' : (revealHand ? '#ecf0f1' : '#555'),
                   border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #aaa',
                   borderRadius: '5px',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
                   boxShadow: isSelected('hand', index) ? '0 0 15px #00ffff' : 'none',
                   animation: isSelected('hand', index) ? 'pulse-selected 1.5s infinite' : 'none',
-                  color: '#aaa',
-                  fontSize: '12px'
+                  color: revealHand ? getSuitColor(card.suit) : '#aaa',
+                  fontSize: '12px',
+                  position: 'relative'
                 }}
               >
-                Card Back
+                {revealHand ? (
+                  <>
+                    <div style={{ position: 'absolute', top: '5px', left: '5px' }}>{card.suit}</div>
+                    <div style={{ position: 'absolute', top: '5px', right: '5px' }}>{card.rank}</div>
+                    <div style={{ fontWeight: 'bold' }}>{card.name}</div>
+                  </>
+                ) : (
+                  'Card Back'
+                )}
               </div>
             ))}
           </div>
@@ -2525,6 +2535,84 @@ const ZhenFengModal = ({ onConfirm, onCancel }) => {
   );
 };
 
+const JianyingNameModal = ({ onConfirm, onCancel }) => {
+  const options = ['杀', '酒', '桃'];
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        minWidth: '300px'
+      }}>
+        <h3 style={{ color: 'white', textAlign: 'center', margin: 0 }}>请选择变换后的牌名</h3>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          {options.map(opt => (
+            <button
+              key={opt}
+              onClick={() => onConfirm(opt)}
+              style={{
+                padding: '10px 20px',
+                fontSize: '16px',
+                backgroundColor: '#e67e22',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={onCancel}
+          style={{
+            padding: '8px',
+            backgroundColor: '#7f8c8d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            marginTop: '10px'
+          }}
+        >
+          取消
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const JianyingDisplay = ({ suit, rank }) => {
+  if (!suit) return null;
+  return (
+    <div style={{
+      marginTop: '5px',
+      padding: '2px 5px',
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      color: getSuitColor(suit),
+      borderRadius: '4px',
+      fontSize: '12px',
+      border: '1px solid #aaa',
+      textAlign: 'center'
+    }}>
+      上一张: {suit}{rank}
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -3199,6 +3287,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    // Jie Jushou Skills
+    if (skillName === '渐营') {
+        moves.activateJianying();
+        return;
+    }
+
     moves.useSkill(skillName);
   };
 
@@ -3578,6 +3672,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               isLinked={G.players[id]?.is_linked}
               onToggleChain={() => onToggleChain(id)}
             />
+            <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </div>
         </React.Fragment>
       );
@@ -3587,25 +3682,28 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       <div style={areaStyle}>
         {/* Hero Area for Left/Right players */}
         {!isMe && (
-          <HeroArea 
-            name={general ? general.name : `Player ${id}`}
-            hp={player?.hp ?? (general ? general.hp : 4)}
-            hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
-            skills={general ? general.skills : ["Strike", "Dodge"]}
-            portrait={general ? general.portrait : null}
-            role={role}
-            onClick={() => onHeroClick(id)}
-            isSelectable={isSelectable}
-            isSelected={isSelected}
-            equipments={equipments}
-            onModifyHP={(amount) => onModifyHP(id, amount)}
-            judges={judges}
-            onToggleJudgment={(type) => onToggleJudgment(id, type)}
-            scale={isCompact ? 0.9 : 1}
-            handCount={hand.length}
-            isLinked={G.players[id]?.is_linked}
-            onToggleChain={() => onToggleChain(id)}
-          />
+          <>
+            <HeroArea 
+              name={general ? general.name : `Player ${id}`}
+              hp={player?.hp ?? (general ? general.hp : 4)}
+              hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
+              skills={general ? general.skills : ["Strike", "Dodge"]}
+              portrait={general ? general.portrait : null}
+              role={role}
+              onClick={() => onHeroClick(id)}
+              isSelectable={isSelectable}
+              isSelected={isSelected}
+              equipments={equipments}
+              onModifyHP={(amount) => onModifyHP(id, amount)}
+              judges={judges}
+              onToggleJudgment={(type) => onToggleJudgment(id, type)}
+              scale={isCompact ? 0.9 : 1}
+              handCount={hand.length}
+              isLinked={G.players[id]?.is_linked}
+              onToggleChain={() => onToggleChain(id)}
+            />
+            <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
+          </>
         )}
         
         <PlayerInfo />
@@ -3674,6 +3772,35 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Jie Jushou Jianying Modals */}
+      {G.jianyingSelect && G.jianyingSelect.active && G.jianyingSelect.playerID === playerID && (
+          <>
+              {G.jianyingSelect.stage === 'card_selection' && (
+                  <CardSelectionModal
+                      targetPlayer={G.players[playerID]}
+                      targetHand={G.hands[playerID]}
+                      singleSelection={true}
+                      title="渐营：请选择一张手牌"
+                      revealHand={true}
+                      onConfirm={(selected) => {
+                          if (selected && selected.length > 0 && selected[0].type === 'hand') {
+                              moves.selectJianyingCard(selected[0].index);
+                          } else {
+                              alert("请选择一张手牌");
+                          }
+                      }}
+                      onCancel={() => moves.cancelJianying()}
+                  />
+              )}
+              {G.jianyingSelect.stage === 'name_selection' && (
+                  <JianyingNameModal
+                      onConfirm={(name) => moves.selectJianyingName(name)}
+                      onCancel={() => moves.cancelJianying()}
+                  />
+              )}
+          </>
       )}
 
       {/* Judgment Menu Overlay */}
