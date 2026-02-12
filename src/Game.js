@@ -12,11 +12,12 @@ import { caoangSkill } from './skills/caoang.js';
 import { shenluxunSkill } from './skills/shenluxun.js';
 import { zhangxiuSkill } from './skills/zhangxiu.js';
 import { maliangSkill } from './skills/maliang.js';
+import { jielubuSkill } from './skills/jielubu.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['马良', '神陆逊', '刘协'];
+const TESTING_GENERAL_LIST = ['界吕布', '马良', '神陆逊', '刘协'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -302,6 +303,16 @@ export const CardGame = {
       sourcePlayerID: null,
       targetPlayerID: null,
       selectedCard: null,
+    },
+    liyuTargeting: {
+      active: false,
+      sourceID: null,
+      selectedTargetID: null,
+    },
+    liyuCardSelecting: {
+      active: false,
+      sourceID: null,
+      targetID: null,
     },
     maliang: {
       cheeringPile: [],
@@ -1561,5 +1572,22 @@ export const CardGame = {
     maliangTransferConfirm: maliangSkill.transfer.confirm,
     maliangTransferCancel: maliangSkill.transfer.cancel,
     maliangDiscardCheering: maliangSkill.discard,
+    
+    // Jie Lu Bu Skills
+    useLiyu: ({ G, playerID }) => {
+        jielubuSkill.useLiyu({ G, playerID });
+    },
+    selectLiyuTarget: ({ G, playerID }, targetID) => {
+        jielubuSkill.selectLiyuTarget({ G, playerID }, targetID);
+    },
+    confirmLiyuTarget: ({ G, playerID }) => {
+        jielubuSkill.confirmLiyuTarget({ G, playerID });
+    },
+    cancelLiyuTarget: ({ G, playerID }) => {
+        jielubuSkill.cancelLiyuTarget({ G, playerID });
+    },
+    liyuObtainCard: ({ G, playerID }, targetID, selectedCards) => {
+        jielubuSkill.liyuObtainCard({ G, playerID }, targetID, selectedCards);
+    },
   },
 };

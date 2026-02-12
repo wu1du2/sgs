@@ -2595,6 +2595,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    // Liyu Target Selection
+    if (G.liyuTargeting && G.liyuTargeting.active && G.liyuTargeting.sourceID === playerID) {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.selectLiyuTarget(targetId);
+      return;
+    }
+
     if (selectedCardIndices.length > 0) {
        if (selectedTargetIds.includes(targetId)) {
          setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
@@ -2844,6 +2854,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName.startsWith('昭汉')) {
       moves.useZhaohan();
+      return;
+    }
+
+    if (skillName === '利驭') {
+      moves.useLiyu();
       return;
     }
 
@@ -4093,6 +4108,63 @@ export function CardBoard({ ctx, G, moves, playerID }) {
              取消
            </button>
         </div>
+      )}
+
+      {/* Liyu Target Confirm */}
+      {G.liyuTargeting && G.liyuTargeting.active && G.liyuTargeting.sourceID === playerID && (
+        <div style={{
+          position: 'fixed',
+          bottom: '250px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '20px',
+          zIndex: 2000
+        }}>
+           <button
+             onClick={() => moves.confirmLiyuTarget()}
+             disabled={!G.liyuTargeting.selectedTargetID}
+             style={{
+               padding: '10px 30px',
+               backgroundColor: G.liyuTargeting.selectedTargetID ? '#4CAF50' : '#555',
+               color: 'white',
+               border: 'none',
+               borderRadius: '5px',
+               fontSize: '18px',
+               cursor: G.liyuTargeting.selectedTargetID ? 'pointer' : 'not-allowed',
+               boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+             }}
+           >
+             确定目标
+           </button>
+           <button
+             onClick={() => moves.cancelLiyuTarget()}
+             style={{
+               padding: '10px 30px',
+               backgroundColor: '#f44336',
+               color: 'white',
+               border: 'none',
+               borderRadius: '5px',
+               fontSize: '18px',
+               cursor: 'pointer',
+               boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+             }}
+           >
+             取消
+           </button>
+        </div>
+      )}
+
+      {/* Liyu Card Selection Modal */}
+      {G.liyuCardSelecting && G.liyuCardSelecting.active && G.liyuCardSelecting.sourceID === playerID && (
+        <CardSelectionModal
+          targetPlayer={G.players[G.liyuCardSelecting.targetID]}
+          targetHand={G.hands[G.liyuCardSelecting.targetID]}
+          onConfirm={(selected) => moves.liyuObtainCard(G.liyuCardSelecting.targetID, selected)}
+          onCancel={() => moves.cancelLiyuTarget()}
+          title="利驭: 请选择一张牌"
+          singleSelection={true}
+        />
       )}
 
       {/* Poxi Modal */}
