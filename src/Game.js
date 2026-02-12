@@ -15,11 +15,12 @@ import { maliangSkill } from './skills/maliang.js';
 import { jielubuSkill } from './skills/jielubu.js';
 import { shitaishiciSkill } from './skills/shitaishici.js';
 import { jiejushouSkill } from './skills/jiejushou.js';
+import { xuyouSkill } from './skills/xuyou.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ["界沮授"];
+const TESTING_GENERAL_LIST = [];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -346,6 +347,11 @@ export const CardGame = {
       status: 'idle',
       sourcePlayerID: null,
     },
+    xuyouChengLueSelect: {
+      active: false,
+      stage: null, // 'discard_2_yang', 'discard_1_yin'
+      playerID: null,
+    },
   }),
 
   turn: {
@@ -355,6 +361,7 @@ export const CardGame = {
   },
 
   moves: {
+    ...xuyouSkill.moves,
     performJudgment: ({ G, playerID }) => {
       // Draw judgment card
       if (G.deck.length === 0) {

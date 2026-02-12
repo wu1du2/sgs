@@ -2626,6 +2626,49 @@ const JianyingDisplay = ({ suit, rank }) => {
   );
 };
 
+const ShiCaiModal = ({ cards, onMoveToTop, onDiscardAll, onClose }) => {
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333', padding: '20px', borderRadius: '10px',
+        display: 'flex', flexDirection: 'column', gap: '20px', minWidth: '400px', maxHeight: '80%', overflowY: 'auto'
+      }}>
+        <h3 style={{ color: 'white', textAlign: 'center', margin: 0 }}>恃才区域</h3>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {cards.length === 0 ? <div style={{color:'#aaa'}}>空</div> : cards.map((card, index) => (
+             <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                <div style={{
+                    width: '60px', height: '90px', backgroundColor: '#ecf0f1',
+                    borderRadius: '5px', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', position: 'relative',
+                    color: getSuitColor(card.suit)
+                }}>
+                    <div style={{ position: 'absolute', top: '2px', left: '2px', fontSize: '10px' }}>{card.suit}</div>
+                    <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px' }}>{card.rank}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{card.name}</div>
+                </div>
+                <button onClick={() => onMoveToTop(index)} style={{ fontSize: '10px', padding: '2px 5px', cursor: 'pointer' }}>置于牌堆顶</button>
+             </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+             <button onClick={onDiscardAll} style={{ padding: '8px 16px', backgroundColor: '#e74c3c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                全部弃置
+             </button>
+             <button onClick={onClose} style={{ padding: '8px 16px', backgroundColor: '#95a5a6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                关闭
+             </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -2653,6 +2696,9 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [showZhenFengModal, setShowZhenFengModal] = React.useState(false);
   const [zhenFengHanZhan, setZhenFengHanZhan] = React.useState('hpMax');
   const [zhenFengZhanLie, setZhenFengZhanLie] = React.useState('attackRange');
+
+  // Xu You State
+  const [showShiCaiModal, setShowShiCaiModal] = React.useState(false);
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
@@ -2740,7 +2786,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const onClickDraw = () => {
     if (G.phase === 'playing') {
       const actionId = Date.now() + Math.random();
-      handleSafeAction(() => moves.drawCard(actionId));
+      const me = G.players[playerID];
+      if (me.general && me.general.name === '许攸') {
+        handleSafeAction(() => moves.xuyouDrawCard(actionId));
+      } else {
+        handleSafeAction(() => moves.drawCard(actionId));
+      }
     }
   };
 
@@ -2984,7 +3035,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       setTimeout(() => setLasers([]), 1000);
     }
 
-    moves.playCards(selectedCardIndices, selectedTargetIds);
+    const me = G.players[playerID];
+    if (me.general && me.general.name === '许攸') {
+        moves.xuyouPlayCards(selectedCardIndices, selectedTargetIds);
+    } else {
+        moves.playCards(selectedCardIndices, selectedTargetIds);
+    }
     setSelectedCardIndices([]);
     setSelectedTargetIds([]);
   };
@@ -3129,6 +3185,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     // Read-only display skills (containing colon)
     if (skillName.includes(':')) {
+        return;
+    }
+
+    if (skillName.startsWith('成略')) {
+        moves.xuyouChengLue();
+        return;
+    }
+
+    if (skillName.startsWith('恃才')) {
+        setShowShiCaiModal(true);
         return;
     }
 
@@ -3325,6 +3391,25 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     let displaySkills = general ? general.skills : ["Strike", "Dodge"];
     if (isMe && general) {
+      if (general.name === '许攸') {
+        const state = player.xuyouState || 'yang';
+        displaySkills = general.skills.map(s => {
+           if (s === '成略') {
+             return state === 'yang' ? '成略(阳)' : '成略(阴)';
+           }
+           if (s === '恃才') {
+             const count = player.shicai ? player.shicai.length : 0;
+             return `恃才[${count}]`;
+           }
+           return s;
+        });
+        
+        // Also show recorded suits
+        if (player.chengLueSuits && player.chengLueSuits.length > 0) {
+            displaySkills.push(`Recorded: ${player.chengLueSuits.join(',')}`);
+        }
+      }
+
       if (general.skills && general.skills.includes(caochunSkill.shanjia.name)) {
         displaySkills = general.skills.map(s => {
           if (s === caochunSkill.shanjia.name) {
@@ -3741,6 +3826,39 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* Xu You Shi Cai Modal */}
+      {showShiCaiModal && (
+        <ShiCaiModal
+            cards={G.players[playerID].shicai || []}
+            onMoveToTop={(index) => moves.xuyouShiCaiToTop(index)}
+            onDiscardAll={() => moves.xuyouShiCaiToDiscard()}
+            onClose={() => setShowShiCaiModal(false)}
+        />
+      )}
+      
+      {/* Xu You Cheng Lue Selection */}
+      {G.xuyouChengLueSelect && G.xuyouChengLueSelect.active && G.xuyouChengLueSelect.playerID === playerID && (
+         <CardSelectionModal
+            targetPlayer={G.players[playerID]}
+            targetHand={G.hands[playerID]}
+            onConfirm={(items) => {
+                const count = G.xuyouChengLueSelect.stage === 'discard_2_yang' ? 2 : 1;
+                if (items.length !== count) {
+                    alert(`请选择${count}张手牌弃置`);
+                    return;
+                }
+                const realIndices = items.map(x => x.index);
+                moves.xuyouChengLueDiscard(realIndices);
+            }}
+            onCancel={() => {
+                 alert("必须弃牌");
+            }}
+            title={G.xuyouChengLueSelect.stage === 'discard_2_yang' ? "成略(阳): 弃置2张手牌" : "成略(阴): 弃置1张手牌"}
+            singleSelection={false}
+            revealHand={true}
+         />
+      )}
+
       {/* Equipment Menu Overlay */}
       {equipmentMenu && (
         <div style={{
@@ -3763,6 +3881,26 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             minWidth: '200px'
           }} onClick={e => e.stopPropagation()}>
             <h3 style={{ color: '#ffd700', margin: '0 0 10px 0', textAlign: 'center' }}>装备操作</h3>
+            {/* Control Top Button for Xu You */}
+            {G.players[playerID].general && G.players[playerID].general.name === '许攸' && (
+                <button
+                    onClick={() => {
+                        moves.xuyouEquipToTop(equipmentMenu.slot);
+                        setEquipmentMenu(null);
+                    }}
+                    style={{
+                        padding: '10px',
+                        backgroundColor: '#3498db',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    控顶
+                </button>
+            )}
             <button
               onClick={handleDiscardEquipment}
               style={{
