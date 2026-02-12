@@ -13,11 +13,12 @@ import { shenluxunSkill } from './skills/shenluxun.js';
 import { zhangxiuSkill } from './skills/zhangxiu.js';
 import { maliangSkill } from './skills/maliang.js';
 import { jielubuSkill } from './skills/jielubu.js';
+import { shitaishiciSkill } from './skills/shitaishici.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = [];
+const TESTING_GENERAL_LIST = ["势太史慈"];
 
 // Fisher-Yates shuffle
 function shuffle(array) {

@@ -2432,6 +2432,99 @@ const MiZhaoPinDianModal = ({ hand, onConfirm, title }) => {
   );
 };
 
+const ZhanLieModal = ({ currentX, onConfirm, onCancel }) => {
+  const [x, setX] = React.useState(currentX || 0);
+
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333', padding: '20px', borderRadius: '10px', width: '300px',
+        display: 'flex', flexDirection: 'column', gap: '20px', color: 'white'
+      }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>战烈: 更新X</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <label>数值: {x}</label>
+            <input 
+                type="range" 
+                min="0" 
+                max="10" 
+                value={x} 
+                onChange={(e) => setX(parseInt(e.target.value))} 
+                style={{ width: '100%' }}
+            />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button onClick={onCancel} style={{ padding: '8px 15px', backgroundColor: '#7f8c8d', border: 'none', borderRadius: '5px', color: 'white', cursor: 'pointer' }}>取消</button>
+          <button onClick={() => onConfirm(x)} style={{ padding: '8px 15px', backgroundColor: '#e67e22', border: 'none', borderRadius: '5px', color: 'white', cursor: 'pointer' }}>确定</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ZhenFengModal = ({ onConfirm, onCancel }) => {
+  const [hanZhanChoice, setHanZhanChoice] = React.useState('hpMax');
+  const [zhanLieChoice, setZhanLieChoice] = React.useState('attackRange');
+
+  const hanZhanOptions = [
+    { value: 'hpMax', label: '体力上限' },
+    { value: 'hp', label: '当前体力值' },
+    { value: 'lostHp', label: '已损失体力值' },
+    { value: 'aliveCount', label: '存活角色数' }
+  ];
+
+  const zhanLieOptions = [
+    { value: 'attackRange', label: '攻击范围' },
+    { value: 'hp', label: '当前体力值' },
+    { value: 'lostHp', label: '已损失体力值' },
+    { value: 'aliveCount', label: '存活角色数' }
+  ];
+
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333', padding: '20px', borderRadius: '10px', width: '350px',
+        display: 'flex', flexDirection: 'column', gap: '20px', color: 'white'
+      }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>振锋: 调整数值</h3>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <label>酣战调整:</label>
+          <select 
+            value={hanZhanChoice} 
+            onChange={(e) => setHanZhanChoice(e.target.value)}
+            style={{ padding: '8px', borderRadius: '5px', backgroundColor: '#555', color: 'white', border: 'none' }}
+          >
+            {hanZhanOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <label>战烈调整:</label>
+          <select 
+            value={zhanLieChoice} 
+            onChange={(e) => setZhanLieChoice(e.target.value)}
+            style={{ padding: '8px', borderRadius: '5px', backgroundColor: '#555', color: 'white', border: 'none' }}
+          >
+            {zhanLieOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button onClick={onCancel} style={{ padding: '8px 15px', backgroundColor: '#7f8c8d', border: 'none', borderRadius: '5px', color: 'white', cursor: 'pointer' }}>取消</button>
+          <button onClick={() => onConfirm(hanZhanChoice, zhanLieChoice)} style={{ padding: '8px 15px', backgroundColor: '#e67e22', border: 'none', borderRadius: '5px', color: 'white', cursor: 'pointer' }}>确定</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -2452,6 +2545,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [mizhaoStage, setMizhaoStage] = React.useState(null);
   const [mizhaoTargetA, setMizhaoTargetA] = React.useState(null);
   const [mizhaoTargetB, setMizhaoTargetB] = React.useState(null);
+  
+  // Shi Taishi Ci State
+  const [showZhanLieModal, setShowZhanLieModal] = React.useState(false);
+  const [zhanLieX, setZhanLieX] = React.useState(0);
+  const [showZhenFengModal, setShowZhenFengModal] = React.useState(false);
+  const [zhenFengHanZhan, setZhenFengHanZhan] = React.useState('hpMax');
+  const [zhenFengZhanLie, setZhenFengZhanLie] = React.useState('attackRange');
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
@@ -2924,6 +3024,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const skillName = rawSkillName.trim();
     console.log('onSkillClick called with:', skillName, 'length:', skillName.length);
 
+    // Read-only display skills (containing colon)
+    if (skillName.includes(':')) {
+        return;
+    }
+
     if (skillName.startsWith(caochunSkill.shanjia.name)) {
       setShanJiaState(prev => caochunSkill.shanjia.cycleState(prev));
       // Removed setActiveSkill('缮甲') to prevent target selection prompt
@@ -3083,6 +3188,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    // Shi Taishi Ci Skills
+    if (skillName.startsWith('战烈')) {
+      setShowZhanLieModal(true);
+      return;
+    }
+
+    if (skillName === '振锋') {
+      setShowZhenFengModal(true);
+      return;
+    }
+
     moves.useSkill(skillName);
   };
 
@@ -3133,6 +3249,32 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             return shenluxunSkill.junlue.getDisplayName(player.junlueCount);
           }
           return s;
+        });
+      }
+
+      if (general.name === '势太史慈') {
+        const hanZhanLabel = {
+          hpMax: '体力上限',
+          hp: '当前体力值',
+          lostHp: '已损失体力值',
+          aliveCount: '存活角色数'
+        }[zhenFengHanZhan] || zhenFengHanZhan;
+
+        const zhanLieLabel = {
+          attackRange: '攻击范围',
+          hp: '当前体力值',
+          lostHp: '已损失体力值',
+          aliveCount: '存活角色数'
+        }[zhenFengZhanLie] || zhenFengZhanLie;
+
+        displaySkills = general.skills.flatMap(s => {
+          if (s === '战烈') {
+            return [`战烈${zhanLieX}`];
+          }
+          if (s === '振锋') {
+            return ['振锋', `酣战:${hanZhanLabel}`, `战烈:${zhanLieLabel}`];
+          }
+          return [s];
         });
       }
     }
@@ -4278,6 +4420,29 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           hand={G.hands[playerID]} 
           title={mizhaoPinDianTitle}
           onConfirm={(index) => moves.selectMizhaoPinDianCard(index)}
+        />
+      )}
+
+      {/* Shi Taishi Ci Modals */}
+      {showZhanLieModal && (
+        <ZhanLieModal 
+          currentX={zhanLieX}
+          onConfirm={(newX) => {
+            setZhanLieX(newX);
+            setShowZhanLieModal(false);
+          }}
+          onCancel={() => setShowZhanLieModal(false)}
+        />
+      )}
+
+      {showZhenFengModal && (
+        <ZhenFengModal 
+          onConfirm={(hanZhan, zhanLie) => {
+            setZhenFengHanZhan(hanZhan);
+            setZhenFengZhanLie(zhanLie);
+            setShowZhenFengModal(false);
+          }}
+          onCancel={() => setShowZhenFengModal(false)}
         />
       )}
     </div>
