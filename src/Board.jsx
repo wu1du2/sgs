@@ -739,6 +739,14 @@ const ZhuangShiModal = ({ onConfirm, onCancel }) => {
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
+  const elementRef = React.useRef(null);
+  const [savedHeight, setSavedHeight] = React.useState(0);
+
+  React.useLayoutEffect(() => {
+    if (!isMinimized && elementRef.current) {
+      setSavedHeight(elementRef.current.offsetHeight);
+    }
+  }, [isMinimized, name, hp, hpMax, skills, equipments, judges, isLinked, handCount, portrait, role, isSelectable, isSelected]);
 
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
@@ -755,6 +763,9 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
   };
 
   if (isMinimized) {
+    const minimizedHeight = 28; // 24px height + 4px border
+    const marginBottom = Math.max(0, savedHeight - minimizedHeight);
+
     return (
       <div 
         onClick={onClick}
@@ -776,7 +787,8 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
           cursor: isSelectable ? 'pointer' : 'default',
           transition: 'all 0.3s ease',
           padding: '0 8px',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          marginBottom: `${marginBottom}px`
         }}
       >
         <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#ffd700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
@@ -802,6 +814,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
 
   return (
     <div 
+      ref={elementRef}
       onClick={onClick}
       style={{
         width: '160px',
@@ -1382,7 +1395,7 @@ const ActionTicker = ({ logs }) => {
       
       timeoutRef.current = setTimeout(() => {
         setVisible(false);
-      }, 1000);
+      }, 1500);
     }
   }, [logs]);
 
@@ -3612,7 +3625,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            zIndex: 50
+            zIndex: 50,
+            pointerEvents: 'none'
           }}>
             <PlayerInfo />
             {/* Po Jun Return Buttons */}
@@ -3631,7 +3645,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                             border: 'none',
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '12px'
+                            fontSize: '12px',
+                            pointerEvents: 'auto'
                         }}
                     >
                         归还 {targetName} ({cards.length})
@@ -3650,7 +3665,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                   borderRadius: '4px',
                   fontSize: '12px',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  pointerEvents: 'auto'
               }}>
                 权 {player.quan.length}
               </div>
@@ -3787,13 +3803,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                       targetPlayer={G.players[playerID]}
                       targetHand={G.hands[playerID]}
                       singleSelection={true}
-                      title="渐营：请选择一张手牌"
+                      title="渐营：请选择一张手牌或装备"
                       revealHand={true}
                       onConfirm={(selected) => {
-                          if (selected && selected.length > 0 && selected[0].type === 'hand') {
-                              moves.selectJianyingCard(selected[0].index);
+                          if (selected && selected.length > 0 && (selected[0].type === 'hand' || selected[0].type === 'equip')) {
+                              moves.selectJianyingCard(selected[0]);
                           } else {
-                              alert("请选择一张手牌");
+                              alert("请选择一张手牌或装备");
                           }
                       }}
                       onCancel={() => moves.cancelJianying()}

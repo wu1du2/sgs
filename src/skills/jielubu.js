@@ -77,7 +77,7 @@ export const jielubuSkill = {
         if (cardToMove) {
             G.hands[playerID].push(cardToMove);
             const targetName = target.general.name;
-            G.actionLog.push(`界吕布 "利驭" 获得了 ${targetName} 的一张 ${cardType} 牌`);
+            G.actionLog.push(`界吕布 "利驭" 获得了 ${targetName} 的一张 ${cardType} 牌: ${cardToMove.suit} ${cardToMove.rank} ${cardToMove.name}`);
         }
 
         // Clean up state

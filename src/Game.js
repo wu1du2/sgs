@@ -279,7 +279,7 @@ export const CardGame = {
     jianyingSelect: {
         active: false,
         stage: null, // 'card_selection', 'name_selection'
-        selectedIndex: null,
+        selectedCard: null,
         playerID: null
     },
     kangkaiSelect: {
@@ -1661,22 +1661,39 @@ export const CardGame = {
         G.jianyingSelect = {
             active: true,
             stage: 'card_selection',
-            selectedIndex: null,
+            selectedCard: null,
             playerID: playerID
         };
     },
-    selectJianyingCard: ({ G, playerID }, cardIndex) => {
+    selectJianyingCard: ({ G, playerID }, cardData) => {
         if (!G.jianyingSelect.active || G.jianyingSelect.playerID !== playerID) return;
-        G.jianyingSelect.selectedIndex = cardIndex;
+        G.jianyingSelect.selectedCard = cardData;
         G.jianyingSelect.stage = 'name_selection';
     },
     selectJianyingName: ({ G, playerID }, newName) => {
         if (!G.jianyingSelect.active || G.jianyingSelect.playerID !== playerID) return;
-        const index = G.jianyingSelect.selectedIndex;
+        const selectedCard = G.jianyingSelect.selectedCard;
         const hand = G.hands[playerID];
+        let card = null;
+        let cardIndex = -1;
+
+        if (selectedCard.type === 'hand') {
+            if (selectedCard.index >= 0 && selectedCard.index < hand.length) {
+                card = hand[selectedCard.index];
+                cardIndex = selectedCard.index;
+            }
+        } else if (selectedCard.type === 'equip') {
+            const player = G.players[playerID];
+            if (player.equipments[selectedCard.slot]) {
+                card = player.equipments[selectedCard.slot];
+                // Move equipment to hand to play it
+                player.equipments[selectedCard.slot] = null;
+                hand.push(card);
+                cardIndex = hand.length - 1;
+            }
+        }
         
-        if (index >= 0 && index < hand.length) {
-            const card = hand[index];
+        if (card && cardIndex !== -1) {
             // Save original info
             card._originalName = card.name;
             card._originalType = card.type;
@@ -1697,7 +1714,7 @@ export const CardGame = {
             // Since we modified the card IN PLACE in the hand, playCards will see the modified version.
             // We pass empty targets array. If '杀' needs target, it will likely be discarded or just played without target.
             // The requirement "execute the logic of playing this card" is satisfied by invoking the standard play function.
-            CardGame.moves.playCards({ G, playerID }, [index], []);
+            CardGame.moves.playCards({ G, playerID }, [cardIndex], []);
             
             const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
             G.actionLog.push(`${playerName} activated Jianying: played ${card._originalName} as ${newName}`);
@@ -1707,7 +1724,7 @@ export const CardGame = {
         G.jianyingSelect = {
             active: false,
             stage: null,
-            selectedIndex: null,
+            selectedCard: null,
             playerID: null
         };
     },
@@ -1715,7 +1732,7 @@ export const CardGame = {
         G.jianyingSelect = {
             active: false,
             stage: null,
-            selectedIndex: null,
+            selectedCard: null,
             playerID: null
         };
     },
