@@ -16,11 +16,12 @@ import { jielubuSkill } from './skills/jielubu.js';
 import { shitaishiciSkill } from './skills/shitaishici.js';
 import { jiejushouSkill } from './skills/jiejushou.js';
 import { xuyouSkill } from './skills/xuyou.js';
+import { liuyanSkill } from './skills/liuyan.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = [];
+const TESTING_GENERAL_LIST = ["刘焉"];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -295,6 +296,10 @@ export const CardGame = {
       sourcePlayerID: null,
       targetA: null,
       targetB: null,
+    },
+    liMuSelect: {
+      active: false,
+      playerID: null,
     },
     jiezhonghuiQuanJiSelect: {
       active: false,
@@ -1740,6 +1745,55 @@ export const CardGame = {
             active: false,
             stage: null,
             selectedCard: null,
+            playerID: null
+        };
+    },
+    
+    // Liu Yan Skills
+    liMuStart: ({ G, playerID }) => {
+        const player = G.players[playerID];
+        if (player.judges.le) {
+            // Logic handled in UI to alert, but here we prevent activation
+            return;
+        }
+        G.liMuSelect = {
+            active: true,
+            playerID: playerID
+        };
+    },
+    liMuConfirm: ({ G, playerID }, cardIndex) => {
+        const player = G.players[playerID];
+        const hand = G.hands[playerID];
+        
+        if (cardIndex < 0 || cardIndex >= hand.length) return;
+        
+        // Remove card from hand
+        const card = hand.splice(cardIndex, 1)[0];
+        
+        // Treat as Indulgence (Le Bu Si Shu)
+        // Modify card properties to match Indulgence
+        card.name = '乐不思蜀';
+        card.type = '乐';
+        
+        player.judges.le = card;
+        
+        // Recover 1 HP
+        if (player.hp < player.hpMax) {
+            player.hp++;
+        }
+        
+        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} used Li Mu: put ${card.suit}${card.rank} as Indulgence and recovered 1 HP`);
+        
+        // Reset state
+        G.liMuSelect = {
+            active: false,
+            playerID: null
+        };
+    },
+    liMuCancel: ({ G, playerID }) => {
+        G.liMuSelect = {
+            active: false,
             playerID: null
         };
     },

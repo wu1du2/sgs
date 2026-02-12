@@ -2608,6 +2608,66 @@ const JianyingNameModal = ({ onConfirm, onCancel }) => {
   );
 };
 
+const LiMuModal = ({ hand, onConfirm, onCancel }) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(null);
+
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333', padding: '20px', borderRadius: '10px',
+        display: 'flex', flexDirection: 'column', gap: '20px', minWidth: '400px', maxHeight: '80%', overflowY: 'auto'
+      }}>
+        <h3 style={{ color: 'white', textAlign: 'center', margin: 0 }}>立牧: 选择一张牌当【乐不思蜀】</h3>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {hand.map((card, index) => {
+             const isDiamond = card.suit === '♦';
+             
+             return (
+             <div key={index} 
+                onClick={() => setSelectedIndex(index)}
+                style={{ 
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
+                    transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
+                    border: selectedIndex === index ? '3px solid #00ffff' : (isDiamond ? '3px solid #e74c3c' : '1px solid #aaa'),
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    boxShadow: isDiamond ? '0 0 10px rgba(231, 76, 60, 0.5)' : 'none',
+                    transition: 'all 0.2s'
+                }}>
+                <div style={{
+                    width: '60px', height: '90px', backgroundColor: '#ecf0f1',
+                    borderRadius: '5px', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', position: 'relative',
+                    color: getSuitColor(card.suit)
+                }}>
+                    <div style={{ position: 'absolute', top: '2px', left: '2px', fontSize: '10px' }}>{card.suit}</div>
+                    <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px' }}>{card.rank}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{card.name}</div>
+                </div>
+             </div>
+          )})}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+             <button 
+                onClick={() => selectedIndex !== null && onConfirm(selectedIndex)} 
+                disabled={selectedIndex === null}
+                style={{ padding: '8px 16px', backgroundColor: selectedIndex !== null ? '#2ecc71' : '#7f8c8d', color: 'white', border: 'none', borderRadius: '4px', cursor: selectedIndex !== null ? 'pointer' : 'not-allowed' }}>
+                确定
+             </button>
+             <button onClick={onCancel} style={{ padding: '8px 16px', backgroundColor: '#95a5a6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                取消
+             </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const JianyingDisplay = ({ suit, rank }) => {
   if (!suit) return null;
   return (
@@ -2669,6 +2729,35 @@ const ShiCaiModal = ({ cards, onMoveToTop, onDiscardAll, onClose }) => {
   );
 };
 
+const FenYinEffect = ({ message }) => {
+  if (!message) return null;
+  const isRed = message.includes('红');
+  return (
+    <div style={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      zIndex: 4000,
+      pointerEvents: 'none',
+      animation: 'fadeInOut 2s ease-in-out'
+    }}>
+      <div style={{
+        fontSize: '48px',
+        fontWeight: 'bold',
+        color: isRed ? '#ff0000' : '#000000',
+        textShadow: '0 0 10px white',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        padding: '20px 40px',
+        borderRadius: '10px',
+        border: `5px solid ${isRed ? '#ff0000' : '#000000'}`
+      }}>
+        {message}
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -2696,6 +2785,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [showZhenFengModal, setShowZhenFengModal] = React.useState(false);
   const [zhenFengHanZhan, setZhenFengHanZhan] = React.useState('hpMax');
   const [zhenFengZhanLie, setZhenFengZhanLie] = React.useState('attackRange');
+  const [fenYinMessage, setFenYinMessage] = React.useState(null);
 
   // Xu You State
   const [showShiCaiModal, setShowShiCaiModal] = React.useState(false);
@@ -3036,6 +3126,23 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     }
 
     const me = G.players[playerID];
+
+    // Liu Zan Fen Yin Effect
+    if (me.general && me.general.name === '留赞' && selectedCardIndices.length > 0) {
+        const cardIndex = selectedCardIndices[0];
+        const card = G.hands[playerID][cardIndex];
+        let message = '';
+        if (['♥', '♦'].includes(card.suit)) {
+            message = '奋音(红)';
+        } else if (['♠', '♣'].includes(card.suit)) {
+            message = '奋音(黑)';
+        }
+        if (message) {
+            setFenYinMessage(message);
+            setTimeout(() => setFenYinMessage(null), 2000);
+        }
+    }
+
     if (me.general && me.general.name === '许攸') {
         moves.xuyouPlayCards(selectedCardIndices, selectedTargetIds);
     } else {
@@ -3371,6 +3478,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     // Jie Jushou Skills
     if (skillName === '渐营') {
         moves.activateJianying();
+        return;
+    }
+
+    if (skillName === '立牧') {
+        const player = G.players[playerID];
+        if (player.judges.le) {
+             alert('已经有乐，不能执行');
+             return;
+        }
+        moves.liMuStart();
         return;
     }
 
@@ -3960,6 +4077,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                   />
               )}
           </>
+      )}
+
+      {/* Liu Yan Li Mu Modal */}
+      {G.liMuSelect && G.liMuSelect.active && G.liMuSelect.playerID === playerID && (
+        <LiMuModal
+          hand={G.hands[playerID]}
+          onConfirm={(index) => moves.liMuConfirm(index)}
+          onCancel={() => moves.liMuCancel()}
+        />
       )}
 
       {/* Judgment Menu Overlay */}
@@ -4731,6 +4857,9 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => setShowZhenFengModal(false)}
         />
       )}
+
+      {/* Liu Zan Fen Yin Effect */}
+      <FenYinEffect message={fenYinMessage} />
     </div>
   );
 }
