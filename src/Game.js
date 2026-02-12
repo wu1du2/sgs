@@ -63,6 +63,7 @@ const createPlayerState = () => ({
   hpMax: 4,
   is_turned_over: false,
   skipNextDraw: false,
+  lastActionId: null, // For idempotency
   pojun: {},
   jianying: { suit: null, rank: null }, // For Jie Jushou
   ...createEmptyZones()
@@ -372,8 +373,17 @@ export const CardGame = {
       G.actionLog.push(`${playerName} performed a judgment: drew ${drawnCard.suit}${drawnCard.rank} ${drawnCard.name}`);
     },
 
-    drawCard: ({ G, playerID }) => {
+    drawCard: ({ G, playerID }, actionId) => {
       const player = G.players[playerID];
+
+      // Idempotency check
+      if (actionId && player.lastActionId === actionId) {
+          return;
+      }
+      if (actionId) {
+          player.lastActionId = actionId;
+      }
+
       if (player.skipNextDraw) {
         player.skipNextDraw = false;
         const playerName = player.general ? player.general.name : `Player ${playerID}`;
@@ -522,8 +532,17 @@ export const CardGame = {
         G.congjianSelect.selectedCard = null;
     },
     
-    useLuckCard: ({ G, playerID }) => {
+    useLuckCard: ({ G, playerID }, actionId) => {
       const player = G.players[playerID];
+
+      // Idempotency check
+      if (actionId && player.lastActionId === actionId) {
+          return;
+      }
+      if (actionId) {
+          player.lastActionId = actionId;
+      }
+
       if (player.luckCardCount > 0 && !player.luckCardConfirmed) {
         // Return current hand to deck
         const currentHand = G.hands[playerID];
@@ -1527,7 +1546,15 @@ export const CardGame = {
         G.pendingEffect = null;
     },
 
-    changeGeneral: ({ G, playerID }, generalId) => {
+    changeGeneral: ({ G, playerID }, generalId, actionId) => {
+      // Idempotency check
+      if (actionId && G.players[playerID].lastActionId === actionId) {
+          return;
+      }
+      if (actionId) {
+          G.players[playerID].lastActionId = actionId;
+      }
+
       const options = G.generalOptions[playerID];
       const index = options.findIndex(g => g.id === generalId);
       

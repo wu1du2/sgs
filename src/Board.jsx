@@ -2643,7 +2643,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
-  const handleSafeAction = (action, delay = 1000) => {
+  const handleSafeAction = (action, delay = 200) => {
     if (processingAction.current) {
         console.log('Duplicate action prevented');
         return;
@@ -2726,7 +2726,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const onClickDraw = () => {
     if (G.phase === 'playing') {
-      handleSafeAction(() => moves.drawCard(), 300);
+      const actionId = Date.now() + Math.random();
+      handleSafeAction(() => moves.drawCard(actionId));
     }
   };
 
@@ -3017,7 +3018,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onChangeGeneral = (generalId) => {
-    handleSafeAction(() => moves.changeGeneral(generalId));
+    const actionId = Date.now() + Math.random();
+    handleSafeAction(() => moves.changeGeneral(generalId, actionId));
   };
 
   const onBid = (amount) => {
@@ -3480,7 +3482,10 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             {showLuckCardUI && (
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', pointerEvents: 'auto', position: 'relative', zIndex: 20 }}>
                 <button
-                  onClick={() => handleSafeAction(() => moves.useLuckCard())}
+                  onClick={() => {
+                  const actionId = Date.now() + Math.random();
+                  handleSafeAction(() => moves.useLuckCard(actionId));
+                }}
                   disabled={luckCardCount <= 0}
                   style={{
                     padding: '5px 10px',
