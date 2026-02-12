@@ -11,11 +11,12 @@ import { yangbiaoSkill } from './skills/yangbiao.js';
 import { caoangSkill } from './skills/caoang.js';
 import { shenluxunSkill } from './skills/shenluxun.js';
 import { zhangxiuSkill } from './skills/zhangxiu.js';
+import { maliangSkill } from './skills/maliang.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['张绣', '神陆逊', '刘协'];
+const TESTING_GENERAL_LIST = ['马良', '神陆逊', '刘协'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -301,6 +302,11 @@ export const CardGame = {
       sourcePlayerID: null,
       targetPlayerID: null,
       selectedCard: null,
+    },
+    maliang: {
+      cheeringPile: [],
+      status: 'idle',
+      sourcePlayerID: null,
     },
   }),
 
@@ -693,21 +699,36 @@ export const CardGame = {
                 const targetPlayer = G.players[targetID];
                 // Check if slot is empty
                 if (targetPlayer.judges[judgeSlot]) {
-                    addToDiscardPile(G, card);
-                    G.actionLog.push(`Cannot play ${card.name}, judgment slot occupied. Card discarded.`);
+                    if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
+                       G.maliang.cheeringPile.push(card);
+                       G.actionLog.push(`Cannot play ${card.name}, judgment slot occupied. Card moved to Cheering Area.`);
+                    } else {
+                       addToDiscardPile(G, card);
+                       G.actionLog.push(`Cannot play ${card.name}, judgment slot occupied. Card discarded.`);
+                    }
                 } else {
                     targetPlayer.judges[judgeSlot] = card;
                     const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetID}`;
                     G.actionLog.push(`${playerName} placed ${card.name} on ${targetName}'s judgment area`);
                 }
             } else {
-                addToDiscardPile(G, card);
-                G.actionLog.push(`No target for ${card.name}, discarded.`);
+                if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
+                   G.maliang.cheeringPile.push(card);
+                   G.actionLog.push(`No target for ${card.name}, moved to Cheering Area.`);
+                } else {
+                   addToDiscardPile(G, card);
+                   G.actionLog.push(`No target for ${card.name}, discarded.`);
+                }
             }
         }
         // 3. Regular Cards (Basic, Scroll)
         else {
-            addToDiscardPile(G, card);
+            if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
+               G.maliang.cheeringPile.push(card);
+               G.actionLog.push(`${playerName} put ${card.name} into Cheering Area`);
+            } else {
+               addToDiscardPile(G, card);
+            }
             
             // Handle Card Effects for Regular Cards
             if (card.name === '桃') {
@@ -1517,5 +1538,10 @@ export const CardGame = {
         });
       }
     },
+
+    maliangTransferStart: maliangSkill.transfer.start,
+    maliangTransferConfirm: maliangSkill.transfer.confirm,
+    maliangTransferCancel: maliangSkill.transfer.cancel,
+    maliangDiscardCheering: maliangSkill.discard,
   },
 };

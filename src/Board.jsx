@@ -528,6 +528,42 @@ const HarvestBox = ({ cards, onPick, onClose }) => {
   );
 };
 
+const MaLiangCheeringArea = ({ cards, onTransfer, onDiscard }) => {
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: '180px',
+      left: '20px',
+      zIndex: 2000,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      padding: '10px',
+      borderRadius: '8px',
+      border: '2px solid #3498db',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px',
+    }}>
+      <h3 style={{ margin: 0, color: '#3498db', textAlign: 'center' }}>应援区 ({cards.length})</h3>
+      <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', maxWidth: '300px' }}>
+        {cards.map((card, index) => (
+           <div key={index} style={{
+             width: '40px', height: '60px', backgroundColor: '#ecf0f1',
+             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+             fontSize: '10px', color: getSuitColor(card.suit), borderRadius: '4px'
+           }}>
+             <div>{card.suit}</div>
+             <div>{card.rank}</div>
+           </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+        <button onClick={onTransfer} style={{ padding: '5px 10px', backgroundColor: '#2ecc71', border: 'none', borderRadius: '4px', cursor: 'pointer', color: 'white' }}>移交</button>
+        <button onClick={onDiscard} style={{ padding: '5px 10px', backgroundColor: '#e74c3c', border: 'none', borderRadius: '4px', cursor: 'pointer', color: 'white' }}>弃牌</button>
+      </div>
+    </div>
+  );
+};
+
 const HarvestCountSelector = ({ onSelect }) => {
   return (
     <div style={{
@@ -2434,6 +2470,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onHeroClick = (targetId) => {
+    // Ma Liang Transfer
+    if (G.maliang && G.maliang.status === 'selecting_transfer_target') {
+      if (targetId === playerID) {
+          alert("Cannot transfer to yourself");
+          return;
+      }
+      moves.maliangTransferConfirm(targetId);
+      return;
+    }
+
     if (mizhaoStage === 'selectA') {
       if (targetId === playerID) {
         alert("不能选择自己");
@@ -3488,6 +3534,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           </line>
         </svg>
       ))}
+
+      {/* Ma Liang Cheering Area */}
+      {G.maliang && G.maliang.cheeringPile.length > 0 && G.players[playerID].general && G.players[playerID].general.name === '马良' && (
+        <MaLiangCheeringArea 
+          cards={G.maliang.cheeringPile}
+          onTransfer={() => moves.maliangTransferStart()}
+          onDiscard={() => moves.maliangDiscardCheering()}
+        />
+      )}
 
       {/* General Selection Overlay */}
       {G.phase === 'selection' && G.generalOptions[playerID] && !G.players[playerID]?.general && (
