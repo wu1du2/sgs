@@ -2128,6 +2128,87 @@ const PinDianModal = ({ hand, onConfirm, title }) => {
   );
 };
 
+const MiZhaoPinDianModal = ({ hand, onConfirm, title }) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(null);
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <h3>{title || "请选择一张手牌进行拼点"}</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {hand.map((card, index) => (
+            <div
+              key={index}
+              onClick={() => setSelectedIndex(index)}
+              style={{
+                width: '80px',
+                height: '120px',
+                backgroundColor: '#ecf0f1',
+                borderRadius: '6px',
+                border: selectedIndex === index ? '3px solid #e74c3c' : '1px solid #bdc3c7',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                color: getSuitColor(card.suit),
+                transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
+                {card.suit}
+              </div>
+              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
+                {card.rank}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
+                {card.name}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button 
+            onClick={() => onConfirm(selectedIndex)} 
+            disabled={selectedIndex === null}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: selectedIndex !== null ? '#e74c3c' : '#555', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '5px',
+              cursor: selectedIndex !== null ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -2145,6 +2226,9 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [judgmentMenu, setJudgmentMenu] = React.useState(null); // { playerID: string, type: string, card: object }
   const [showDiscardPile, setShowDiscardPile] = React.useState(false);
   const [quanView, setQuanView] = React.useState({ active: false, cards: [] });
+  const [mizhaoStage, setMizhaoStage] = React.useState(null);
+  const [mizhaoTargetA, setMizhaoTargetA] = React.useState(null);
+  const [mizhaoTargetB, setMizhaoTargetB] = React.useState(null);
 
   // Responsive hand width state
   const [maxHandWidth, setMaxHandWidth] = React.useState(
@@ -2230,6 +2314,28 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onHeroClick = (targetId) => {
+    if (mizhaoStage === 'selectA') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      setMizhaoTargetA(targetId);
+      return;
+    }
+
+    if (mizhaoStage === 'selectB') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      if (targetId === mizhaoTargetA) {
+        alert("不能选择同一名角色");
+        return;
+      }
+      setMizhaoTargetB(targetId);
+      return;
+    }
+
     if (activeSkill === '义争') {
       if (targetId === playerID) {
         alert("不能选择自己");
@@ -2495,6 +2601,22 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     }
   }
 
+  let showMizhaoPinDianModal = false;
+  let mizhaoPinDianTitle = "";
+  if (G.mizhaoPindian && G.mizhaoPindian.active) {
+    if (G.mizhaoPindian.sourceCard === null) {
+      if (playerID === G.mizhaoPindian.sourcePlayerID) {
+        showMizhaoPinDianModal = true;
+        mizhaoPinDianTitle = "请选择用于拼点的卡牌";
+      }
+    } else if (G.mizhaoPindian.targetCard === null) {
+      if (playerID === G.mizhaoPindian.targetPlayerID) {
+        showMizhaoPinDianModal = true;
+        mizhaoPinDianTitle = "请选择用于拼点的卡牌 (对方已出牌)";
+      }
+    }
+  }
+
   const onModifyHP = (targetId, amount) => {
     moves.modifyHP(targetId, amount);
   };
@@ -2580,6 +2702,19 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName === '让节') {
       moves.useRangjie();
+      return;
+    }
+
+    if (skillName === '密诏') {
+      if ((G.hands[playerID] || []).length === 0) {
+        alert("你必须有手牌才能发动");
+        return;
+      }
+      setActiveSkill(null);
+      setMizhaoStage('selectA');
+      setMizhaoTargetA(null);
+      setMizhaoTargetB(null);
+      moves.startMizhao();
       return;
     }
 
@@ -2729,8 +2864,9 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     }
 
     // Target Selection Logic
-    const isSelectable = selectedCardIndices.length > 0;
-    const isSelected = selectedTargetIds.includes(id);
+    const mizhaoSelecting = mizhaoStage === 'selectA' || mizhaoStage === 'selectB';
+    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting;
+    const isSelected = selectedTargetIds.includes(id) || (mizhaoStage === 'selectA' && mizhaoTargetA === id) || (mizhaoStage === 'selectB' && (mizhaoTargetA === id || mizhaoTargetB === id));
 
     // Dynamic overlap calculation
     const CARD_WIDTH = 60;
@@ -3315,6 +3451,75 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         </div>
       )}
 
+      {mizhaoStage && (
+        <div style={{
+          position: 'absolute',
+          top: '20%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          padding: '10px 20px',
+          borderRadius: '8px',
+          color: 'white',
+          zIndex: 120,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <span>{mizhaoStage === 'selectA' ? '请选择密诏的角色A' : '请选择密诏的角色B'}</span>
+          <button
+            onClick={() => {
+              if (mizhaoStage === 'selectA') {
+                if (!mizhaoTargetA) {
+                  alert("请选择一名目标");
+                  return;
+                }
+                moves.mizhaoConfirmTargetA(mizhaoTargetA);
+                setMizhaoStage('selectB');
+                setMizhaoTargetB(null);
+                return;
+              }
+              if (!mizhaoTargetB) {
+                alert("请选择一名目标");
+                return;
+              }
+              moves.mizhaoConfirmTargetB({ targetAID: mizhaoTargetA, targetBID: mizhaoTargetB });
+              setMizhaoStage(null);
+              setMizhaoTargetA(null);
+              setMizhaoTargetB(null);
+            }}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: (mizhaoStage === 'selectA' ? mizhaoTargetA : mizhaoTargetB) ? '#2ecc71' : '#555',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: (mizhaoStage === 'selectA' ? mizhaoTargetA : mizhaoTargetB) ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+          <button
+            onClick={() => {
+              moves.cancelMizhao();
+              setMizhaoStage(null);
+              setMizhaoTargetA(null);
+              setMizhaoTargetB(null);
+            }}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      )}
+
       {/* Skill Selection Overlay */}
       {activeSkill && (
         <div style={{
@@ -3669,6 +3874,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           hand={G.hands[playerID]} 
           title={pinDianTitle}
           onConfirm={(index) => moves.selectPinDianCard(index)}
+        />
+      )}
+      {showMizhaoPinDianModal && (
+        <MiZhaoPinDianModal 
+          hand={G.hands[playerID]} 
+          title={mizhaoPinDianTitle}
+          onConfirm={(index) => moves.selectMizhaoPinDianCard(index)}
         />
       )}
     </div>

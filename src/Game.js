@@ -14,7 +14,7 @@ import { shenluxunSkill } from './skills/shenluxun.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['曹昂', '神陆逊'];
+const TESTING_GENERAL_LIST = ['曹昂', '神陆逊', '刘协'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -259,6 +259,13 @@ export const CardGame = {
       targetPlayerID: null,
       stage: null,
     },
+    mizhao: {
+      active: false,
+      stage: null,
+      sourcePlayerID: null,
+      targetA: null,
+      targetB: null,
+    },
     jiezhonghuiQuanJiSelect: {
       active: false,
       playerID: null,
@@ -274,6 +281,13 @@ export const CardGame = {
       sourceCard: null,
       targetCard: null,
       skillName: null,
+    },
+    mizhaoPindian: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      sourceCard: null,
+      targetCard: null,
     },
     rangjieSelect: {
       active: false,
@@ -769,6 +783,126 @@ export const CardGame = {
           sourceCard: null,
           targetCard: null,
           skillName: null,
+        };
+      }
+    },
+
+    startMizhao: ({ G, playerID }) => {
+      G.mizhao = {
+        active: true,
+        stage: 'selectA',
+        sourcePlayerID: playerID,
+        targetA: null,
+        targetB: null,
+      };
+    },
+
+    cancelMizhao: ({ G, playerID }) => {
+      if (!G.mizhao.active || G.mizhao.sourcePlayerID !== playerID) return;
+      G.mizhao = {
+        active: false,
+        stage: null,
+        sourcePlayerID: null,
+        targetA: null,
+        targetB: null,
+      };
+    },
+
+    mizhaoConfirmTargetA: ({ G, playerID }, targetAID) => {
+      const sourceHand = G.hands[playerID];
+      if (!sourceHand || sourceHand.length === 0) return;
+      if (targetAID === playerID) return;
+      if (!G.hands[targetAID]) return;
+
+      const movedCards = sourceHand.splice(0, sourceHand.length);
+      G.hands[targetAID].push(...movedCards);
+
+      G.mizhao = {
+        active: true,
+        stage: 'selectB',
+        sourcePlayerID: playerID,
+        targetA: targetAID,
+        targetB: null,
+      };
+
+      const sourceName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const targetAName = G.players[targetAID].general ? G.players[targetAID].general.name : `Player ${targetAID}`;
+      G.actionLog.push(`${sourceName} 将所有手牌交给了 ${targetAName} (密诏)`);
+    },
+
+    mizhaoConfirmTargetB: ({ G, playerID }, { targetAID, targetBID }) => {
+      if (targetAID === targetBID) return;
+      if (targetBID === playerID) return;
+      if (!G.players[targetAID] || !G.players[targetBID]) return;
+
+      G.mizhao = {
+        active: false,
+        stage: null,
+        sourcePlayerID: null,
+        targetA: null,
+        targetB: null,
+      };
+
+      G.mizhaoPindian = {
+        active: true,
+        sourcePlayerID: targetAID,
+        targetPlayerID: targetBID,
+        sourceCard: null,
+        targetCard: null,
+      };
+
+      const targetAName = G.players[targetAID].general ? G.players[targetAID].general.name : `Player ${targetAID}`;
+      const targetBName = G.players[targetBID].general ? G.players[targetBID].general.name : `Player ${targetBID}`;
+      G.actionLog.push(`${targetAName} 对 ${targetBName} 发起拼点 (密诏)`);
+    },
+
+    selectMizhaoPinDianCard: ({ G, playerID }, cardIndex) => {
+      const pindian = G.mizhaoPindian;
+      if (!pindian.active) return;
+
+      let isSource = false;
+      if (playerID === pindian.sourcePlayerID) isSource = true;
+      else if (playerID === pindian.targetPlayerID) isSource = false;
+      else return;
+
+      const hand = G.hands[playerID];
+      if (cardIndex < 0 || cardIndex >= hand.length) return;
+
+      const card = hand[cardIndex];
+      hand.splice(cardIndex, 1);
+
+      if (isSource) {
+        pindian.sourceCard = card;
+      } else {
+        pindian.targetCard = card;
+      }
+
+      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} 选择了拼点牌 (密诏)`);
+
+      if (pindian.sourceCard && pindian.targetCard) {
+        const val1 = getCardValue(pindian.sourceCard.rank);
+        const val2 = getCardValue(pindian.targetCard.rank);
+
+        addToDiscardPile(G, [pindian.sourceCard, pindian.targetCard]);
+
+        const sourceName = G.players[pindian.sourcePlayerID].general ? G.players[pindian.sourcePlayerID].general.name : `Player ${pindian.sourcePlayerID}`;
+        const targetName = G.players[pindian.targetPlayerID].general ? G.players[pindian.targetPlayerID].general.name : `Player ${pindian.targetPlayerID}`;
+
+        G.actionLog.push(`密诏拼点结果: ${pindian.sourceCard.rank} (${val1}) vs ${pindian.targetCard.rank} (${val2})`);
+
+        if (val1 > val2) {
+          G.actionLog.push(`${sourceName} 拼点胜利，视为对 ${targetName} 使用【杀】`);
+        } else {
+          G.actionLog.push(`${sourceName} 拼点未胜`);
+        }
+
+        G.mizhaoPindian = {
+          active: false,
+          sourcePlayerID: null,
+          targetPlayerID: null,
+          sourceCard: null,
+          targetCard: null,
         };
       }
     },
