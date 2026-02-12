@@ -2456,12 +2456,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   // Prevent double clicks
   const processingAction = React.useRef(false);
   const handleSafeAction = (action) => {
-    if (processingAction.current) return;
+    if (processingAction.current) {
+        console.log('Duplicate action prevented');
+        return;
+    }
     processingAction.current = true;
+    console.log('Executing action');
     action();
     setTimeout(() => {
       processingAction.current = false;
-    }, 500);
+      console.log('Action lock released');
+    }, 1000); // Increased lock time to 1s
   };
 
   // Responsive hand width state
