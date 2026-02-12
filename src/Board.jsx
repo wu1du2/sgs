@@ -728,6 +728,8 @@ const ZhuangShiModal = ({ onConfirm, onCancel }) => {
 
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain }) => {
+  const [isMinimized, setIsMinimized] = React.useState(false);
+
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
     if (isSelectable) return '#ffff00'; // Yellow for selectable
@@ -741,6 +743,52 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
     if (role === 'peasant') return 'rgba(0, 50, 0, 0.8)';
     return 'rgba(0,0,0,0.7)';
   };
+
+  if (isMinimized) {
+    return (
+      <div 
+        onClick={onClick}
+        style={{
+          width: '160px',
+          height: '24px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center',
+          backgroundColor: getBackgroundColor(),
+          borderRadius: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          color: '#e0e0e0',
+          pointerEvents: 'auto',
+          border: `2px solid ${getBorderColor()}`,
+          boxShadow: isSelected ? '0 0 20px 5px #00ffff' : (isSelectable ? '0 0 10px #ffff00' : '0 4px 8px rgba(0,0,0,0.5)'),
+          flexShrink: 0,
+          cursor: isSelectable ? 'pointer' : 'default',
+          transition: 'all 0.3s ease',
+          padding: '0 8px',
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#ffd700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
+          {name}
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); setIsMinimized(false); }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#fff',
+            cursor: 'pointer',
+            fontSize: '14px',
+            padding: '0 4px'
+          }}
+          title="Expand"
+        >
+          🔽
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -766,6 +814,25 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
         position: 'relative' // Ensure overlay is positioned correctly
       }}
     >
+      <button
+        onClick={(e) => { e.stopPropagation(); setIsMinimized(true); }}
+        style={{
+          position: 'absolute',
+          top: '2px',
+          right: '2px',
+          background: 'none',
+          border: 'none',
+          color: 'rgba(255,255,255,0.7)',
+          cursor: 'pointer',
+          fontSize: '10px',
+          zIndex: 20,
+          padding: '2px'
+        }}
+        title="Minimize"
+      >
+        ➖
+      </button>
+
       {/* Chain Effect Icon */}
       {isLinked && (
         <div style={{
