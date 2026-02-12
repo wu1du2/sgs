@@ -2555,7 +2555,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
-  const handleSafeAction = (action) => {
+  const handleSafeAction = (action, delay = 1000) => {
     if (processingAction.current) {
         console.log('Duplicate action prevented');
         return;
@@ -2566,7 +2566,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     setTimeout(() => {
       processingAction.current = false;
       console.log('Action lock released');
-    }, 1000); // Increased lock time to 1s
+    }, delay); 
   };
 
   // Responsive hand width state
@@ -2638,7 +2638,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const onClickDraw = () => {
     if (G.phase === 'playing') {
-      handleSafeAction(() => moves.drawCard());
+      handleSafeAction(() => moves.drawCard(), 300);
     }
   };
 
