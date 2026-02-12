@@ -3021,6 +3021,18 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    // LongHun Target Selection
+    if (G.longhunSelect && G.longhunSelect.active && G.longhunSelect.stage === 'target_selection') {
+      moves.selectLongHunTarget(targetId);
+      return;
+    }
+
+    // ChouCe Target Selection
+    if (G.chouceSelect && G.chouceSelect.active && G.chouceSelect.stage === 'target_selection') {
+      moves.selectChouceTarget(targetId);
+      return;
+    }
+
     // Liyu Target Selection
     if (G.liyuTargeting && G.liyuTargeting.active && G.liyuTargeting.sourceID === playerID) {
       if (targetId === playerID) {
@@ -3478,6 +3490,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     // Jie Jushou Skills
     if (skillName === '渐营') {
         moves.activateJianying();
+        return;
+    }
+
+    if (skillName === '龙魂') {
+        moves.clickLongHun();
+        return;
+    }
+
+    if (skillName === '筹策') {
+        moves.clickChouce();
         return;
     }
 
@@ -4086,6 +4108,156 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onConfirm={(index) => moves.liMuConfirm(index)}
           onCancel={() => moves.liMuCancel()}
         />
+      )}
+
+      {/* LongHun Modals */}
+      {G.longhunSelect && G.longhunSelect.active && G.longhunSelect.sourcePlayerID === playerID && (
+          <>
+              {G.longhunSelect.stage === 'target_selection' && G.longhunSelect.targetPlayerID && (
+                  <div style={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 3000
+                  }}>
+                      <div style={{
+                          backgroundColor: '#333',
+                          padding: '20px',
+                          borderRadius: '10px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '20px',
+                          color: 'white'
+                      }}>
+                          <h3>确认选择该目标？</h3>
+                          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                              <button
+                                  onClick={() => moves.confirmLongHunTarget()}
+                                  style={{
+                                      padding: '10px 20px',
+                                      backgroundColor: '#2ecc71',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '5px',
+                                      cursor: 'pointer'
+                                  }}
+                              >
+                                  确定
+                              </button>
+                              <button
+                                  onClick={() => moves.cancelLongHun()}
+                                  style={{
+                                      padding: '10px 20px',
+                                      backgroundColor: '#e74c3c',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '5px',
+                                      cursor: 'pointer'
+                                  }}
+                              >
+                                  取消
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              )}
+              {G.longhunSelect.stage === 'card_selection' && (
+                  <CardSelectionModal
+                      targetPlayer={G.players[G.longhunSelect.targetPlayerID]}
+                      targetHand={G.hands[G.longhunSelect.targetPlayerID]}
+                      singleSelection={true}
+                      title="龙魂：请选择一张牌弃置"
+                      revealHand={false} // Blind selection
+                      onConfirm={(selected) => {
+                          if (selected && selected.length > 0) {
+                              moves.selectLongHunCard(selected[0]);
+                              moves.confirmLongHunCard();
+                          } else {
+                              alert("请选择一张牌");
+                          }
+                      }}
+                      onCancel={() => moves.cancelLongHun()}
+                  />
+              )}
+          </>
+      )}
+
+      {/* ChouCe Modals */}
+      {G.chouceSelect && G.chouceSelect.active && G.chouceSelect.sourcePlayerID === playerID && (
+          <>
+              {G.chouceSelect.stage === 'target_selection' && G.chouceSelect.targetPlayerID && (
+                  <div style={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 3000
+                  }}>
+                      <div style={{
+                          backgroundColor: '#333',
+                          padding: '20px',
+                          borderRadius: '10px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '20px',
+                          color: 'white'
+                      }}>
+                          <h3>确认选择该目标？</h3>
+                          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                              <button
+                                  onClick={() => moves.confirmChouceTarget()}
+                                  style={{
+                                      padding: '10px 20px',
+                                      backgroundColor: '#2ecc71',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '5px',
+                                      cursor: 'pointer'
+                                  }}
+                              >
+                                  确定
+                              </button>
+                              <button
+                                  onClick={() => moves.cancelChouce()}
+                                  style={{
+                                      padding: '10px 20px',
+                                      backgroundColor: '#e74c3c',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '5px',
+                                      cursor: 'pointer'
+                                  }}
+                              >
+                                  取消
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              )}
+              {G.chouceSelect.stage === 'card_selection' && (
+                  <CardSelectionModal
+                      targetPlayer={G.players[G.chouceSelect.targetPlayerID]}
+                      targetHand={G.hands[G.chouceSelect.targetPlayerID]}
+                      singleSelection={true}
+                      title="筹策：请选择一张牌弃置"
+                      revealHand={false} // Blind selection
+                      onConfirm={(selected) => {
+                          if (selected && selected.length > 0) {
+                              moves.selectChouceCard(selected[0]);
+                              moves.confirmChouceCard();
+                          } else {
+                              alert("请选择一张牌");
+                          }
+                      }}
+                      onCancel={() => moves.cancelChouce()}
+                  />
+              )}
+          </>
       )}
 
       {/* Judgment Menu Overlay */}

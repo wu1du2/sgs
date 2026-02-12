@@ -17,11 +17,13 @@ import { shitaishiciSkill } from './skills/shitaishici.js';
 import { jiejushouSkill } from './skills/jiejushou.js';
 import { xuyouSkill } from './skills/xuyou.js';
 import { liuyanSkill } from './skills/liuyan.js';
+import { shenzhaoyunSkill } from './skills/shenzhaoyun.js';
+import { xizhicaiSkill } from './skills/xizhicai.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ["刘焉"];
+const TESTING_GENERAL_LIST = ["刘焉", "神赵云", "戏志才"];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -296,6 +298,20 @@ export const CardGame = {
       sourcePlayerID: null,
       targetA: null,
       targetB: null,
+    },
+    longhunSelect: {
+        active: false,
+        stage: null, // 'target_selection', 'card_selection'
+        sourcePlayerID: null,
+        targetPlayerID: null,
+        selectedCard: null // { type: 'hand'|'equip', index: number, slot: string }
+    },
+    chouceSelect: {
+        active: false,
+        stage: null,
+        sourcePlayerID: null,
+        targetPlayerID: null,
+        selectedCard: null
     },
     liMuSelect: {
       active: false,
@@ -1797,5 +1813,138 @@ export const CardGame = {
             playerID: null
         };
     },
+
+    // Shen Zhao Yun - Long Hun
+    clickLongHun: ({ G, playerID }) => {
+        G.longhunSelect.active = true;
+        G.longhunSelect.stage = 'target_selection';
+        G.longhunSelect.sourcePlayerID = playerID;
+        G.longhunSelect.targetPlayerID = null;
+        G.longhunSelect.selectedCard = null;
+    },
+    selectLongHunTarget: ({ G, playerID }, targetID) => {
+        if (G.longhunSelect.active && G.longhunSelect.stage === 'target_selection') {
+            G.longhunSelect.targetPlayerID = targetID;
+        }
+    },
+    confirmLongHunTarget: ({ G, playerID }) => {
+        if (G.longhunSelect.active && G.longhunSelect.stage === 'target_selection' && G.longhunSelect.targetPlayerID) {
+            G.longhunSelect.stage = 'card_selection';
+        }
+    },
+    cancelLongHun: ({ G, playerID }) => {
+        G.longhunSelect.active = false;
+        G.longhunSelect.stage = null;
+        G.longhunSelect.sourcePlayerID = null;
+        G.longhunSelect.targetPlayerID = null;
+        G.longhunSelect.selectedCard = null;
+    },
+    selectLongHunCard: ({ G, playerID }, cardData) => {
+         if (G.longhunSelect.active && G.longhunSelect.stage === 'card_selection') {
+             G.longhunSelect.selectedCard = cardData;
+         }
+    },
+    confirmLongHunCard: ({ G, playerID }) => {
+        const { sourcePlayerID, targetPlayerID, selectedCard } = G.longhunSelect;
+        if (!selectedCard) return;
+
+        const { type, index, slot } = selectedCard;
+        
+        const targetPlayer = G.players[targetPlayerID];
+        const targetHand = G.hands[targetPlayerID];
+        let cardToDiscard = null;
+
+        if (type === 'hand') {
+            if (index >= 0 && index < targetHand.length) {
+                cardToDiscard = targetHand.splice(index, 1)[0];
+            }
+        } else if (type === 'equip') {
+            cardToDiscard = targetPlayer.equipments[slot];
+            targetPlayer.equipments[slot] = null;
+        }
+
+        if (cardToDiscard) {
+            // Need to import addToDiscardPile or define it inside moves if it's not available in scope
+            // It is available in module scope as defined earlier in the file.
+            addToDiscardPile(G, cardToDiscard);
+            const sourceName = G.players[sourcePlayerID].general ? G.players[sourcePlayerID].general.name : `Player ${sourcePlayerID}`;
+            const targetName = G.players[targetPlayerID].general ? G.players[targetPlayerID].general.name : `Player ${targetPlayerID}`;
+            G.actionLog.push(`${sourceName} used Long Hun to discard ${cardToDiscard.name} from ${targetName}`);
+        }
+
+        // Reset state
+        G.longhunSelect.active = false;
+        G.longhunSelect.stage = null;
+        G.longhunSelect.sourcePlayerID = null;
+        G.longhunSelect.targetPlayerID = null;
+        G.longhunSelect.selectedCard = null;
+    },
+
+    // Xi Zhi Cai - Chou Ce
+    clickChouce: ({ G, playerID }) => {
+        G.chouceSelect.active = true;
+        G.chouceSelect.stage = 'target_selection';
+        G.chouceSelect.sourcePlayerID = playerID;
+        G.chouceSelect.targetPlayerID = null;
+        G.chouceSelect.selectedCard = null;
+    },
+    selectChouceTarget: ({ G, playerID }, targetID) => {
+        if (G.chouceSelect.active && G.chouceSelect.stage === 'target_selection') {
+            G.chouceSelect.targetPlayerID = targetID;
+        }
+    },
+    confirmChouceTarget: ({ G, playerID }) => {
+        if (G.chouceSelect.active && G.chouceSelect.stage === 'target_selection' && G.chouceSelect.targetPlayerID) {
+            G.chouceSelect.stage = 'card_selection';
+        }
+    },
+    cancelChouce: ({ G, playerID }) => {
+        G.chouceSelect.active = false;
+        G.chouceSelect.stage = null;
+        G.chouceSelect.sourcePlayerID = null;
+        G.chouceSelect.targetPlayerID = null;
+        G.chouceSelect.selectedCard = null;
+    },
+    selectChouceCard: ({ G, playerID }, cardData) => {
+         if (G.chouceSelect.active && G.chouceSelect.stage === 'card_selection') {
+             G.chouceSelect.selectedCard = cardData;
+         }
+    },
+    confirmChouceCard: ({ G, playerID }) => {
+        const { sourcePlayerID, targetPlayerID, selectedCard } = G.chouceSelect;
+        if (!selectedCard) return;
+
+        const { type, index, slot } = selectedCard;
+        
+        const targetPlayer = G.players[targetPlayerID];
+        const targetHand = G.hands[targetPlayerID];
+        let cardToDiscard = null;
+
+        if (type === 'hand') {
+            if (index >= 0 && index < targetHand.length) {
+                cardToDiscard = targetHand.splice(index, 1)[0];
+            }
+        } else if (type === 'equip') {
+            cardToDiscard = targetPlayer.equipments[slot];
+            targetPlayer.equipments[slot] = null;
+        } else if (type === 'judge') {
+            cardToDiscard = targetPlayer.judges[slot];
+            targetPlayer.judges[slot] = null;
+        }
+
+        if (cardToDiscard) {
+            addToDiscardPile(G, cardToDiscard);
+            const sourceName = G.players[sourcePlayerID].general ? G.players[sourcePlayerID].general.name : `Player ${sourcePlayerID}`;
+            const targetName = G.players[targetPlayerID].general ? G.players[targetPlayerID].general.name : `Player ${targetPlayerID}`;
+            G.actionLog.push(`${sourceName} used Chou Ce to discard ${cardToDiscard.name} from ${targetName}`);
+        }
+
+        // Reset state
+        G.chouceSelect.active = false;
+        G.chouceSelect.stage = null;
+        G.chouceSelect.sourcePlayerID = null;
+        G.chouceSelect.targetPlayerID = null;
+        G.chouceSelect.selectedCard = null;
+    }
   },
 };
