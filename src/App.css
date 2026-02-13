@@ -29,3 +29,42 @@
   80% { opacity: 1; transform: translate(-50%, -50%); }
   100% { opacity: 0; transform: translate(-50%, -60%); }
 }
+
+/* 
+  Power Feel: Quick, violent shake, then a static hold (pause).
+*/
+@keyframes shake-impact {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-12px, 3px) rotate(-3deg); }
+  20% { transform: translate(10px, -3px) rotate(3deg); }
+  30% { transform: translate(-8px, 2px) rotate(-2deg); }
+  40% { transform: translate(6px, -1px) rotate(1deg); }
+  50% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(0, 0) rotate(0deg); } /* Hold still for the "Pause" */
+}
+
+@keyframes bounce-impact {
+  0% { transform: scale(1); }
+  20% { transform: scale(1.15); } /* Pop up */
+  40% { transform: scale(1.15); } /* Hold slightly */
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes flash-pause {
+  0% { opacity: 1; }
+  60% { opacity: 1; } /* The "Pause": Keep the color visible and bright */
+  100% { opacity: 0; }
+}
+
+.hero-hurt {
+  animation: shake-impact 0.8s ease-out;
+}
+
+.hero-recover {
+  animation: bounce-impact 0.8s ease-out;
+}
+
+.overlay-anim {
+  animation: flash-pause 0.8s forwards;
+}

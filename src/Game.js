@@ -26,7 +26,7 @@ import { youxushuSkill } from './skills/youxushu.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['友徐庶', '界沮授'];
+const TESTING_GENERAL_LIST = ['戏志才'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
@@ -322,6 +322,11 @@ export const CardGame = {
         sourcePlayerID: null,
         targetPlayerID: null,
         selectedCard: null
+    },
+    tianduSelect: {
+        active: false,
+        playerID: null,
+        card: null
     },
     liMuSelect: {
       active: false,
@@ -1208,6 +1213,14 @@ export const CardGame = {
       // Remove from hand
       hand.splice(cardIndex, 1);
 
+      // Record for Jie Jushou (Jianying) - Equipments also trigger
+      if (G.players[playerID].general && G.players[playerID].general.name === '界沮授') {
+          G.players[playerID].jianying = {
+              suit: card.suit,
+              rank: card.rank
+          };
+      }
+
       // Luo Tong Skill: Qin Zheng
       if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
           G.players[playerID].qz_cnt += 1;
@@ -2022,6 +2035,49 @@ export const CardGame = {
         G.chouceSelect.sourcePlayerID = null;
         G.chouceSelect.targetPlayerID = null;
         G.chouceSelect.selectedCard = null;
+    },
+
+    // Xi Zhicai - Tian Du
+    clickTiandu: ({ G, playerID }) => {
+        // Check if discard pile has cards
+        if (G.discardPile.length === 0) {
+            return;
+        }
+        
+        const card = G.discardPile[G.discardPile.length - 1];
+        G.tianduSelect = {
+            active: true,
+            playerID: playerID,
+            card: card
+        };
+    },
+    
+    confirmTiandu: ({ G, playerID }) => {
+        if (!G.tianduSelect.active || !G.tianduSelect.card) return;
+        
+        // Remove from discard pile (pop the last one)
+        const card = G.discardPile.pop();
+        
+        // Add to hand
+        G.hands[playerID].push(card);
+        
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} used Tian Du to obtain ${card.suit}${card.rank} ${card.name} from discard pile`);
+        
+        // Reset state
+        G.tianduSelect = {
+            active: false,
+            playerID: null,
+            card: null
+        };
+    },
+    
+    cancelTiandu: ({ G }) => {
+        G.tianduSelect = {
+            active: false,
+            playerID: null,
+            card: null
+        };
     }
   },
 };

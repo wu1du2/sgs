@@ -845,12 +845,100 @@ const QiHuiModal = ({ onSelect }) => {
   );
 };
 
+const TianduModal = ({ card, onConfirm, onCancel }) => {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '300px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '15px',
+        boxShadow: '0 0 20px rgba(0,0,0,0.5)',
+        alignItems: 'center'
+      }}>
+        <h3 style={{ margin: 0, color: '#f1c40f', textAlign: 'center' }}>天妒：是否获得此牌？</h3>
+        
+        {card && (
+            <div style={{
+                width: '80px',
+                height: '120px',
+                backgroundColor: '#ecf0f1',
+                borderRadius: '6px',
+                border: '1px solid #bdc3c7',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: getSuitColor(card.suit),
+                position: 'relative'
+            }}>
+                <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>{card.suit}</div>
+                <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>{card.rank}</div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>{card.name}</div>
+            </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+                onClick={onConfirm}
+                style={{ padding: '8px 20px', cursor: 'pointer', backgroundColor: '#2ecc71', border: 'none', color: 'white', borderRadius: '5px', fontWeight: 'bold' }}
+            >
+                确定
+            </button>
+            <button 
+                onClick={onCancel}
+                style={{ padding: '8px 20px', cursor: 'pointer', backgroundColor: '#e74c3c', border: 'none', color: 'white', borderRadius: '5px', fontWeight: 'bold' }}
+            >
+                取消
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Hero Area Component
 const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
   const [savedHeight, setSavedHeight] = React.useState(0);
+
+  const prevHpRef = React.useRef(hp);
+  const [animationState, setAnimationState] = React.useState('idle');
+  const [animKey, setAnimKey] = React.useState(0);
+
+  React.useEffect(() => {
+    const currentHp = Number(hp);
+    const prevHp = Number(prevHpRef.current);
+
+    if (currentHp < prevHp) {
+      setAnimationState('hurt');
+      setAnimKey(prev => prev + 1);
+      const timer = setTimeout(() => setAnimationState('idle'), 800);
+      prevHpRef.current = currentHp;
+      return () => clearTimeout(timer);
+    } else if (currentHp > prevHp) {
+      setAnimationState('recover');
+      setAnimKey(prev => prev + 1);
+      const timer = setTimeout(() => setAnimationState('idle'), 800);
+      prevHpRef.current = currentHp;
+      return () => clearTimeout(timer);
+    }
+    prevHpRef.current = currentHp;
+  }, [hp]);
 
   React.useLayoutEffect(() => {
     if (!isMinimized && elementRef.current) {
@@ -924,8 +1012,10 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
 
   return (
     <div 
+      key={animKey}
       ref={elementRef}
       onClick={onClick}
+      className={animationState === 'hurt' ? 'hero-hurt' : animationState === 'recover' ? 'hero-recover' : ''}
       style={{
         width: '160px',
         transform: `scale(${scale})`,
@@ -965,6 +1055,24 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
       >
         ➖
       </button>
+
+      {/* Animation Overlays */}
+      {animationState === 'hurt' && (
+        <div className="overlay-anim" style={{
+          position: 'absolute', inset: 0, 
+          background: 'radial-gradient(circle, rgba(255, 50, 50, 0.8) 0%, rgba(255, 0, 0, 0.4) 100%)',
+          zIndex: 5, borderRadius: '8px', pointerEvents: 'none',
+          boxShadow: '0 0 30px 10px rgba(255, 0, 0, 0.8)',
+          mixBlendMode: 'hard-light'
+        }} />
+      )}
+      {animationState === 'recover' && (
+        <div className="overlay-anim" style={{
+          position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 255, 0, 0.6)', 
+          zIndex: 5, borderRadius: '8px', pointerEvents: 'none',
+          boxShadow: '0 0 20px rgba(0, 255, 0, 0.8)'
+        }} />
+      )}
 
       {/* Chain Effect Icon */}
       {isLinked && (
@@ -1616,7 +1724,7 @@ const ActionTicker = ({ logs }) => {
       
       timeoutRef.current = setTimeout(() => {
         setVisible(false);
-      }, 1500);
+      }, 3000);
     }
   }, [logs]);
 
@@ -1640,7 +1748,7 @@ const ActionTicker = ({ logs }) => {
           
           if (cardNames.includes(part)) {
             return (
-              <span key={i} style={{ color: '#ffd700', fontWeight: 'bold' }}>
+              <span key={i} style={{ color: '#ffd700', fontWeight: 'bold', textShadow: '0 0 5px rgba(255, 215, 0, 0.5)' }}>
                 {part}
               </span>
             );
@@ -1651,13 +1759,13 @@ const ActionTicker = ({ logs }) => {
              const suit = part.match(/[♠♥♣♦]/)[0];
              const color = getSuitColor(suit);
              return (
-               <span key={i} style={{ color: color, fontWeight: 'bold', fontSize: '18px' }}>
+               <span key={i} style={{ color: color, fontWeight: 'bold', fontSize: '20px', textShadow: '0 0 2px rgba(255,255,255,0.3)' }}>
                  {part}
                </span>
              );
           }
 
-          return <span key={i}>{part}</span>;
+          return <span key={i} style={{ textShadow: '0 1px 2px black' }}>{part}</span>;
         })}
       </div>
     );
@@ -1669,18 +1777,19 @@ const ActionTicker = ({ logs }) => {
       bottom: '100%', // Position above the parent
       left: '50%',
       transform: 'translateX(-50%)',
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.85)',
       color: '#fff',
-      padding: '8px 16px',
-      borderRadius: '20px',
-      marginBottom: '10px',
+      padding: '10px 20px',
+      borderRadius: '25px',
+      marginBottom: '15px',
       whiteSpace: 'nowrap',
       zIndex: 100,
       pointerEvents: 'none',
-      fontSize: '16px',
+      fontSize: '18px',
       fontWeight: 'bold',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
-      border: '1px solid #ffd700'
+      boxShadow: '0 4px 15px rgba(0,0,0,0.6)',
+      border: '2px solid #ffd700',
+      textShadow: '0 1px 3px black'
     }}>
       {renderMessage()}
     </div>
@@ -5152,7 +5261,14 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
         {/* Judgment Button - Left of Deck */}
         <div 
-          onClick={onPerformJudgment}
+          onClick={() => {
+            const me = G.players[playerID];
+            if (me.general && me.general.name === '戏志才') {
+              moves.clickTiandu();
+            } else {
+              onPerformJudgment();
+            }
+          }}
           style={{
             position: 'absolute',
             top: '-20px',
@@ -5438,6 +5554,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => moves.cancelLiyuTarget()}
           title="利驭: 请选择一张牌"
           singleSelection={true}
+        />
+      )}
+      
+      {/* Tiandu Modal */}
+      {G.tianduSelect && G.tianduSelect.active && G.tianduSelect.playerID === playerID && (
+        <TianduModal
+            card={G.tianduSelect.card}
+            onConfirm={() => moves.confirmTiandu()}
+            onCancel={() => moves.cancelTiandu()}
         />
       )}
 
