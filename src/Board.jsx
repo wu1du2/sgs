@@ -1179,7 +1179,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
   );
 };
 
-const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord }) => {
+const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord, debugInfo }) => {
   const isCompact = typeof window !== 'undefined' && window.innerWidth <= 700;
 
   return (
@@ -1197,6 +1197,28 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
       boxSizing: 'border-box',
       overflowY: 'auto'
     }}>
+      {/* Debug Info */}
+      {debugInfo && debugInfo.length > 0 && (
+          <div style={{ width: '100%', maxWidth: '600px', marginBottom: '10px' }}>
+              <textarea
+                  readOnly
+                  value={JSON.stringify(debugInfo, null, 2)}
+                  style={{
+                      width: '100%',
+                      height: '100px',
+                      fontSize: '10px',
+                      backgroundColor: '#222',
+                      color: '#0f0',
+                      border: '1px solid #555'
+                  }}
+                  onClick={(e) => e.target.select()}
+              />
+              <div style={{ fontSize: '10px', color: '#aaa', textAlign: 'center' }}>
+                  Debug Info (Click text to select all)
+              </div>
+          </div>
+      )}
+
       {/* Bidding Buttons */}
       <div style={{ marginBottom: isCompact ? '12px' : '20px', display: 'flex', gap: isCompact ? '10px' : '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
         <span style={{ fontSize: isCompact ? '14px' : '18px', fontWeight: 'bold' }}>叫分:</span>
@@ -3480,7 +3502,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const onChangeGeneral = (generalId) => {
     const actionId = Date.now() + Math.random();
-    handleSafeAction(() => moves.changeGeneral(generalId, actionId));
+    const clickid = Math.random().toString(36).substring(2, 15);
+    let sessionid = localStorage.getItem('sgs_debug_sessionid');
+    if (!sessionid) {
+        sessionid = Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('sgs_debug_sessionid', sessionid);
+    }
+    handleSafeAction(() => moves.changeGeneral(generalId, actionId, clickid, sessionid));
   };
 
   const onBid = (amount) => {
@@ -4687,6 +4715,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           changeUsed={G.generalChangeUsed[playerID] || [false, false, false]}
           onBid={onBid}
           landlord={G.landlord}
+          debugInfo={G.debugInfo}
         />
       )}
 

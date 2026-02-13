@@ -376,6 +376,7 @@ export const CardGame = {
       stage: null, // 'discard_2_yang', 'discard_1_yin'
       playerID: null,
     },
+    debugInfo: [], // Store clickid and sessionid for debugging
   }),
 
   turn: {
@@ -1578,13 +1579,28 @@ export const CardGame = {
         G.pendingEffect = null;
     },
 
-    changeGeneral: ({ G, playerID }, generalId, actionId) => {
+    changeGeneral: ({ G, playerID }, generalId, actionId, clickid, sessionid) => {
       // Idempotency check
       if (actionId && G.players[playerID].lastActionId === actionId) {
           return;
       }
       if (actionId) {
           G.players[playerID].lastActionId = actionId;
+      }
+
+      // Store debug info
+      if (clickid || sessionid) {
+          if (!G.debugInfo) G.debugInfo = [];
+          G.debugInfo.push({
+              playerID,
+              generalId,
+              clickid,
+              sessionid,
+              timestamp: new Date().toISOString(),
+              actionId
+          });
+          // Keep only last 20 entries
+          if (G.debugInfo.length > 20) G.debugInfo.shift();
       }
 
       const options = G.generalOptions[playerID];

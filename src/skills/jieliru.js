@@ -45,7 +45,7 @@ export const jieliruSkill = {
       // Put on top of deck (array start)
       G.deck.unshift(card);
       
-      G.actionLog.push(`${player.general.name} 将一张牌置于牌堆顶`);
+      G.actionLog.push(`${player.general.name} 将一张${card.suit}${card.rank}【${card.name}】置于牌堆顶`);
       
       G.miejiStage = 'targetRespond';
     },
