@@ -1267,7 +1267,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
                 hp={general.hp} 
                 hpMax={general.hpMax}
                 skills={general.skills} 
-                portrait={general.portrait}
+                portrait={general.localPortrait || general.portrait}
               />
             </div>
             <button 
@@ -4234,7 +4234,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               hp={player?.hp ?? (general ? general.hp : 4)}
               hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
               skills={displaySkills}
-              portrait={general ? general.portrait : null}
+              portrait={general ? (general.localPortrait || general.portrait) : null}
               isMe={true} 
               role={role}
               onClick={() => onHeroClick(id)}
@@ -4269,7 +4269,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               hp={player?.hp ?? (general ? general.hp : 4)}
               hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
               skills={general ? general.skills : ["Strike", "Dodge"]}
-              portrait={general ? general.portrait : null}
+              portrait={general ? (general.localPortrait || general.portrait) : null}
               role={role}
               onClick={() => onHeroClick(id)}
               isSelectable={isSelectable}
