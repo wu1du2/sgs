@@ -21,11 +21,12 @@ import { shenzhaoyunSkill } from './skills/shenzhaoyun.js';
 import { xizhicaiSkill } from './skills/xizhicai.js';
 import { shenlubuSkill } from './skills/shenlubu.js';
 import { jieliruSkill } from './skills/jieliru.js';
+import { youxushuSkill } from './skills/youxushu.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['界李儒'];
+const TESTING_GENERAL_LIST = ['友徐庶'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
@@ -392,6 +393,7 @@ export const CardGame = {
 
   moves: {
     ...jieliruSkill.moves,
+    ...youxushuSkill.moves,
     ...xuyouSkill.moves,
     performJudgment: ({ G, ctx, playerID }) => {
       // Draw judgment card
@@ -633,6 +635,15 @@ export const CardGame = {
         if (G.players[playerID].role === 'landlord') {
            G.players[playerID].hpMax += 1;
            G.players[playerID].hp += 1;
+        }
+
+        // Initialize Qi Hui for You Xu Shu
+        if (selected.name === '友徐庶') {
+             G.players[playerID].qiHui = {
+                litButtons: [],
+                stage: 'lighting',
+                selectedOption: null
+            };
         }
       }
       

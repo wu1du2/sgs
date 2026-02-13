@@ -799,9 +799,56 @@ const KuangbaoSelector = ({ onSelect, onCancel }) => {
   );
 };
 
+const QiHuiModal = ({ onSelect }) => {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '300px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '15px',
+        boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+      }}>
+        <h3 style={{ margin: 0, color: '#f1c40f', textAlign: 'center' }}>启诲：请选择一项</h3>
+        <button 
+            onClick={() => onSelect(1)}
+            style={{ padding: '10px', cursor: 'pointer', backgroundColor: '#3498db', border: 'none', color: 'white', borderRadius: '5px' }}
+        >
+            1. 回复1点体力
+        </button>
+        <button 
+            onClick={() => onSelect(2)}
+            style={{ padding: '10px', cursor: 'pointer', backgroundColor: '#3498db', border: 'none', color: 'white', borderRadius: '5px' }}
+        >
+            2. 摸两张牌
+        </button>
+        <button 
+            onClick={() => onSelect(3)}
+            style={{ padding: '10px', cursor: 'pointer', backgroundColor: '#3498db', border: 'none', color: 'white', borderRadius: '5px' }}
+        >
+            3. 下一张牌不计次数
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
+  const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
   const [savedHeight, setSavedHeight] = React.useState(0);
 
@@ -809,7 +856,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
     if (!isMinimized && elementRef.current) {
       setSavedHeight(elementRef.current.offsetHeight);
     }
-  }, [isMinimized, name, hp, hpMax, skills, equipments, judges, isLinked, handCount, portrait, role, isSelectable, isSelected]);
+  }, [isMinimized, name, hp, hpMax, skills, equipments, judges, isLinked, handCount, portrait, role, isSelectable, isSelected, qiHui]);
 
   const getBorderColor = () => {
     if (isSelected) return '#00ffff'; // Cyan for selected
@@ -1065,6 +1112,50 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
           </button>
         ))}
       </div>
+
+      {/* Qi Hui Area */}
+      {qiHui && (
+        <div style={{ marginTop: '2px', width: '100%', border: '1px solid #7f8c8d', padding: '2px', borderRadius: '4px', backgroundColor: 'rgba(0,0,0,0.4)' }}>
+             <div 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setQiHuiCollapsed(!qiHuiCollapsed);
+                }}
+                style={{ fontSize: '9px', color: '#f1c40f', cursor: 'pointer', textAlign: 'center', marginBottom: qiHuiCollapsed ? 0 : '2px', fontWeight: 'bold' }}
+             >
+                 [启诲] {qiHuiCollapsed ? '▼' : '▲'}
+             </div>
+             
+             {!qiHuiCollapsed && (
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                     <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                        {['基本', '锦囊', '装备'].map(btn => {
+                            const isLit = qiHui.litButtons && qiHui.litButtons.includes(btn);
+                            return (
+                                <button
+                                    key={btn}
+                                    onClick={(e) => { e.stopPropagation(); onQiHuiClick && onQiHuiClick(btn); }}
+                                    style={{
+                                        fontSize: '8px',
+                                        padding: '1px 3px',
+                                        backgroundColor: isLit ? '#f1c40f' : '#34495e',
+                                        color: isLit ? '#000' : '#bdc3c7',
+                                        border: isLit ? '1px solid #f39c12' : '1px solid #2c3e50',
+                                        borderRadius: '2px',
+                                        cursor: isMe ? 'pointer' : 'default', // Only clickable by owner? Or everyone? Assuming owner.
+                                        boxShadow: isLit ? '0 0 5px #f1c40f' : 'none'
+                                    }}
+                                    disabled={!isMe}
+                                >
+                                    {btn}
+                                </button>
+                            );
+                        })}
+                     </div>
+                 </div>
+             )}
+        </div>
+      )}
 
       {/* Equipment Slots */}
       <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px' }}>
@@ -3827,6 +3918,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         return;
     }
 
+    if (skillName === '侠行') {
+        moves.youxushuXiaXing();
+        return;
+    }
+
     if (skillName === '龙魂') {
         moves.clickLongHun();
         return;
@@ -4252,6 +4348,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               onToggleChain={() => onToggleChain(id)}
               kuangbaoCount={G.players[id].kuangbaoCount}
               onKuangbaoClick={onKuangbaoClick}
+              qiHui={player.qiHui}
+              onQiHuiClick={(btn) => moves.youxushuQiHuiClick(btn)}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </div>
@@ -4283,6 +4381,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               isLinked={G.players[id]?.is_linked}
               onToggleChain={() => onToggleChain(id)}
               kuangbaoCount={G.players[id].kuangbaoCount}
+              qiHui={player.qiHui}
+              onQiHuiClick={(btn) => moves.youxushuQiHuiClick(btn)}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </>
@@ -4302,6 +4402,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       position: 'relative',
       overflow: 'auto'
     }}>
+      {/* Qi Hui Selection Modal */}
+      {G.players[playerID] && G.players[playerID].qiHui && G.players[playerID].qiHui.stage === 'selecting_option' && (
+         <QiHuiModal onSelect={(opt) => moves.youxushuQiHuiSelectOption(opt)} />
+      )}
+
       {/* Xu You Shi Cai Modal */}
       {showShiCaiModal && (
         <ShiCaiModal
