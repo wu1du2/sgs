@@ -736,8 +736,70 @@ const ZhuangShiModal = ({ onConfirm, onCancel }) => {
   );
 };
 
+const KuangbaoSelector = ({ onSelect, onCancel }) => {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '300px',
+        maxHeight: '80vh',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px'
+      }}>
+        <h3 style={{ color: 'white', textAlign: 'center', margin: 0 }}>选择狂暴标记数量</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+          {Array.from({ length: 21 }, (_, i) => i).map(num => (
+            <button
+              key={num}
+              onClick={() => onSelect(num)}
+              style={{
+                padding: '10px',
+                backgroundColor: '#e67e22',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '16px'
+              }}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={onCancel}
+          style={{
+            padding: '10px',
+            backgroundColor: '#7f8c8d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            marginTop: '10px'
+          }}
+        >
+          取消
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const elementRef = React.useRef(null);
   const [savedHeight, setSavedHeight] = React.useState(0);
@@ -867,6 +929,33 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
           filter: 'drop-shadow(0 0 2px black)'
         }}>
           🔗
+        </div>
+      )}
+
+      {/* Kuangbao Indicator for Shen Lubu */}
+      {name === '神吕布' && (
+        <div 
+          onClick={(e) => {
+            e.stopPropagation();
+            onKuangbaoClick && onKuangbaoClick();
+          }}
+          style={{
+            position: 'absolute',
+            top: '-10px',
+            right: '-10px',
+            backgroundColor: '#e74c3c',
+            color: 'white',
+            padding: '2px 6px',
+            borderRadius: '10px',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            border: '1px solid #c0392b',
+            boxShadow: '0 0 5px rgba(231, 76, 60, 0.5)',
+            zIndex: 15
+          }}
+        >
+          狂暴{typeof kuangbaoCount === 'number' ? kuangbaoCount : 0}
         </div>
       )}
 
@@ -3224,7 +3313,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const [activeSkill, setActiveSkill] = React.useState(null);
   const [showZhuangShiModal, setShowZhuangShiModal] = React.useState(false);
+  const [showKuangbaoSelector, setShowKuangbaoSelector] = React.useState(false);
   const [shanJiaState, setShanJiaState] = React.useState(3);
+
+  const onKuangbaoClick = () => {
+    setShowKuangbaoSelector(true);
+  };
+
+  const handleKuangbaoSelect = (num) => {
+    moves.updateKuangbaoCount(num);
+    setShowKuangbaoSelector(false);
+  };
 
   // Pin Dian Modal Logic
   let showPinDianModal = false;
@@ -3916,6 +4015,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               handCount={hand.length}
               isLinked={G.players[id]?.is_linked}
               onToggleChain={() => onToggleChain(id)}
+              kuangbaoCount={G.players[id].kuangbaoCount}
+              onKuangbaoClick={onKuangbaoClick}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </div>
@@ -3946,6 +4047,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               handCount={hand.length}
               isLinked={G.players[id]?.is_linked}
               onToggleChain={() => onToggleChain(id)}
+              kuangbaoCount={G.players[id].kuangbaoCount}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </>
@@ -5027,6 +5129,14 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             setShowZhenFengModal(false);
           }}
           onCancel={() => setShowZhenFengModal(false)}
+        />
+      )}
+
+      {/* Shen Lubu Kuangbao Selector */}
+      {showKuangbaoSelector && (
+        <KuangbaoSelector
+          onSelect={handleKuangbaoSelect}
+          onCancel={() => setShowKuangbaoSelector(false)}
         />
       )}
 

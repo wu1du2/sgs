@@ -19,11 +19,12 @@ import { xuyouSkill } from './skills/xuyou.js';
 import { liuyanSkill } from './skills/liuyan.js';
 import { shenzhaoyunSkill } from './skills/shenzhaoyun.js';
 import { xizhicaiSkill } from './skills/xizhicai.js';
+import { shenlubuSkill } from './skills/shenlubu.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = [];
+const TESTING_GENERAL_LIST = ['神吕布'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -62,6 +63,7 @@ const createPlayerState = () => ({
   is_linked: false,
   qz_cnt: 0, // Qin Zheng counter for Luo Tong
   junlueCount: 0,
+  kuangbaoCount: 0, // Shen Lubu Kuangbao
   quan: [], // For Jie Zhonghui
   hp: 4,
   hpMax: 4,
@@ -1878,6 +1880,15 @@ export const CardGame = {
         G.longhunSelect.sourcePlayerID = null;
         G.longhunSelect.targetPlayerID = null;
         G.longhunSelect.selectedCard = null;
+    },
+
+    // Shen Lubu - Kuangbao
+    updateKuangbaoCount: ({ G, playerID }, count) => {
+        const player = G.players[playerID];
+        if (player.general && player.general.name === '神吕布') {
+            player.kuangbaoCount = count;
+            G.actionLog.push(`${player.general.name} set Kuangbao to ${count}`);
+        }
     },
 
     // Xi Zhi Cai - Chou Ce
