@@ -1181,6 +1181,18 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
 
 const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord, debugInfo }) => {
   const isCompact = typeof window !== 'undefined' && window.innerWidth <= 700;
+  const [renderLogs, setRenderLogs] = React.useState([]);
+
+  React.useEffect(() => {
+      const timestamp = new Date().toISOString();
+      const currentGenerals = options.map(g => g.name).join(', ');
+      setRenderLogs(prev => [...prev, `[${timestamp}] Rendered: ${currentGenerals}`]);
+  }, [options]);
+
+  const allDebugInfo = {
+      backendLogs: debugInfo,
+      frontendRenderLogs: renderLogs
+  };
 
   return (
     <div style={{
@@ -1198,26 +1210,24 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
       overflowY: 'auto'
     }}>
       {/* Debug Info */}
-      {debugInfo && debugInfo.length > 0 && (
-          <div style={{ width: '100%', maxWidth: '600px', marginBottom: '10px' }}>
-              <textarea
-                  readOnly
-                  value={JSON.stringify(debugInfo, null, 2)}
-                  style={{
-                      width: '100%',
-                      height: '100px',
-                      fontSize: '10px',
-                      backgroundColor: '#222',
-                      color: '#0f0',
-                      border: '1px solid #555'
-                  }}
-                  onClick={(e) => e.target.select()}
-              />
-              <div style={{ fontSize: '10px', color: '#aaa', textAlign: 'center' }}>
-                  Debug Info (Click text to select all)
-              </div>
+      <div style={{ width: '100%', maxWidth: '600px', marginBottom: '10px' }}>
+          <textarea
+              readOnly
+              value={JSON.stringify(allDebugInfo, null, 2)}
+              style={{
+                  width: '100%',
+                  height: '100px',
+                  fontSize: '10px',
+                  backgroundColor: '#222',
+                  color: '#0f0',
+                  border: '1px solid #555'
+              }}
+              onClick={(e) => e.target.select()}
+          />
+          <div style={{ fontSize: '10px', color: '#aaa', textAlign: 'center' }}>
+              Debug Info (Backend & Frontend)
           </div>
-      )}
+      </div>
 
       {/* Bidding Buttons */}
       <div style={{ marginBottom: isCompact ? '12px' : '20px', display: 'flex', gap: isCompact ? '10px' : '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
