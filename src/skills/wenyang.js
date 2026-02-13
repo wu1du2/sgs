@@ -6,7 +6,7 @@ export const wenyangSkill = {
       player.hpMax -= 1;
       // 确保当前体力不超过新的上限
       if (player.hp > player.hpMax) {
-          player.hp = player.hpMax;
+        player.hp = player.hpMax;
       }
       
       const playerName = player.general ? player.general.name : `Player ${playerID}`;
@@ -21,7 +21,7 @@ export const wenyangSkill = {
       player.hpMax += 1;
       // 确保当前体力不超过新的上限
       if (player.hp > player.hpMax) {
-          player.hp = player.hpMax;
+        player.hp = player.hpMax;
       }
       
       if (drawCards) {

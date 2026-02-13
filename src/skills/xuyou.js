@@ -1,11 +1,15 @@
 
-// Helper to shuffle array
-function shuffle(array) {
+// Helper to shuffle array with optional RNG
+function shuffle(array, rng) {
   let currentIndex = array.length,  randomIndex;
   const newArray = [...array];
 
   while (currentIndex != 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
+    if (rng) {
+      randomIndex = Math.floor(rng.Number() * currentIndex);
+    } else {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+    }
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [
       newArray[randomIndex], newArray[currentIndex]];
@@ -34,7 +38,7 @@ const addToDiscardPile = (G, cards) => {
 
 export const xuyouSkill = {
     moves: {
-        xuyouDrawCard: ({ G, playerID }, actionId) => {
+        xuyouDrawCard: ({ G, ctx, playerID }, actionId) => {
             const player = G.players[playerID];
 
             // Idempotency check
@@ -57,7 +61,7 @@ export const xuyouSkill = {
             
             if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
-                    G.deck = shuffle(G.discardPile);
+                    G.deck = shuffle(G.discardPile, ctx.random);
                     G.discardPile = [];
                 } else {
                     // No cards left
@@ -73,7 +77,7 @@ export const xuyouSkill = {
             }
         },
 
-        xuyouChengLue: ({ G, playerID }) => {
+        xuyouChengLue: ({ G, ctx, playerID }) => {
             // Check if already used this turn? Prompt says "出牌阶段限一次" in json, but user description doesn't explicitly limit it.
             // But usually skills are limited. However, user said "Strictly follow my description". 
             // Description: "Cheng Lue (Yang): Click...". It doesn't say "Once per phase".
@@ -102,7 +106,7 @@ export const xuyouSkill = {
                 // Draw 1
                  if (G.deck.length === 0) {
                     if (G.discardPile.length > 0) {
-                        G.deck = shuffle(G.discardPile);
+                        G.deck = shuffle(G.discardPile, ctx.random);
                         G.discardPile = [];
                     }
                 }
@@ -121,7 +125,7 @@ export const xuyouSkill = {
                 for (let i=0; i<2; i++) {
                      if (G.deck.length === 0) {
                         if (G.discardPile.length > 0) {
-                            G.deck = shuffle(G.discardPile);
+                            G.deck = shuffle(G.discardPile, ctx.random);
                             G.discardPile = [];
                         } else break;
                     }

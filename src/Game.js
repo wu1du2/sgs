@@ -717,7 +717,7 @@ export const CardGame = {
       // Luo Tong Skill: Qin Zheng
       if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
           G.players[playerID].qz_cnt += 1;
-          const logs = luotongSkill.qinzheng.trigger(G, playerID);
+          const logs = luotongSkill.qinzheng.trigger(G, playerID, ctx.random);
           if (logs && logs.length > 0) {
               G.actionLog.push(...logs);
           }
@@ -939,9 +939,9 @@ export const CardGame = {
       G.actionLog.push(`${playerName} discarded ${cardNames}`);
     },
 
-    shuffleDeck: ({ G }) => {
+    shuffleDeck: ({ G, ctx }) => {
       const combined = [...G.deck, ...G.discardPile];
-      G.deck = shuffle(combined);
+      G.deck = shuffle(combined, ctx.random);
       G.discardPile = [];
       G.actionLog.push(`Deck shuffled (merged with discard pile). Total cards: ${G.deck.length}`);
     },

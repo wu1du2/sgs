@@ -1,10 +1,14 @@
-// Fisher-Yates shuffle (duplicated from Game.js or imported if possible, but for now I'll just implement it here or rely on Game.js passing a shuffle function if I can, but Game.js doesn't export shuffle easily. I'll just re-implement it or assume G.deck is accessible)
-function shuffle(array) {
+// Fisher-Yates shuffle with optional RNG
+function shuffle(array, rng) {
   let currentIndex = array.length,  randomIndex;
   const newArray = [...array];
 
   while (currentIndex != 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
+    if (rng) {
+      randomIndex = Math.floor(rng.Number() * currentIndex);
+    } else {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+    }
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [
       newArray[randomIndex], newArray[currentIndex]];
@@ -18,7 +22,7 @@ export const luotongSkill = {
         name: "勤政",
         description: "锁定技，你每使用或打出三张牌时，你随机获得一张【杀】或【闪】；每使用或打出五张牌时，你随机获得一张【桃】或【酒】；每使用或打出八张牌时，你随机获得一张【无中生有】或【决斗】。",
         
-        trigger: (G, playerID) => {
+        trigger: (G, playerID, rng) => {
             const player = G.players[playerID];
             if (!player || typeof player.qz_cnt !== 'number') return;
 
@@ -28,7 +32,7 @@ export const luotongSkill = {
             // Helper to find and draw card
             const findAndDraw = (targetNames) => {
                 // Shuffle deck
-                G.deck = shuffle(G.deck);
+                G.deck = shuffle(G.deck, rng);
                 
                 const cardIndex = G.deck.findIndex(c => targetNames.includes(c.name));
                 if (cardIndex !== -1) {
