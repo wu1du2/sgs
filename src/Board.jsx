@@ -2847,6 +2847,180 @@ const FenYinEffect = ({ message }) => {
   );
 };
 
+const MieJiCardSelectionModal = ({ hand, onConfirm, onCancel }) => {
+  const [selectedIndex, setSelectedIndex] = React.useState(null);
+
+  const isHighlighted = (card) => {
+    return (card.suit === '♠' || card.suit === '♣') && card.type === '锦囊';
+  };
+
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333', padding: '20px', borderRadius: '10px', width: '80%', maxWidth: '800px',
+        display: 'flex', flexDirection: 'column', gap: '20px', color: 'white'
+      }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>灭计: 选择一张牌置于牌堆顶</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {hand.map((card, index) => {
+            const highlighted = isHighlighted(card);
+            return (
+              <div
+                key={index}
+                onClick={() => setSelectedIndex(index === selectedIndex ? null : index)}
+                style={{
+                  width: '80px', height: '120px',
+                  backgroundColor: '#ecf0f1',
+                  borderRadius: '6px',
+                  border: selectedIndex === index ? '3px solid #e74c3c' : (highlighted ? '3px solid #f1c40f' : '1px solid #bdc3c7'),
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', position: 'relative',
+                  color: getSuitColor(card.suit),
+                  transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
+                  transition: 'all 0.2s',
+                  boxShadow: highlighted ? '0 0 10px #f1c40f' : 'none'
+                }}
+              >
+                <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>{card.suit}</div>
+                <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>{card.rank}</div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>{card.name}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button onClick={onCancel} style={{ padding: '10px 20px', backgroundColor: '#95a5a6', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>取消</button>
+          <button 
+            onClick={() => onConfirm(selectedIndex)} 
+            disabled={selectedIndex === null}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: selectedIndex !== null ? '#e74c3c' : '#555', 
+              color: 'white', border: 'none', borderRadius: '5px', 
+              cursor: selectedIndex !== null ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard }) => {
+  const [selected, setSelected] = React.useState([]); // Array of {type, index/slot}
+
+  const toggleSelection = (item) => {
+    const exists = selected.find(s => s.type === item.type && s.index === item.index && s.slot === item.slot);
+    if (exists) {
+      setSelected(selected.filter(s => s !== exists));
+    } else {
+      setSelected([...selected, item]);
+    }
+  };
+
+  const isSelected = (type, val) => {
+    return selected.some(s => s.type === type && (s.index === val || s.slot === val));
+  };
+
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333', padding: '20px', borderRadius: '10px', width: '80%', maxWidth: '800px',
+        display: 'flex', flexDirection: 'column', gap: '20px', color: 'white'
+      }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>灭计: 选择牌交出或弃置</h3>
+        
+        {/* Hand */}
+        <div>
+            <h4>手牌</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+            {hand.map((card, index) => (
+                <div
+                key={`hand-${index}`}
+                onClick={() => toggleSelection({ type: 'hand', index })}
+                style={{
+                    width: '80px', height: '120px',
+                    backgroundColor: '#ecf0f1',
+                    borderRadius: '6px',
+                    border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #bdc3c7',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', position: 'relative',
+                    color: getSuitColor(card.suit),
+                    transform: isSelected('hand', index) ? 'scale(1.1)' : 'scale(1)',
+                    transition: 'all 0.2s'
+                }}
+                >
+                <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>{card.suit}</div>
+                <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>{card.rank}</div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>{card.name}</div>
+                </div>
+            ))}
+            </div>
+        </div>
+
+        {/* Equipments */}
+        <div>
+            <h4>装备</h4>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {Object.entries(equipments).map(([slot, card]) => {
+                if (!card) return null;
+                return (
+                <div
+                    key={`equip-${slot}`}
+                    onClick={() => toggleSelection({ type: 'equip', slot })}
+                    style={{
+                    padding: '10px',
+                    backgroundColor: isSelected('equip', slot) ? 'rgba(0, 255, 255, 0.3)' : '#444',
+                    border: isSelected('equip', slot) ? '3px solid #00ffff' : '1px solid #aaa',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    color: 'white'
+                    }}
+                >
+                    {card.name} ({slot})
+                </div>
+                );
+            })}
+            </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button 
+            onClick={() => onGive(selected)} 
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: '#2ecc71', 
+              color: 'white', border: 'none', borderRadius: '5px', 
+              cursor: 'pointer'
+            }}
+          >
+            交出
+          </button>
+          <button 
+            onClick={() => onDiscard(selected)} 
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: '#e74c3c', 
+              color: 'white', border: 'none', borderRadius: '5px', 
+              cursor: 'pointer'
+            }}
+          >
+            弃置
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function CardBoard({ ctx, G, moves, playerID }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
@@ -3041,6 +3215,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       } else {
         setSelectedTargetIds([targetId]);
       }
+      return;
+    }
+
+    if (activeSkill === '灭计') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.miejiTarget(targetId);
+      setActiveSkill(null);
       return;
     }
 
@@ -3491,6 +3675,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName === '绽火') {
       moves.shenluxunResetJunlue();
+      return;
+    }
+
+    if (skillName === '灭计') {
+      if (activeSkill === '灭计') {
+        setActiveSkill(null);
+        moves.miejiCancel();
+      } else {
+        setActiveSkill('灭计');
+      }
       return;
     }
 
@@ -4074,6 +4268,25 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             onMoveToTop={(index) => moves.xuyouShiCaiToTop(index)}
             onDiscardAll={() => moves.xuyouShiCaiToDiscard()}
             onClose={() => setShowShiCaiModal(false)}
+        />
+      )}
+
+      {/* Mie Ji Card Selection (Li Ru) */}
+      {G.miejiStage === 'selectCard' && playerID === ctx.currentPlayer && (
+        <MieJiCardSelectionModal
+          hand={G.hands[playerID]}
+          onConfirm={(index) => moves.miejiSelectCard(index)}
+          onCancel={() => moves.miejiCancel()}
+        />
+      )}
+
+      {/* Mie Ji Target Respond (Target) */}
+      {G.miejiStage === 'targetRespond' && playerID === G.miejiTargetId && (
+        <MieJiTargetRespondModal
+          hand={G.hands[playerID]}
+          equipments={G.players[playerID].equipments}
+          onGive={(items) => moves.miejiGive(items)}
+          onDiscard={(items) => moves.miejiDiscard(items)}
         />
       )}
       

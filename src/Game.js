@@ -20,11 +20,12 @@ import { liuyanSkill } from './skills/liuyan.js';
 import { shenzhaoyunSkill } from './skills/shenzhaoyun.js';
 import { xizhicaiSkill } from './skills/xizhicai.js';
 import { shenlubuSkill } from './skills/shenlubu.js';
+import { jieliruSkill } from './skills/jieliru.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['神吕布'];
+const TESTING_GENERAL_LIST = ['界李儒'];
 
 // Fisher-Yates shuffle
 function shuffle(array) {
@@ -384,6 +385,7 @@ export const CardGame = {
   },
 
   moves: {
+    ...jieliruSkill.moves,
     ...xuyouSkill.moves,
     performJudgment: ({ G, playerID }) => {
       // Draw judgment card
