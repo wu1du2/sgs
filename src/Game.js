@@ -27,13 +27,17 @@ const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
 const TESTING_GENERAL_LIST = ['界李儒'];
 
-// Fisher-Yates shuffle
-function shuffle(array) {
+// Fisher-Yates shuffle with optional RNG
+function shuffle(array, rng) {
   let currentIndex = array.length,  randomIndex;
   const newArray = [...array];
 
   while (currentIndex != 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
+    if (rng) {
+      randomIndex = Math.floor(rng.Number() * currentIndex);
+    } else {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+    }
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [
       newArray[randomIndex], newArray[currentIndex]];
@@ -76,8 +80,8 @@ const createPlayerState = () => ({
   ...createEmptyZones()
 });
 
-const distributeGenerals = () => {
-  const shuffledGenerals = shuffle(ENABLED_GENERALS);
+const distributeGenerals = (rng) => {
+  const shuffledGenerals = shuffle(ENABLED_GENERALS, rng);
   const generalOptions = {};
   const generalChangeUsed = {};
   ['0', '1', '2'].forEach(pid => {
@@ -197,12 +201,12 @@ const addToDiscardPile = (G, cards) => {
   }
 };
 
-const drawCards = (G, playerID, count) => {
+const drawCards = (G, playerID, count, rng) => {
   const cardsToDraw = [];
   for (let i = 0; i < count; i++) {
     if (G.deck.length === 0) {
       if (G.discardPile.length > 0) {
-        G.deck = shuffle(G.discardPile);
+        G.deck = shuffle(G.discardPile, rng);
         G.discardPile = [];
       } else {
         break; // No more cards
@@ -217,8 +221,8 @@ const drawCards = (G, playerID, count) => {
 
 
 export const CardGame = {
-  setup: () => ({
-    deck: shuffle(SGS_CARDS.map((c, i) => ({ ...c, id: `card-${i}` }))),
+  setup: ({ ctx }) => ({
+    deck: shuffle(SGS_CARDS.map((c, i) => ({ ...c, id: `card-${i}` })), ctx.random),
     discardPile: [],
     hands: {
       '0': [],
@@ -388,11 +392,11 @@ export const CardGame = {
   moves: {
     ...jieliruSkill.moves,
     ...xuyouSkill.moves,
-    performJudgment: ({ G, playerID }) => {
+    performJudgment: ({ G, ctx, playerID }) => {
       // Draw judgment card
       if (G.deck.length === 0) {
         if (G.discardPile.length > 0) {
-            G.deck = shuffle(G.discardPile);
+            G.deck = shuffle(G.discardPile, ctx.random);
             G.discardPile = [];
         } else {
              G.actionLog.push("Deck and discard pile empty, cannot judge.");
@@ -406,7 +410,7 @@ export const CardGame = {
       G.actionLog.push(`${playerName} performed a judgment: drew ${drawnCard.suit}${drawnCard.rank} ${drawnCard.name}`);
     },
 
-    drawCard: ({ G, playerID }, actionId) => {
+    drawCard: ({ G, ctx, playerID }, actionId) => {
       const player = G.players[playerID];
 
       // Idempotency check
@@ -423,13 +427,13 @@ export const CardGame = {
         G.actionLog.push(`${playerName} skips draw phase`);
         return;
       }
-      const cards = drawCards(G, playerID, 1);
+      const cards = drawCards(G, playerID, 1, ctx.random);
       if (cards.length > 0) {
         const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         G.actionLog.push(`${playerName} 摸牌`);
       }
     },
-    rangjieChooseOption: ({ G, playerID }, option) => {
+    rangjieChooseOption: ({ G, ctx, playerID }, option) => {
       if (option === 'cancel') {
         G.rangjieSelect.active = false;
         G.rangjieSelect.stage = null;
@@ -450,7 +454,7 @@ export const CardGame = {
       if (option === 'basic') emptyMessage = '牌堆没有基本牌';
       if (option === 'equip') emptyMessage = '牌堆没有装备牌';
 
-      G.deck = shuffle(G.deck);
+      G.deck = shuffle(G.deck, ctx.random);
 
       const delayedScrolls = ['乐不思蜀', '兵粮寸断', '闪电'];
       const cardIndex = G.deck.findIndex(c => {
@@ -565,7 +569,7 @@ export const CardGame = {
         G.congjianSelect.selectedCard = null;
     },
     
-    useLuckCard: ({ G, playerID }, actionId) => {
+    useLuckCard: ({ G, ctx, playerID }, actionId) => {
       const player = G.players[playerID];
 
       // Idempotency check
@@ -583,10 +587,10 @@ export const CardGame = {
         G.hands[playerID] = [];
 
         // Shuffle deck
-        G.deck = shuffle(G.deck);
+        G.deck = shuffle(G.deck, ctx.random);
 
         // Draw 4 new cards
-        drawCards(G, playerID, 4);
+        drawCards(G, playerID, 4, ctx.random);
 
         // Decrement count
         player.luckCardCount--;
@@ -602,7 +606,7 @@ export const CardGame = {
       const player = G.players[playerID];
       player.is_linked = !player.is_linked;
     },
-    playerReady: ({ G, playerID }) => {
+    playerReady: ({ G, ctx, playerID }) => {
       if (!G.readyPlayers.includes(playerID)) {
         G.readyPlayers.push(playerID);
       }
@@ -610,12 +614,12 @@ export const CardGame = {
         // Start selection phase
         G.phase = 'selection';
         // Distribute 3 random generals to each player
-        const { generalOptions, generalChangeUsed } = distributeGenerals();
+        const { generalOptions, generalChangeUsed } = distributeGenerals(ctx.random);
         G.generalOptions = generalOptions;
         G.generalChangeUsed = generalChangeUsed;
       }
     },
-    selectGeneral: ({ G, playerID }, generalId) => {
+    selectGeneral: ({ G, ctx, playerID }, generalId) => {
       const options = G.generalOptions[playerID];
       const selected = options.find(g => g.id === generalId);
       if (selected) {
@@ -637,7 +641,7 @@ export const CardGame = {
         G.phase = 'playing';
         // Deal 4 cards to each player
         ['0', '1', '2'].forEach(pid => {
-          drawCards(G, pid, 4);
+          drawCards(G, pid, 4, ctx.random);
         });
       }
     },
@@ -1124,11 +1128,11 @@ export const CardGame = {
       }
     },
 
-    selectHarvestCount: ({ G, playerID }, count) => {
+    selectHarvestCount: ({ G, ctx, playerID }, count) => {
       if (!G.harvestCountSelect.active || G.harvestCountSelect.playerID !== playerID) return;
       
       const numCards = count;
-      const cards = drawCards(G, playerID, numCards);
+      const cards = drawCards(G, playerID, numCards, ctx.random);
       
       // Revert the draw to hand (pop from hand)
       if (cards.length > 0) {
@@ -1214,10 +1218,10 @@ export const CardGame = {
       G.actionLog.push(`${playerName} equipped ${card.name}`);
     },
 
-    triggerHarvest: ({ G, playerID }) => {
+    triggerHarvest: ({ G, ctx, playerID }) => {
       // Draw X cards where X is number of players (3)
       const numPlayers = 3;
-      const cards = drawCards(G, playerID, numPlayers); // Temporarily draw to player to get cards, but we need to move them to harvestCards
+      const cards = drawCards(G, playerID, numPlayers, ctx.random); // Temporarily draw to player to get cards, but we need to move them to harvestCards
       
       // Revert the draw to hand (pop from hand)
       if (cards.length > 0) {
@@ -1294,9 +1298,9 @@ export const CardGame = {
     },
 
     // Cao Chun Skills
-    confirmShanjia: ({ G, playerID }, discardCount) => {
+    confirmShanjia: ({ G, ctx, playerID }, discardCount) => {
         // Draw 3 cards
-        drawCards(G, playerID, 3);
+        drawCards(G, playerID, 3, ctx.random);
         
         // Discard X cards (discardCount)
         // Since we don't have a UI for selecting specific cards to discard for Shanjia yet,
@@ -1333,8 +1337,8 @@ export const CardGame = {
     useQueDi: ({ G, playerID }) => {
         wenyangSkill.useQueDi({ G, playerID });
     },
-    useChouJue: ({ G, playerID }) => {
-        wenyangSkill.useChouJue({ G, playerID }, (G, pid, count) => drawCards(G, pid, count));
+    useChouJue: ({ G, ctx, playerID }) => {
+        wenyangSkill.useChouJue({ G, playerID }, (G, pid, count) => drawCards(G, pid, count, ctx.random));
     },
     useZhuiFeng: ({ G, playerID }, targetID) => {
         wenyangSkill.useZhuiFeng({ G, playerID }, targetID);
@@ -1579,7 +1583,7 @@ export const CardGame = {
         G.pendingEffect = null;
     },
 
-    changeGeneral: ({ G, playerID }, generalId, actionId, clickid, sessionid) => {
+    changeGeneral: ({ G, ctx, playerID }, generalId, actionId, clickid, sessionid) => {
       // Idempotency check
       if (actionId && G.players[playerID].lastActionId === actionId) {
           return;
@@ -1620,8 +1624,17 @@ export const CardGame = {
       const available = ENABLED_GENERALS.filter(g => !usedGeneralIds.has(g.id));
       
       if (available.length > 0) {
-        // Pick random
-        const newGeneral = available[Math.floor(Math.random() * available.length)];
+        // Pick random using deterministic RNG
+        // Note: ctx.random is available in boardgame.io
+        let newGeneral;
+        if (ctx && ctx.random) {
+            // Use boardgame.io RNG
+            const randIndex = Math.floor(ctx.random.Number() * available.length);
+            newGeneral = available[randIndex];
+        } else {
+            // Fallback (should not happen in boardgame.io environment)
+            newGeneral = available[Math.floor(Math.random() * available.length)];
+        }
         
         // Replace
         G.generalOptions[playerID][index] = newGeneral;

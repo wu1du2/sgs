@@ -3511,7 +3511,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onChangeGeneral = (generalId) => {
-    const actionId = Date.now() + Math.random();
+    const actionId = Date.now().toString(); // Use timestamp as action ID (simplified)
     const clickid = Math.random().toString(36).substring(2, 15);
     let sessionid = localStorage.getItem('sgs_debug_sessionid');
     if (!sessionid) {
@@ -4051,7 +4051,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', pointerEvents: 'auto', position: 'relative', zIndex: 20 }}>
                 <button
                   onClick={() => {
-                  const actionId = Date.now() + Math.random();
+                  const actionId = Date.now().toString();
                   handleSafeAction(() => moves.useLuckCard(actionId));
                 }}
                   disabled={luckCardCount <= 0}
