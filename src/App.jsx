@@ -67,7 +67,7 @@ const App = () => {
   }
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'auto' }}>
       <CardClient playerID={playerID} matchID="default" />
     </div>
   );

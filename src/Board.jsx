@@ -5,6 +5,7 @@ import { SGS_CARDS } from './sgs_data';
 import { caochunSkill } from './skills/caochun';
 import { yangbiaoSkill } from './skills/yangbiao';
 import { shenluxunSkill } from './skills/shenluxun';
+import { SHOW_DEBUG_INFO } from './Game';
 
 // Helper for suit colors
 const getSuitColor = (suit) => {
@@ -1210,6 +1211,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
       overflowY: 'auto'
     }}>
       {/* Debug Info */}
+      {SHOW_DEBUG_INFO && (
       <div style={{ width: '100%', maxWidth: '600px', marginBottom: '10px' }}>
           <textarea
               readOnly
@@ -1228,6 +1230,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
               Debug Info (Backend & Frontend)
           </div>
       </div>
+      )}
 
       {/* Bidding Buttons */}
       <div style={{ marginBottom: isCompact ? '12px' : '20px', display: 'flex', gap: isCompact ? '10px' : '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -4297,7 +4300,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       backgroundColor: '#2c3e50',
       backgroundImage: 'radial-gradient(circle at center, #34495e 0%, #2c3e50 100%)',
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'auto'
     }}>
       {/* Xu You Shi Cai Modal */}
       {showShiCaiModal && (

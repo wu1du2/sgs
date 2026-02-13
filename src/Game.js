@@ -26,6 +26,7 @@ import { jieliruSkill } from './skills/jieliru.js';
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
 const TESTING_GENERAL_LIST = ['界李儒'];
+export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
 function shuffle(array, rng) {
@@ -1593,7 +1594,7 @@ export const CardGame = {
       }
 
       // Store debug info
-      if (clickid || sessionid) {
+      if (SHOW_DEBUG_INFO && (clickid || sessionid)) {
           if (!G.debugInfo) G.debugInfo = [];
           G.debugInfo.push({
               playerID,
@@ -1641,7 +1642,7 @@ export const CardGame = {
         G.generalChangeUsed[playerID][index] = true;
 
         // Update debug info with the new general
-        if (G.debugInfo && G.debugInfo.length > 0) {
+        if (SHOW_DEBUG_INFO && G.debugInfo && G.debugInfo.length > 0) {
             const lastLog = G.debugInfo[G.debugInfo.length - 1];
             if (lastLog.actionId === actionId) {
                 lastLog.newGeneral = newGeneral.name;

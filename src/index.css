@@ -21,7 +21,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   min-height: 100dvh; /* Mobile viewport fix */
-  overflow: hidden; /* Prevent scrolling */
+  overflow: auto; /* Enable scrolling if needed */
   touch-action: none; /* Prevent double-tap zoom */
 }
 
