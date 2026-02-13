@@ -26,7 +26,7 @@ import { youxushuSkill } from './skills/youxushu.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['友徐庶'];
+const TESTING_GENERAL_LIST = ['友徐庶', '界沮授'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
@@ -74,6 +74,7 @@ const createPlayerState = () => ({
   quan: [], // For Jie Zhonghui
   hp: 4,
   hpMax: 4,
+  armor: 0,
   is_turned_over: false,
   skipNextDraw: false,
   lastActionId: null, // For idempotency
@@ -630,6 +631,7 @@ export const CardGame = {
         // Initialize HP on player object to avoid polluting the global config
         G.players[playerID].hp = selected.hp;
         G.players[playerID].hpMax = selected.hpMax;
+        G.players[playerID].armor = selected.initial_armor || 0;
         
         // Apply Landlord bonus if this player is the landlord
         if (G.players[playerID].role === 'landlord') {
@@ -683,7 +685,19 @@ export const CardGame = {
         if (amount > 0) {
            player.hp = Math.min(player.hp + amount, player.hpMax);
         } else {
-           player.hp = Math.max(player.hp + amount, 0);
+           let damage = -amount;
+           if (player.armor > 0) {
+               if (player.armor >= damage) {
+                   player.armor -= damage;
+                   damage = 0;
+               } else {
+                   damage -= player.armor;
+                   player.armor = 0;
+               }
+           }
+           if (damage > 0) {
+               player.hp = Math.max(player.hp - damage, 0);
+           }
         }
       }
     },

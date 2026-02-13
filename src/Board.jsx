@@ -846,7 +846,7 @@ const QiHuiModal = ({ onSelect }) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
@@ -1038,6 +1038,11 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, skills = ["Strike", "Do
               {'♥'.repeat(hp)}
               <span style={{ color: '#ff4444', opacity: 0.5 }}>{'♡'.repeat(Math.max(0, hpMax - hp))}</span>
             </span>
+            {armor > 0 && (
+                <span style={{ color: '#3498db', fontWeight: 'bold', marginLeft: '4px' }}>
+                    护甲{armor}
+                </span>
+            )}
             
             {/* HP Modification Buttons */}
             <div style={{ display: 'flex', flexDirection: 'row', gap: '2px', marginLeft: '4px' }}>
@@ -1357,6 +1362,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
                 name={general.name} 
                 hp={general.hp} 
                 hpMax={general.hpMax}
+                armor={general.initial_armor || 0}
                 skills={general.skills} 
                 portrait={general.localPortrait || general.portrait}
               />
@@ -4329,6 +4335,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               name={general ? general.name : "My Hero"} 
               hp={player?.hp ?? (general ? general.hp : 4)}
               hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
+              armor={player?.armor || 0}
               skills={displaySkills}
               portrait={general ? (general.localPortrait || general.portrait) : null}
               isMe={true} 
@@ -4366,6 +4373,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               name={general ? general.name : `Player ${id}`}
               hp={player?.hp ?? (general ? general.hp : 4)}
               hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
+              armor={player?.armor || 0}
               skills={general ? general.skills : ["Strike", "Dodge"]}
               portrait={general ? (general.localPortrait || general.portrait) : null}
               role={role}

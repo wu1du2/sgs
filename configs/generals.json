@@ -16,7 +16,8 @@
       "振锋:限定技，出牌阶段，你可以选择一项：1.回复2点体力；2.将“酣战”和“战烈”中的X分别固定为其中一个选项的数值（当前体力值/已损失体力值/存活角色数）。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/势太史慈.png"
+    "localPortrait": "/images/generals/势太史慈.png",
+    "initial_armor": 0
   },
   {
     "id": "界沮授",
@@ -33,7 +34,8 @@
       "矢北:锁定技，当你受到伤害后，若此次伤害是你本回合受到的第一次伤害，则你回复1点体力，否则你失去1点体力。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/界沮授.jpg"
+    "localPortrait": "/images/generals/界沮授.jpg",
+    "initial_armor": 3
   },
   {
     "id": "友诸葛亮",
@@ -52,7 +54,8 @@
       "共砺:若武将友庞统在场且与你阵营一致，你执行“卧龙演策”可预测的牌数+1;\n若武将友徐庶在场且与你阵营一致，你“卧龙演策”预测的第一张牌的结果视为正确。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/友诸葛亮.jpg"
+    "localPortrait": "/images/generals/友诸葛亮.jpg",
+    "initial_armor": 0
   },
   {
     "id": "友徐庶",
@@ -71,7 +74,8 @@
       "共砺:若武将友庞统在场且与你阵营一致，你执行“卧龙演策”可预测的牌数+1;\n若武将友徐庶在场且与你阵营一致，你“卧龙演策”预测的第一张牌的结果视为正确。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/友徐庶.jpg"
+    "localPortrait": "/images/generals/友徐庶.jpg",
+    "initial_armor": 0
   },
   {
     "id": "势魏延",
@@ -90,7 +94,8 @@
       "忠傲:游戏开始时，你获得“狂骨/势魏延”。\n成功：当你杀死一名角色后，你令“狂骨/势魏延”增加新的描述“背水：弃置一张牌，然后你此阶段内使用【杀】的次数+1”，然后若你于此阶段内：\n使用的牌数小于因“壮誓”弃置的牌数，你摸一张牌；\n使用的牌数小于因“壮誓”失去的体力数，你回复1点体力（若你未受伤则改为摸一张牌）。\n失败：当你进入濒死状态，或者当你于出牌阶段开始时未执行“壮誓”，则你失去“壮誓”并获得“困奋/势魏延”。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/势魏延.jpg"
+    "localPortrait": "/images/generals/势魏延.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神鲁肃",
@@ -109,7 +114,8 @@
       "智盟:回合结束后，你可以选择一名其他角色，然后随机平分你与其的所有手牌（若这些牌的数量为奇数，则你获得的牌的数量较多）。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神鲁肃.png"
+    "localPortrait": "/images/generals/神鲁肃.png",
+    "initial_armor": 0
   },
   {
     "id": "谋曹操",
@@ -128,7 +134,8 @@
       "护驾:每轮限一次，当你受到伤害时，你可以将此伤害转移给一名其他魏势力角色。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/谋曹操.jpg"
+    "localPortrait": "/images/generals/谋曹操.jpg",
+    "initial_armor": 0
   },
   {
     "id": "张让",
@@ -143,7 +150,8 @@
       "滔乱:当你需要使用一张基本牌或普通锦囊牌时，若没有角色处于濒死状态，你可以将一张牌当任意一张基本牌或普通锦囊牌使用（每种牌名限一次），然后此牌结算结束后令一名其他角色选择一项：1.交给你一张与“滔乱”声明的牌类别不同的牌；2.令你失去1点体力且本回合“滔乱”失效。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/张让.jpg"
+    "localPortrait": "/images/generals/张让.jpg",
+    "initial_armor": 0
   },
   {
     "id": "马钧",
@@ -160,7 +168,8 @@
       "巧思:出牌阶段限一次，你可以表演一次“水转百戏图”，获得对应的牌，然后你选择一项：1.弃置等量的牌；2.将等量的牌交给一名其他角色。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/马钧.jpg"
+    "localPortrait": "/images/generals/马钧.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神甘宁",
@@ -177,7 +186,8 @@
       "劫营:①回合开始时，若场上没有角色有“营”标记，你获得“营”标记；②结束阶段，你可以将“营”标记交给一名其他角色；③有“营”标记的其他角色的回合结束后，移去“营”标记，你获得其所有手牌。\n【营】：摸牌阶段多摸一张牌；出牌阶段可多使用一张【杀】；手牌上限+1。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/神甘宁.jpg"
+    "localPortrait": "/images/generals/神甘宁.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神陆逊",
@@ -196,7 +206,8 @@
       "绽火:出牌阶段，你可以移去所有“军略”标记，令至多等量的已横置角色弃置所有装备区里的牌，然后对其中一名角色造成1点火焰伤害。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/神陆逊.jpg"
+    "localPortrait": "/images/generals/神陆逊.jpg",
+    "initial_armor": 0
   },
   {
     "id": "徐荣",
@@ -213,7 +224,8 @@
       "杀绝:当其他角色进入濒死状态时，若其需要超过1个【桃】或【酒】才能救回，你获得1个“暴戾”标记，然后你获得令其进入濒死状态的牌。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/徐荣.jpg"
+    "localPortrait": "/images/generals/徐荣.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界钟会",
@@ -232,7 +244,8 @@
       "排异:出牌阶段限一次，你可以移去一张“权”，令一名角色摸两张牌，然后若该角色的手牌数大于你，你对其造成1点伤害。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/界钟会.jpg"
+    "localPortrait": "/images/generals/界钟会.jpg",
+    "initial_armor": 0
   },
   {
     "id": "杨彪",
@@ -251,7 +264,8 @@
       "义争:出牌阶段限一次，你可以与一名体力值不大于你的角色拼点，若你：赢，其跳过其下个摸牌阶段；没赢，你减1点体力上限。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/杨彪.jpg"
+    "localPortrait": "/images/generals/杨彪.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界徐盛",
@@ -266,7 +280,8 @@
       "破军:①当你使用【杀】指定一名角色为目标后，你可以将该角色的至多X张牌置于其武将牌上（X为该角色的体力值），然后当前回合结束时，其获得武将牌上的牌；"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/界徐盛.jpg"
+    "localPortrait": "/images/generals/界徐盛.jpg",
+    "initial_armor": 0
   },
   {
     "id": "文鸯",
@@ -287,7 +302,8 @@
       "冲坚:吴你可以将一张装备牌当【酒】或无距离限制且无视防具的任意一种【杀】使用，然后你以此法使用此【杀】造成伤害后，你获得受伤角色装备区里的X张牌（X为此次伤害的伤害值）。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/文鸯.jpg"
+    "localPortrait": "/images/generals/文鸯.jpg",
+    "initial_armor": 0
   },
   {
     "id": "曹髦",
@@ -304,7 +320,8 @@
       "卫统:游戏开始时，若场上有其他魏势力角色且你拥有“潜龙”，则你因“潜龙”于游戏开始时获得的“道心|blue”值修改为60。|经典技能台词=手无实权难卫统，朦胧成睡，睡去还惊。aHR0cHM6Ly8xZHJ2Lm1zL3UvYy8wY2RiMjhhMmUzMzIxZDVlL0VlbVZRaWkyTGw1Tm1PbXJtekFaeGhnQnpfcE54VmJjcnFFcnZ1RU94NHpsRlE"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/曹髦.png"
+    "localPortrait": "/images/generals/曹髦.png",
+    "initial_armor": 0
   },
   {
     "id": "十常侍",
@@ -321,7 +338,8 @@
       "殁亡:①当你死亡后，若你拥有技能“党锢”且你仍有未出亮出的“常侍”牌，则改为休整一轮；"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/十常侍.jpg"
+    "localPortrait": "/images/generals/十常侍.jpg",
+    "initial_armor": 0
   },
   {
     "id": "谋黄盖",
@@ -338,7 +356,8 @@
       "诈降:①摸牌阶段，你多摸X张牌；②你每回合使用的前X张【杀】无距离与次数限制且不能被响应。（X为你已损失的体力值）。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/谋黄盖.jpg"
+    "localPortrait": "/images/generals/谋黄盖.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神郭嘉",
@@ -357,7 +376,8 @@
       "天翊:准备阶段，若所有存活角色在本局游戏中均受到过伤害，你加2点体力上限并回复1点体力，然后令一名角色获得技能“佐幸”。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神郭嘉.jpg"
+    "localPortrait": "/images/generals/神郭嘉.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界虞翻",
@@ -374,7 +394,8 @@
       "直言:结束阶段，你可以令一名角色摸一张牌并展示之，若此牌为装备牌，其使用此牌并回复1点体力。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/界虞翻.jpg"
+    "localPortrait": "/images/generals/界虞翻.jpg",
+    "initial_armor": 0
   },
   {
     "id": "势夏侯尚",
@@ -389,7 +410,8 @@
       "探锋:准备阶段，你可以选择任意项：1.弃置一名角色至多两张牌，然后若其手牌数小于等于你，你跳过摸牌阶段；2.对一名角色造成1点火焰伤害，然后若其体力值小于等于你，你跳过出牌阶段。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/势夏侯尚.png"
+    "localPortrait": "/images/generals/势夏侯尚.png",
+    "initial_armor": 0
   },
   {
     "id": "势陆郁生",
@@ -406,7 +428,8 @@
       "霜怀:每回合限一次，当与你距离1以内的其他角色受到伤害时，你可以选择一项：1.防止此伤害；2.令其从弃牌堆中获得一张【桃】。\n若该角色与你上一次发动时：相同，你与其各摸一张牌；不同，你失去1点体力。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/势陆郁生.jpg"
+    "localPortrait": "/images/generals/势陆郁生.jpg",
+    "initial_armor": 0
   },
   {
     "id": "傅佥",
@@ -423,7 +446,8 @@
       "绝勇:①当你成为一张不因“绝勇/傅佥”使用的非转换且非虚拟的牌（【桃】和【酒】除外）指定的目标时，若你是此牌的唯一目标且此时“绝”的数量小于你的体力值，你取消之，然后将此牌置于你的武将牌上，称为“绝”。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/傅佥.jpg"
+    "localPortrait": "/images/generals/傅佥.jpg",
+    "initial_armor": 0
   },
   {
     "id": "势董昭",
@@ -440,7 +464,8 @@
       "迎驾:一名角色的回合结束后，若你本回合使用了大于等于两张同名锦囊牌，你可以弃置一张手牌，令一名角色执行一个额外的回合。此额外回合开始时，其摸两张牌。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/势董昭.jpg"
+    "localPortrait": "/images/generals/势董昭.jpg",
+    "initial_armor": 0
   },
   {
     "id": "谋诸葛亮",
@@ -457,7 +482,8 @@
       "看破:每轮开始时，你清除“看破”记录的牌名，然后你可以选择并记录任意个数的牌名（可以同时记录多个同一种牌名；不可选择与上次发动此技能记录过的牌名；每局游戏最多记录/个牌名）。每当有其他角色于本轮使用“看破”记录的牌名时，你可以移去一个对应牌名的记录，然后你摸一张牌并令此牌无效。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/谋诸葛亮.png"
+    "localPortrait": "/images/generals/谋诸葛亮.png",
+    "initial_armor": 0
   },
   {
     "id": "秦宓",
@@ -476,7 +502,8 @@
       "专对:当你使用【杀】指定其他角色为目标后/成为其他角色使用【杀】的目标后，你可以与其拼点，若你赢，其不能响应此【杀】/此【杀】对你无效。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/秦宓.jpg"
+    "localPortrait": "/images/generals/秦宓.jpg",
+    "initial_armor": 0
   },
   {
     "id": "严白虎",
@@ -493,7 +520,8 @@
       "寄篱:当一名与你距离为1的角色成为一名其他角色使用红色基本牌或红色普通锦囊牌的目标时，若你不为此牌的目标，你成为此牌的目标。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/严白虎.jpg"
+    "localPortrait": "/images/generals/严白虎.jpg",
+    "initial_armor": 0
   },
   {
     "id": "张济",
@@ -510,7 +538,8 @@
       "屯军:出牌阶段，你可以令一名角色随机使用牌堆中的X张类型不同且其未装备类别的装备牌（X为你发动过技能“掠命”的次数）。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/张济.jpg"
+    "localPortrait": "/images/generals/张济.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界祝融",
@@ -529,7 +558,8 @@
       "蛮裔:①【南蛮入侵】对你无效；\n②当你登场时，你可以视为使用一张【南蛮入侵】。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/界祝融.jpg"
+    "localPortrait": "/images/generals/界祝融.jpg",
+    "initial_armor": 0
   },
   {
     "id": "孙寒华",
@@ -548,7 +578,8 @@
       "莲华:【1级】当你成为其他角色使用【杀】的目标时，你摸一张牌。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/孙寒华.jpg"
+    "localPortrait": "/images/generals/孙寒华.jpg",
+    "initial_armor": 0
   },
   {
     "id": "马良",
@@ -565,7 +596,8 @@
       "应援:当你于回合内使用牌结算结束置入弃牌堆时，你可以将之交给一名其他角色（每种牌名的牌每回合限一次）。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/马良.jpg"
+    "localPortrait": "/images/generals/马良.jpg",
+    "initial_armor": 0
   },
   {
     "id": "曹昂",
@@ -580,7 +612,8 @@
       "慷忾:当一名角色成为【杀】的目标后，若你与其距离1以内，你可以摸一张牌，然后交给其一张牌并展示之。若此牌为装备牌，该角色可以使用此牌。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/曹昂.jpg"
+    "localPortrait": "/images/generals/曹昂.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界关羽",
@@ -597,7 +630,8 @@
       "义绝:出牌阶段限一次，你可以弃置一张牌，令一名其他角色展示一张手牌，若此牌为：\n【红色】你获得此牌且你可以令其回复1点体力；\n【黑色】其所有非锁定技失效且不能使用或打出手牌、你使用♥️【杀】对其造成的伤害+1。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/界关羽.jpg"
+    "localPortrait": "/images/generals/界关羽.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界吕布",
@@ -614,7 +648,8 @@
       "利驭:当你使用【杀】对其他角色造成伤害后，你可以获得其区域内的一张牌，若你获得的牌不为装备牌，则其摸一张牌，否则视为你对该角色指定的另一名其他角色使用一张【决斗】。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/界吕布.jpg"
+    "localPortrait": "/images/generals/界吕布.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界孙权",
@@ -631,7 +666,8 @@
       "救援:当其他吴势力角色对自己使用【桃】时，若其体力值大于你，该角色可以改为令你回复1点体力，然后其摸一张牌。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/界孙权.jpg"
+    "localPortrait": "/images/generals/界孙权.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界于禁",
@@ -646,7 +682,8 @@
       "节钺:结束阶段，你可以交给一名其他角色一张牌，令其选择一项：1.选择一张手牌和一张装备区里的牌，然后弃置其余的牌；2.令你摸三张牌。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/界于禁.jpg"
+    "localPortrait": "/images/generals/界于禁.jpg",
+    "initial_armor": 0
   },
   {
     "id": "戏志才",
@@ -665,7 +702,8 @@
       "筹策:当你受到1点伤害后，你可以进行一次判定，若结果为：黑色，你弃置一名角色区域里的一张牌；红色，你令一名角色摸一张牌（若其为“先辅”角色，其改为摸两张牌）。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/戏志才.jpg"
+    "localPortrait": "/images/generals/戏志才.jpg",
+    "initial_armor": 0
   },
   {
     "id": "蔡文姬",
@@ -682,7 +720,8 @@
       "断肠:当你死亡时，杀死你的角色失去所有武将技能。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/蔡文姬.jpg"
+    "localPortrait": "/images/generals/蔡文姬.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神太史慈",
@@ -699,7 +738,8 @@
       "破围:使命技，①游戏开始时，所有其他角色获得“围”标记；②回合开始时，所有其他角色的“围”标记移动给除你以外的下家角色；③当你使用【杀】对有“围”标记的角色造成伤害时，移去其的“围”标记并防止此伤害；\n成功：你使用【杀】结算结束后，若没有角色拥有“围”标记，你获得技能“神著”；\n失败：当你进入濒死状态时，你将体力值回复至1点，然后弃置你装备区里的所有牌。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神太史慈.jpg"
+    "localPortrait": "/images/generals/神太史慈.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神华佗",
@@ -716,7 +756,8 @@
       "游医:①弃牌阶段结束时，你可以将此阶段弃置的所有牌置入“仁”区；②出牌阶段限一次，你可以移去所有“仁”牌，然后令所有角色各回复1点体力。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神华佗.png"
+    "localPortrait": "/images/generals/神华佗.png",
+    "initial_armor": 0
   },
   {
     "id": "神诸葛亮",
@@ -735,7 +776,8 @@
       "大雾:结束阶段，你可以移去任意张“星”并选择等量名角色，然后直到你的下回合开始前，当这些角色受到非雷电伤害时，防止之。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神诸葛亮.jpg"
+    "localPortrait": "/images/generals/神诸葛亮.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神曹操",
@@ -752,7 +794,8 @@
       "飞影:其他角色计算与你的距离+1。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神曹操.jpg"
+    "localPortrait": "/images/generals/神曹操.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神赵云",
@@ -769,7 +812,8 @@
       "龙魂:你可以将一至两张花色相同的牌当对应牌使用或打出：♥️当【桃】；♦️当火【杀】；♣️当【闪】；♠️当【无懈可击】。若你以此法转化了两张：红色牌，此牌使用时回复值或伤害值+1；黑色牌，你弃置当前回合角色的一张牌。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/神赵云.jpg"
+    "localPortrait": "/images/generals/神赵云.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神吕布",
@@ -790,7 +834,8 @@
       "神愤:出牌阶段限一次，你可以移去6枚“暴怒”标记，对所有其他角色各造成1点伤害，然后这些角色依次弃置装备区里的所有牌并依次弃置四张手牌，若如此做，你翻面。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/神吕布.jpg"
+    "localPortrait": "/images/generals/神吕布.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神张辽",
@@ -807,7 +852,8 @@
       "止啼:①你的攻击范围内已受伤的角色手牌上限-1；②当你和这些角色拼点或【决斗】你赢时，或当你受到这些角色造成的伤害后，你恢复一个装备栏。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神张辽.jpg"
+    "localPortrait": "/images/generals/神张辽.jpg",
+    "initial_armor": 0
   },
   {
     "id": "骆统",
@@ -822,7 +868,8 @@
       "勤政:锁定技，你每使用或打出三张牌时，你随机获得一张【杀】或【闪】；每使用或打出五张牌时，你随机获得一张【桃】或【酒】；每使用或打出八张牌时，你随机获得一张【无中生有】或【决斗】。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/骆统.jpg"
+    "localPortrait": "/images/generals/骆统.jpg",
+    "initial_armor": 0
   },
   {
     "id": "张绣",
@@ -839,7 +886,8 @@
       "从谏:当你成为锦囊牌的目标时，若此牌的目标数大于1，则你可以交给一名其他目标角色一张牌，然后摸一张牌。若你给出的牌是装备牌，改为摸两张牌。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/张绣.jpg"
+    "localPortrait": "/images/generals/张绣.jpg",
+    "initial_armor": 0
   },
   {
     "id": "孙鲁育",
@@ -856,7 +904,8 @@
       "穆穆:出牌阶段开始时，你可以选择一项：1.弃置一名其他角色装备区里的一张牌；2.获得一名角色装备区里的一张防具牌，若如此做，你本回合不能使用或打出【杀】。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/孙鲁育.jpg"
+    "localPortrait": "/images/generals/孙鲁育.jpg",
+    "initial_armor": 0
   },
   {
     "id": "刘焉",
@@ -873,7 +922,8 @@
       "立牧:出牌阶段，你可以将一张方块牌当【乐不思蜀】对自己使用，然后回复1点体力；你的判定区有牌时，你对攻击范围内的其他角色使用牌没有次数和距离限制。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/刘焉.jpg"
+    "localPortrait": "/images/generals/刘焉.jpg",
+    "initial_armor": 0
   },
   {
     "id": "刘协",
@@ -890,7 +940,8 @@
       "密诏:出牌阶段限一次，你可以将所有手牌（至少一张）交给一名其他角色，令其与你选择的另一名其他角色拼点：若其赢，视为其对后者使用一张【杀】（不计入次数限制）。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/刘协.jpg"
+    "localPortrait": "/images/generals/刘协.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神荀彧",
@@ -909,7 +960,8 @@
       "定汉:每种牌名限一次，你成为锦囊牌的目标时，你记录此牌名，然后取消之。你的回合开始时，你可以在“定汉”记录中，增加或移除一种锦囊牌牌名。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神荀彧.jpg"
+    "localPortrait": "/images/generals/神荀彧.jpg",
+    "initial_armor": 0
   },
   {
     "id": "曹纯",
@@ -924,7 +976,8 @@
       "缮甲:出牌阶段开始时，你可以摸三张牌，然后弃置三张牌（本局游戏你每失去过一张装备区里的牌，便少弃置一张），若你本次没有弃置基本牌或锦囊牌，可视为使用一张【杀】。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/曹纯.jpg"
+    "localPortrait": "/images/generals/曹纯.jpg",
+    "initial_armor": 0
   },
   {
     "id": "神孙策",
@@ -943,7 +996,8 @@
       "冯河:锁定技，你的手牌上限等于已损失的体力值。当你受到其他角色造成的伤害时，若你有手牌且体力上限大于1，你防止此伤害，然后你减1点体力上限并将一张手牌交给一名其他角色，然后若你拥有【英霸】，你令伤害来源获得1个“平定”标记。"
     ],
     "enable": false,
-    "localPortrait": "/images/generals/神孙策.jpg"
+    "localPortrait": "/images/generals/神孙策.jpg",
+    "initial_armor": 0
   },
   {
     "id": "界李儒",
@@ -962,7 +1016,8 @@
       "焚城:限定技，出牌阶段，你可以令所有其他角色依次选择一项：1.弃置至少X张牌（X为上一名此技能的目标因此弃置的牌数+1）；2.受到2点火焰伤害。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/界李儒.jpg"
+    "localPortrait": "/images/generals/界李儒.jpg",
+    "initial_armor": 0
   },
   {
     "id": "许攸",
@@ -981,7 +1036,8 @@
       "寸目:锁定技，当你摸牌时，改为从牌堆底摸牌。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/许攸.jpg"
+    "localPortrait": "/images/generals/许攸.jpg",
+    "initial_armor": 0
   },
   {
     "id": "留赞",
@@ -996,6 +1052,7 @@
       "奋音:当你于回合内使用牌时，若此牌与你本回合使用的上一张牌颜色不同，你可以摸一张牌。"
     ],
     "enable": true,
-    "localPortrait": "/images/generals/留赞.jpg"
+    "localPortrait": "/images/generals/留赞.jpg",
+    "initial_armor": 0
   }
 ]
