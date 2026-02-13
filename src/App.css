@@ -68,3 +68,95 @@
 .overlay-anim {
   animation: flash-pause 0.8s forwards;
 }
+
+/* 
+  Vertical Laser Beam Effect (Heavenly Justice)
+  - 0-30%: Charge/Gathering (faint, narrow)
+  - 30-45%: Impact (bright, wide, full glow)
+  - 45-100%: Dissipate
+*/
+@keyframes laser-impact {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.1) scaleY(1.5); /* Start very thin and tall */
+    filter: brightness(1) drop-shadow(0 0 5px rgba(0, 255, 255, 0.5));
+  }
+  30% {
+    opacity: 0.5;
+    transform: scaleX(0.3) scaleY(1.2); /* Gathering energy */
+    filter: brightness(1.5) drop-shadow(0 0 15px rgba(0, 255, 255, 0.8));
+  }
+  40% {
+    opacity: 1;
+    transform: scaleX(1.2) scaleY(1.0); /* BOOM - Wide impact */
+    filter: brightness(3) drop-shadow(0 0 50px rgba(0, 255, 255, 1));
+    background-color: rgba(0, 255, 255, 0.4); /* Flash core */
+  }
+  60% {
+    opacity: 0.8;
+    transform: scaleX(1.0) scaleY(1.0);
+    filter: brightness(2);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0.1) scaleY(0.5); /* Dissipate */
+    filter: brightness(1);
+  }
+}
+
+.hero-laser-hit {
+  animation: laser-impact 1.0s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  /* Ensure it overflows to look like a beam from sky */
+  transform-origin: center bottom; 
+}
+
+/* 
+  Beam Shot Effect (A -> B)
+  This is a "traveling" beam.
+  - It starts short at the source (0%)
+  - Quickly extends to the target (20%)
+  - The "head" hits, then the "tail" follows, creating a shot effect.
+  - Or simpler: A beam that grows from 0 to 100% length, then fades.
+  
+  Let's do a "Railgun" style: 
+  Instant full line, but extremely bright core, then rapid fade out with width collapse.
+*/
+@keyframes beam-shot {
+  0% {
+    opacity: 0;
+    transform: scaleX(0); /* Start from source */
+    filter: brightness(1);
+  }
+  10% {
+    opacity: 1;
+    transform: scaleX(1); /* Hit target instantly */
+    filter: brightness(2) drop-shadow(0 0 10px #00ffff);
+  }
+  30% {
+    opacity: 1;
+    transform: scaleX(1);
+    filter: brightness(3) drop-shadow(0 0 20px #00ffff); /* Maximum bloom */
+    height: 150%; /* Widen momentarily */
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+    filter: brightness(1);
+    height: 0%; /* Thin out to nothing */
+  }
+}
+
+.laser-beam-shot {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%; /* Will be set by JS distance */
+  height: 6px; /* Base thickness */
+  background: linear-gradient(90deg, rgba(0,255,255,0) 0%, #00ffff 10%, #ffffff 50%, #00ffff 90%, rgba(0,255,255,0) 100%);
+  transform-origin: left center;
+  z-index: 9999;
+  box-shadow: 0 0 10px #00ffff;
+  border-radius: 3px;
+  animation: beam-shot 0.6s ease-out forwards;
+  pointer-events: none;
+}
