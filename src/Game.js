@@ -1626,6 +1626,15 @@ export const CardGame = {
         // Replace
         G.generalOptions[playerID][index] = newGeneral;
         G.generalChangeUsed[playerID][index] = true;
+
+        // Update debug info with the new general
+        if (G.debugInfo && G.debugInfo.length > 0) {
+            const lastLog = G.debugInfo[G.debugInfo.length - 1];
+            if (lastLog.actionId === actionId) {
+                lastLog.newGeneral = newGeneral.name;
+                lastLog.oldGeneralId = generalId;
+            }
+        }
       }
     },
 
