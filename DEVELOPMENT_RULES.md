@@ -19,8 +19,8 @@
 5.  **增量开发原则**：
     目前测试所有逻辑都恰好正确，后来的任何改动都只能通过增量的形式实现，决不允许修改现有逻辑。
 
-6.  **开发后编译与展示**：
-    每次开发后用 `npm run build && npm run start` 编译测试，打开 8000 端口展示。
+7.  **随机数一致性**：
+    在游戏逻辑（`src/Game.js` 或 `src/skills/*.js`）中，**严禁使用 `Math.random()`**。必须使用 `ctx.random`（如 `ctx.random.Number()` 或 `ctx.random.Shuffle()`）来生成随机数。这是为了确保客户端的乐观更新（Optimistic Update）与服务端的最终执行结果一致，防止出现状态闪烁或不一致的问题。
 
 ## UI/交互规范
 
