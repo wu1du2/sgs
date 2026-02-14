@@ -90,7 +90,6 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
                   <>
                     <div style={{ position: 'absolute', top: '5px', left: '5px' }}>{card.suit}</div>
                     <div style={{ position: 'absolute', top: '5px', right: '5px' }}>{card.rank}</div>
-                    <div style={{ fontWeight: 'bold' }}>{card.name}</div>
                   </>
                 ) : (
                   'Card Back'
@@ -1639,6 +1638,40 @@ const ScoreBoard = ({ players, onWin, landlord, scale = 1 }) => {
           </button>
         </div>
       )}
+      <div style={{ marginTop: '10px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+        <button 
+          onClick={() => {
+            const pwd = window.prompt('请输入重置密码:');
+            if (pwd === '2727') {
+              const serverUrl = import.meta.env.DEV ? 'http://localhost:8000' : '';
+              fetch(`${serverUrl}/api/reset`, { method: 'POST' })
+                .then(res => {
+                  if (res.ok) {
+                    window.location.reload();
+                  } else {
+                    alert('重置失败');
+                  }
+                })
+                .catch(e => alert('重置错误: ' + e));
+            } else if (pwd) {
+              alert('密码错误');
+            }
+          }}
+          style={{ 
+            width: '100%',
+            backgroundColor: '#d32f2f', 
+            color: 'white', 
+            border: '1px solid #b71c1c', 
+            padding: '5px', 
+            cursor: 'pointer', 
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}
+        >
+          [重置]
+        </button>
+      </div>
     </div>
   );
 };
@@ -3196,6 +3229,9 @@ const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard }) => {
     return selected.some(s => s.type === type && (s.index === val || s.slot === val));
   };
 
+  const totalCards = hand.length + Object.values(equipments).filter(Boolean).length;
+  // const discardCount = Math.min(2, totalCards); // User requested to remove this restriction
+
   return (
     <div style={{
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -3205,7 +3241,7 @@ const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard }) => {
         backgroundColor: '#333', padding: '20px', borderRadius: '10px', width: '80%', maxWidth: '800px',
         display: 'flex', flexDirection: 'column', gap: '20px', color: 'white'
       }}>
-        <h3 style={{ margin: 0, textAlign: 'center' }}>灭计: 选择牌交出或弃置</h3>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>灭计: 选择一张牌交给李儒，或弃置任意牌</h3>
         
         {/* Hand */}
         <div>
@@ -3264,30 +3300,130 @@ const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard }) => {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button 
             onClick={() => onGive(selected)} 
+            disabled={selected.length !== 1}
             style={{ 
               padding: '10px 20px', 
-              backgroundColor: '#2ecc71', 
+              backgroundColor: selected.length === 1 ? '#2ecc71' : '#555', 
               color: 'white', border: 'none', borderRadius: '5px', 
-              cursor: 'pointer'
+              cursor: selected.length === 1 ? 'pointer' : 'not-allowed'
             }}
           >
-            交出
+            交给李儒 (选1张)
           </button>
           <button 
             onClick={() => onDiscard(selected)} 
+            disabled={selected.length === 0}
             style={{ 
               padding: '10px 20px', 
-              backgroundColor: '#e74c3c', 
+              backgroundColor: selected.length > 0 ? '#e74c3c' : '#555', 
               color: 'white', border: 'none', borderRadius: '5px', 
-              cursor: 'pointer'
+              cursor: selected.length > 0 ? 'pointer' : 'not-allowed'
             }}
           >
-            弃置
+            弃置 (选{selected.length}张)
           </button>
         </div>
       </div>
     </div>
   );
+};
+
+const MieJiLiRuTakeModal = ({ targetHand, targetEquipments, onConfirm }) => {
+    const [selected, setSelected] = React.useState(null); // {type, index/slot}
+
+    const isBlackTrick = (card) => {
+        if (!card) return false;
+        return (card.suit === '♠' || card.suit === '♣') && card.type === '锦囊';
+    };
+
+    return (
+        <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+        }}>
+            <div style={{
+                backgroundColor: '#333', padding: '20px', borderRadius: '10px', width: '80%', maxWidth: '800px',
+                display: 'flex', flexDirection: 'column', gap: '20px', color: 'white'
+            }}>
+                <h3 style={{ margin: 0, textAlign: 'center' }}>灭计: 请选择一张黑色锦囊牌获得</h3>
+                
+                {/* Hand */}
+                <div>
+                    <h4>对方手牌</h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+                    {targetHand.map((card, index) => {
+                        const valid = isBlackTrick(card);
+                        return (
+                            <div
+                                key={`hand-${index}`}
+                                onClick={() => valid && setSelected({ type: 'hand', index })}
+                                style={{
+                                    width: '80px', height: '120px',
+                                    backgroundColor: valid ? '#ecf0f1' : '#7f8c8d',
+                                    borderRadius: '6px',
+                                    border: (selected && selected.type === 'hand' && selected.index === index) ? '3px solid #e74c3c' : (valid ? '1px solid #bdc3c7' : '1px solid #555'),
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    cursor: valid ? 'pointer' : 'not-allowed', position: 'relative',
+                                    color: valid ? getSuitColor(card.suit) : '#333',
+                                    transform: (selected && selected.type === 'hand' && selected.index === index) ? 'scale(1.1)' : 'scale(1)',
+                                    transition: 'all 0.2s',
+                                    opacity: valid ? 1 : 0.6
+                                }}
+                            >
+                                <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>{card.suit}</div>
+                                <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>{card.rank}</div>
+                                <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>{card.name}</div>
+                            </div>
+                        );
+                    })}
+                    </div>
+                </div>
+
+                {/* Equipments */}
+                <div>
+                    <h4>对方装备</h4>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {Object.entries(targetEquipments).map(([slot, card]) => {
+                        if (!card) return null;
+                        const valid = isBlackTrick(card);
+                        return (
+                        <div
+                            key={`equip-${slot}`}
+                            onClick={() => valid && setSelected({ type: 'equip', slot })}
+                            style={{
+                            padding: '10px',
+                            backgroundColor: (selected && selected.type === 'equip' && selected.slot === slot) ? '#e74c3c' : (valid ? '#444' : '#222'),
+                            border: (selected && selected.type === 'equip' && selected.slot === slot) ? '3px solid #e74c3c' : '1px solid #aaa',
+                            borderRadius: '5px',
+                            cursor: valid ? 'pointer' : 'not-allowed',
+                            color: valid ? 'white' : '#777'
+                            }}
+                        >
+                            {card.name} ({slot})
+                        </div>
+                        );
+                    })}
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+                    <button
+                        onClick={() => onConfirm(selected)}
+                        disabled={!selected}
+                        style={{
+                            padding: '10px 30px',
+                            backgroundColor: selected ? '#2ecc71' : '#555',
+                            color: 'white', border: 'none', borderRadius: '5px',
+                            cursor: selected ? 'pointer' : 'not-allowed',
+                            fontSize: '16px', fontWeight: 'bold'
+                        }}
+                    >
+                        确定获得
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export function CardBoard({ ctx, G, moves, playerID }) {

@@ -14,6 +14,25 @@ const server = Server({
   origins: [Origins.LOCALHOST, '*'],
 });
 
+server.app.use(async (ctx, next) => {
+  if (ctx.path === '/api/reset' && ctx.method === 'POST') {
+    try {
+      if (server.db) {
+        await server.db.wipe('default');
+        console.log('Match "default" wiped.');
+      }
+      ctx.status = 200;
+      ctx.body = { success: true };
+    } catch (e) {
+      console.error('Reset error:', e);
+      ctx.status = 500;
+      ctx.body = { error: e.message };
+    }
+    return;
+  }
+  await next();
+});
+
 const PORT = process.env.PORT || 8000;
 
 // Serve static files from the 'dist' directory

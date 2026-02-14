@@ -58,68 +58,38 @@ export const jieliruSkill = {
     },
 
     miejiGive: ({ G, playerID }, selectedCards) => {
-      // playerID here is the current turn player (Li Ru), but the move is triggered by Target?
-      // No, moves are executed by the current player usually, unless we use `turn` stages or `activePlayers`.
-      // But this game seems to be single-seat shared-state (hotseat or similar simplified model).
-      // If I call the move, I can pass the targetID or infer it.
-      // The `playerID` in context is the `ctx.currentPlayer`? Or the one who called it?
-      // In `board.game` (bgio), `playerID` is the one who made the move.
-      // But it's Li Ru's turn. The Target is responding.
-      // If the game framework allows any player to make moves at any time (if configured), fine.
-      // Otherwise, we might need to simulate it.
-      // Assuming `playerID` in the move function is the one who called it.
-      
-      // But wait, the UI for Target will be shown. If Target clicks "Give", who calls the move?
-      // The Target player.
-      // So `playerID` will be `G.miejiTargetId`.
+      // User requested: Target chooses any card to give to Li Ru.
+      // selectedCards: Array of { type: 'hand'|'equip', index|slot }
       
       const targetId = G.miejiTargetId;
-      const liRuId = Object.keys(G.players).find(id => G.players[id].general && G.players[id].general.name === '界李儒'); // Or just use `ctx.currentPlayer` if it's Li Ru's turn.
-      // Assuming it's Li Ru's turn.
+      const liRuId = Object.keys(G.players).find(id => G.players[id].general && G.players[id].general.name === '界李儒');
       
       const target = G.players[targetId];
-      const liRu = G.players[liRuId || playerID]; // Fallback to current player if Li Ru is current
+      const liRu = G.players[liRuId];
       
-      // selectedCards is array of { type: 'hand'|'equip', index|slot }
-      // We need to process them.
-      // Sort indices descending to avoid shift issues for hand cards.
+      const selection = selectedCards[0]; // Should be only 1
       
-      const handIndices = [];
-      const equipSlots = [];
-      
-      selectedCards.forEach(s => {
-          if (s.type === 'hand') handIndices.push(s.index);
-          else equipSlots.push(s.slot);
-      });
-      
-      handIndices.sort((a, b) => b - a);
-      
-      const cardsToGive = [];
-      
-      // Remove from hand
-      const targetHand = G.hands[targetId];
-      handIndices.forEach(idx => {
-          cardsToGive.push(targetHand[idx]);
-          targetHand.splice(idx, 1);
-      });
-      
-      // Remove from equip
-      equipSlots.forEach(slot => {
-          cardsToGive.push(target.equipments[slot]);
-          target.equipments[slot] = null;
-      });
+      let card;
+      if (selection.type === 'hand') {
+          card = G.hands[targetId][selection.index];
+          G.hands[targetId].splice(selection.index, 1);
+      } else {
+          card = target.equipments[selection.slot];
+          target.equipments[selection.slot] = null;
+      }
       
       // Give to Li Ru
-      const liRuHand = G.hands[liRuId || playerID];
-      liRuHand.push(...cardsToGive);
+      G.hands[liRuId].push(card);
       
-      G.actionLog.push(`${target.general.name} 交给了 ${liRu.general.name} ${cardsToGive.length} 张牌`);
+      G.actionLog.push(`${target.general.name} 将一张【${card.name}】交给了 ${liRu.general.name}`);
       
       // Cleanup
       delete G.miejiTargetId;
       delete G.miejiStage;
-      delete G.players[liRuId || playerID].isMieJiTargeting;
+      delete G.players[liRuId].isMieJiTargeting;
     },
+    
+    // Removed miejiOption1 and miejiLiRuTake as requested by user to revert flow
 
     miejiDiscard: ({ G, playerID }, selectedCards) => {
         const targetId = G.miejiTargetId;

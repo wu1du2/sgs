@@ -1,29 +1,27 @@
-import React from 'react';
+import { SGS_CARDS } from './sgs_data';
 
 export const getCardInfo = (card) => {
   if (typeof card === 'object' && card !== null) {
-    const { suit, rank, name, type } = card;
-    let color = 'black';
-    if (suit === '♥') color = '#d63031'; // Red
-    else if (suit === '♦') color = '#0984e3'; // Blue
-    else if (suit === '♣') color = '#00b894'; // Green
-    else if (suit === '♠') color = '#2d3436'; // Black (Dark Grey)
+    const { suit, rank, name, type, card_picture } = card;
+    const color = '#2d3436'; // Black (Dark Grey) -统一为黑桃颜色
     
-    return { suit, rank, color, name, type };
+    return { suit, rank, color, name, type, card_picture };
   }
   // Fallback for legacy number index
+  // Try to find it in SGS_CARDS if it's an index
+  if (typeof card === 'number' && SGS_CARDS[card]) {
+      const info = SGS_CARDS[card];
+      return getCardInfo(info);
+  }
+
   const SUITS = ['♠', '♥', '♣', '♦'];
   const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
   const suit = SUITS[Math.floor(card / 13)];
   const rank = RANKS[card % 13];
   
-  let color = 'black';
-  if (suit === '♥') color = '#d63031';
-  else if (suit === '♦') color = '#0984e3';
-  else if (suit === '♣') color = '#00b894';
-  else if (suit === '♠') color = '#2d3436';
+  const color = '#2d3436'; // Black (Dark Grey) -统一为黑桃颜色
 
-  return { suit, rank, color, name: '', type: '' };
+  return { suit, rank, color, name: '', type: '', card_picture: '' };
 };
 
 export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = false }) => {
@@ -44,7 +42,7 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
     );
   }
 
-  const { suit, rank, color, name } = getCardInfo(card || cardIndex);
+  const { suit, rank, color, name, card_picture } = getCardInfo(card || cardIndex);
 
   return (
     <div 
@@ -66,29 +64,32 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
         boxShadow: '2px 2px 5px rgba(0,0,0,0.2)',
         userSelect: 'none',
         margin: '0 2px',
-        position: 'relative'
+        position: 'relative',
+        backgroundImage: card_picture ? `url(${card_picture})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
       }}
     >
-      <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'left', lineHeight: '1' }}>
+      <div style={{ 
+        fontSize: '14px', 
+        fontWeight: 'bold', 
+        textAlign: 'left', 
+        lineHeight: '1',
+        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.8)' 
+      }}>
         {rank}<br/>
         <span style={{ fontSize: '12px' }}>{suit}</span>
       </div>
-      
-      <div style={{ 
-        position: 'absolute', 
-        top: '50%', 
-        left: '50%', 
-        transform: 'translate(-50%, -50%)',
-        fontSize: '16px', 
-        fontWeight: 'bold',
-        textAlign: 'center',
-        width: '100%',
-        wordBreak: 'break-all'
-      }}>
-        {name}
-      </div>
 
-      <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'right', transform: 'rotate(180deg)', lineHeight: '1' }}>
+      <div style={{ 
+        fontSize: '14px', 
+        fontWeight: 'bold', 
+        textAlign: 'right', 
+        transform: 'rotate(180deg)', 
+        lineHeight: '1',
+        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.8)' 
+      }}>
         {rank}<br/>
         <span style={{ fontSize: '12px' }}>{suit}</span>
       </div>

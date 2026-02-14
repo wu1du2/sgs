@@ -26,7 +26,7 @@ import { youxushuSkill } from './skills/youxushu.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['戏志才'];
+const TESTING_GENERAL_LIST = ['界李儒'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
