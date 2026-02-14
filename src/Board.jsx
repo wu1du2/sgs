@@ -16,8 +16,44 @@ const getSuitColor = (suit) => {
   return '#fff';
 };
 
+const CardPictureButton = ({ card, onClick, width = 60, height = 90, isHidden = false, selected = false, outline = '3px solid #00ffff', outlineIdle = '1px solid #aaa', scaleSelected = 1.1, scaleIdle = 1, disabled = false, wrapperStyle, cardStyle, onMouseEnter, onMouseLeave, onMouseOver, onMouseOut }) => {
+  return (
+    <div
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onMouseOver={onMouseOver}
+      onMouseOut={onMouseOut}
+      style={{
+        width,
+        height,
+        display: 'inline-block',
+        transform: selected ? `scale(${scaleSelected})` : `scale(${scaleIdle})`,
+        transition: 'all 0.2s',
+        borderRadius: `${Math.max(4, Math.round(width * 0.133))}px`,
+        outline: selected ? outline : outlineIdle,
+        outlineOffset: '-1px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.6 : 1,
+        ...wrapperStyle
+      }}
+    >
+      <Card
+        card={card}
+        width={width}
+        height={height}
+        isHidden={isHidden}
+        onClick={disabled ? undefined : onClick}
+        style={{ margin: 0, ...(cardStyle || {}) }}
+      />
+    </div>
+  );
+};
+
 const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title, singleSelection, revealHand }) => {
   const [selected, setSelected] = React.useState([]);
+  const safeHand = Array.isArray(targetHand) ? targetHand : [];
+  const safeEquipments = targetPlayer?.equipments || {};
+  const safeJudges = targetPlayer?.judges || {};
 
   const toggleSelection = (item) => {
     const exists = selected.find(s => s.type === item.type && s.index === item.index && s.slot === item.slot);
@@ -60,41 +96,27 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
         flexDirection: 'column',
         gap: '20px'
       }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>{title || '请选择牌'}</h3>
         
         {/* Hand Cards */}
         <div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {targetHand.map((card, index) => (
-              <div
+            {safeHand.map((card, index) => (
+              <CardPictureButton
                 key={index}
+                card={card}
+                width={60}
+                height={90}
+                isHidden={!revealHand}
+                selected={isSelected('hand', index)}
+                outline="3px solid #00ffff"
+                outlineIdle="1px solid #aaa"
                 onClick={() => toggleSelection({ type: 'hand', index })}
-                style={{
-                  width: '60px',
-                  height: '90px',
-                  backgroundColor: isSelected('hand', index) ? 'rgba(0, 255, 255, 0.3)' : (revealHand ? '#ecf0f1' : '#555'),
-                  border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #aaa',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
+                wrapperStyle={{
                   boxShadow: isSelected('hand', index) ? '0 0 15px #00ffff' : 'none',
-                  animation: isSelected('hand', index) ? 'pulse-selected 1.5s infinite' : 'none',
-                  color: revealHand ? getSuitColor(card.suit) : '#aaa',
-                  fontSize: '12px',
-                  position: 'relative'
+                  animation: isSelected('hand', index) ? 'pulse-selected 1.5s infinite' : 'none'
                 }}
-              >
-                {revealHand ? (
-                  <>
-                    <div style={{ position: 'absolute', top: '5px', left: '5px' }}>{card.suit}</div>
-                    <div style={{ position: 'absolute', top: '5px', right: '5px' }}>{card.rank}</div>
-                  </>
-                ) : (
-                  'Card Back'
-                )}
-              </div>
+              />
             ))}
           </div>
         </div>
@@ -102,7 +124,7 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
         {/* Equipment */}
         <div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {Object.entries(targetPlayer.equipments).map(([slot, card]) => {
+            {Object.entries(safeEquipments).map(([slot, card]) => {
               if (!card) return null;
               return (
                 <div
@@ -128,7 +150,7 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
         {/* Judgments */}
         <div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {Object.entries(targetPlayer.judges).map(([slot, card]) => {
+            {Object.entries(safeJudges).map(([slot, card]) => {
               if (!card) return null;
               return (
                 <div
@@ -228,36 +250,17 @@ const KangkaiCardModal = ({ hand, equipments, onConfirm, onCancel }) => {
       }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
           {hand.map((card, index) => (
-            <div
+            <CardPictureButton
               key={`hand-${index}`}
+              card={card}
+              width={80}
+              height={120}
+              selected={isSelected('hand', index)}
+              outline="3px solid #00ffff"
+              outlineIdle="1px solid #bdc3c7"
+              scaleSelected={1.08}
               onClick={() => selectHand(index)}
-              style={{
-                width: '80px',
-                height: '120px',
-                backgroundColor: '#ecf0f1',
-                borderRadius: '6px',
-                border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #bdc3c7',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative',
-                color: getSuitColor(card.suit),
-                transform: isSelected('hand', index) ? 'scale(1.08)' : 'scale(1)',
-                transition: 'all 0.2s'
-              }}
-            >
-              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
-                {card.suit}
-              </div>
-              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
-                {card.rank}
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
-                {card.name}
-              </div>
-            </div>
+            />
           ))}
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -343,36 +346,17 @@ const FireAttackShowCardModal = ({ hand, onConfirm, onCancel }) => {
         <h3>请展示一张手牌</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
           {hand.map((card, index) => (
-            <div
+            <CardPictureButton
               key={index}
+              card={card}
+              width={80}
+              height={120}
+              selected={selectedIndex === index}
+              outline="3px solid #e74c3c"
+              outlineIdle="1px solid #bdc3c7"
+              scaleSelected={1.1}
               onClick={() => setSelectedIndex(index)}
-              style={{
-                width: '80px',
-                height: '120px',
-                backgroundColor: '#ecf0f1',
-                borderRadius: '6px',
-                border: selectedIndex === index ? '3px solid #e74c3c' : '1px solid #bdc3c7',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative',
-                color: getSuitColor(card.suit),
-                transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
-                transition: 'all 0.2s'
-              }}
-            >
-              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
-                {card.suit}
-              </div>
-              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
-                {card.rank}
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
-                {card.name}
-              </div>
-            </div>
+            />
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -483,37 +467,16 @@ const HarvestBox = ({ cards, onPick, onClose }) => {
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
           {cards.map((card, index) => (
-            <div
+            <CardPictureButton
               key={index}
+              card={card}
+              width={80}
+              height={120}
+              outlineIdle="1px solid #bdc3c7"
               onClick={() => onPick(index)}
-              style={{
-                width: '80px',
-                height: '120px',
-                backgroundColor: '#ecf0f1',
-                borderRadius: '6px',
-                border: '1px solid #bdc3c7',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative',
-                transition: 'transform 0.2s',
-                color: getSuitColor(card.suit)
-              }}
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
-                {card.suit}
-              </div>
-              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
-                {card.rank}
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
-                {card.name}
-              </div>
-            </div>
+            />
           ))}
         </div>
 
@@ -870,23 +833,13 @@ const TianduModal = ({ card, onConfirm, onCancel }) => {
         <h3 style={{ margin: 0, color: '#f1c40f', textAlign: 'center' }}>天妒：是否获得此牌？</h3>
         
         {card && (
-            <div style={{
-                width: '80px',
-                height: '120px',
-                backgroundColor: '#ecf0f1',
-                borderRadius: '6px',
-                border: '1px solid #bdc3c7',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: getSuitColor(card.suit),
-                position: 'relative'
-            }}>
-                <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>{card.suit}</div>
-                <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>{card.rank}</div>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>{card.name}</div>
-            </div>
+          <CardPictureButton
+            card={card}
+            width={80}
+            height={120}
+            outlineIdle="1px solid #bdc3c7"
+            disabled
+          />
         )}
 
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -2084,28 +2037,19 @@ const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel }) => {
         <div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {targetHand.map((card, index) => (
-              <div
+              <CardPictureButton
                 key={`target-${index}`}
+                card={card}
+                width={60}
+                height={90}
+                selected={selectedTargetCards.includes(index)}
+                outline="3px solid #e74c3c"
+                outlineIdle="1px solid #bdc3c7"
                 onClick={() => toggleTargetCard(index)}
-                style={{
-                  width: '60px',
-                  height: '90px',
-                  backgroundColor: selectedTargetCards.includes(index) ? 'rgba(255, 0, 0, 0.3)' : '#ecf0f1',
-                  border: selectedTargetCards.includes(index) ? '3px solid #e74c3c' : '1px solid #bdc3c7',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: getSuitColor(card.suit),
-                  position: 'relative'
+                wrapperStyle={{
+                  boxShadow: selectedTargetCards.includes(index) ? '0 0 12px rgba(231, 76, 60, 0.9)' : 'none'
                 }}
-              >
-                <div style={{ position: 'absolute', top: '2px', left: '2px', fontSize: '10px' }}>{card.suit}</div>
-                <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px' }}>{card.rank}</div>
-                <div style={{ fontSize: '10px', textAlign: 'center' }}>{card.name}</div>
-              </div>
+              />
             ))}
           </div>
         </div>
@@ -2114,28 +2058,19 @@ const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel }) => {
         <div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {myHand.map((card, index) => (
-              <div
+              <CardPictureButton
                 key={`my-${index}`}
+                card={card}
+                width={60}
+                height={90}
+                selected={selectedMyCards.includes(index)}
+                outline="3px solid #e74c3c"
+                outlineIdle="1px solid #bdc3c7"
                 onClick={() => toggleMyCard(index)}
-                style={{
-                  width: '60px',
-                  height: '90px',
-                  backgroundColor: selectedMyCards.includes(index) ? 'rgba(255, 0, 0, 0.3)' : '#ecf0f1',
-                  border: selectedMyCards.includes(index) ? '3px solid #e74c3c' : '1px solid #bdc3c7',
-                  borderRadius: '5px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: getSuitColor(card.suit),
-                  position: 'relative'
+                wrapperStyle={{
+                  boxShadow: selectedMyCards.includes(index) ? '0 0 12px rgba(231, 76, 60, 0.9)' : 'none'
                 }}
-              >
-                <div style={{ position: 'absolute', top: '2px', left: '2px', fontSize: '10px' }}>{card.suit}</div>
-                <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px' }}>{card.rank}</div>
-                <div style={{ fontSize: '10px', textAlign: 'center' }}>{card.name}</div>
-              </div>
+              />
             ))}
           </div>
         </div>
@@ -2591,36 +2526,17 @@ const PinDianModal = ({ hand, onConfirm, title }) => {
         <h3>{title || "请选择一张手牌进行拼点"}</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
           {hand.map((card, index) => (
-            <div
+            <CardPictureButton
               key={index}
+              card={card}
+              width={80}
+              height={120}
+              selected={selectedIndex === index}
+              outline="3px solid #e74c3c"
+              outlineIdle="1px solid #bdc3c7"
+              scaleSelected={1.1}
               onClick={() => setSelectedIndex(index)}
-              style={{
-                width: '80px',
-                height: '120px',
-                backgroundColor: '#ecf0f1',
-                borderRadius: '6px',
-                border: selectedIndex === index ? '3px solid #e74c3c' : '1px solid #bdc3c7',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative',
-                color: getSuitColor(card.suit),
-                transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
-                transition: 'all 0.2s'
-              }}
-            >
-              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
-                {card.suit}
-              </div>
-              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
-                {card.rank}
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
-                {card.name}
-              </div>
-            </div>
+            />
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -2678,36 +2594,17 @@ const CongJianModal = ({ hand, equipments, selectedCard, onSelect, onConfirm, on
         <h3 style={{ textAlign: 'center' }}>请选择一张牌交给目标</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
           {hand.map((card, index) => (
-            <div
+            <CardPictureButton
               key={`hand-${index}`}
+              card={card}
+              width={80}
+              height={120}
+              selected={isSelected('hand', index)}
+              outline="3px solid #00ffff"
+              outlineIdle="1px solid #bdc3c7"
+              scaleSelected={1.08}
               onClick={() => onSelect({ type: 'hand', index })}
-              style={{
-                width: '80px',
-                height: '120px',
-                backgroundColor: '#ecf0f1',
-                borderRadius: '6px',
-                border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #bdc3c7',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative',
-                color: getSuitColor(card.suit),
-                transform: isSelected('hand', index) ? 'scale(1.08)' : 'scale(1)',
-                transition: 'all 0.2s'
-              }}
-            >
-              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
-                {card.suit}
-              </div>
-              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
-                {card.rank}
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
-                {card.name}
-              </div>
-            </div>
+            />
           ))}
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -2793,36 +2690,17 @@ const MiZhaoPinDianModal = ({ hand, onConfirm, title }) => {
         <h3>{title || "请选择一张手牌进行拼点"}</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
           {hand.map((card, index) => (
-            <div
+            <CardPictureButton
               key={index}
+              card={card}
+              width={80}
+              height={120}
+              selected={selectedIndex === index}
+              outline="3px solid #e74c3c"
+              outlineIdle="1px solid #bdc3c7"
+              scaleSelected={1.1}
               onClick={() => setSelectedIndex(index)}
-              style={{
-                width: '80px',
-                height: '120px',
-                backgroundColor: '#ecf0f1',
-                borderRadius: '6px',
-                border: selectedIndex === index ? '3px solid #e74c3c' : '1px solid #bdc3c7',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative',
-                color: getSuitColor(card.suit),
-                transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
-                transition: 'all 0.2s'
-              }}
-            >
-              <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>
-                {card.suit}
-              </div>
-              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>
-                {card.rank}
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>
-                {card.name}
-              </div>
-            </div>
+            />
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -3018,28 +2896,20 @@ const LiMuModal = ({ hand, onConfirm, onCancel }) => {
              const isDiamond = card.suit === '♦';
              
              return (
-             <div key={index} 
+              <CardPictureButton
+                key={index}
+                card={card}
+                width={60}
+                height={90}
+                selected={selectedIndex === index}
+                outline="3px solid #00ffff"
+                outlineIdle={isDiamond ? '3px solid #e74c3c' : '1px solid #aaa'}
+                scaleSelected={1.1}
                 onClick={() => setSelectedIndex(index)}
-                style={{ 
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                    transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
-                    border: selectedIndex === index ? '3px solid #00ffff' : (isDiamond ? '3px solid #e74c3c' : '1px solid #aaa'),
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    boxShadow: isDiamond ? '0 0 10px rgba(231, 76, 60, 0.5)' : 'none',
-                    transition: 'all 0.2s'
-                }}>
-                <div style={{
-                    width: '60px', height: '90px', backgroundColor: '#ecf0f1',
-                    borderRadius: '5px', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', position: 'relative',
-                    color: getSuitColor(card.suit)
-                }}>
-                    <div style={{ position: 'absolute', top: '2px', left: '2px', fontSize: '10px' }}>{card.suit}</div>
-                    <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px' }}>{card.rank}</div>
-                    <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{card.name}</div>
-                </div>
-             </div>
+                wrapperStyle={{
+                  boxShadow: isDiamond ? '0 0 10px rgba(231, 76, 60, 0.5)' : 'none'
+                }}
+              />
           )})}
         </div>
 
@@ -3092,16 +2962,13 @@ const ShiCaiModal = ({ cards, onMoveToTop, onDiscardAll, onClose }) => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
           {cards.length === 0 ? <div style={{color:'#aaa'}}>空</div> : cards.map((card, index) => (
              <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-                <div style={{
-                    width: '60px', height: '90px', backgroundColor: '#ecf0f1',
-                    borderRadius: '5px', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', position: 'relative',
-                    color: getSuitColor(card.suit)
-                }}>
-                    <div style={{ position: 'absolute', top: '2px', left: '2px', fontSize: '10px' }}>{card.suit}</div>
-                    <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px' }}>{card.rank}</div>
-                    <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{card.name}</div>
-                </div>
+                <CardPictureButton
+                  card={card}
+                  width={60}
+                  height={90}
+                  outlineIdle="1px solid #bdc3c7"
+                  disabled
+                />
                 <button onClick={() => onMoveToTop(index)} style={{ fontSize: '10px', padding: '2px 5px', cursor: 'pointer' }}>置于牌堆顶</button>
              </div>
           ))}
@@ -3170,26 +3037,20 @@ const MieJiCardSelectionModal = ({ hand, onConfirm, onCancel }) => {
           {hand.map((card, index) => {
             const highlighted = isHighlighted(card);
             return (
-              <div
+              <CardPictureButton
                 key={index}
+                card={card}
+                width={80}
+                height={120}
+                selected={selectedIndex === index}
+                outline="3px solid #e74c3c"
+                outlineIdle={highlighted ? '3px solid #f1c40f' : '1px solid #bdc3c7'}
+                scaleSelected={1.1}
                 onClick={() => setSelectedIndex(index === selectedIndex ? null : index)}
-                style={{
-                  width: '80px', height: '120px',
-                  backgroundColor: '#ecf0f1',
-                  borderRadius: '6px',
-                  border: selectedIndex === index ? '3px solid #e74c3c' : (highlighted ? '3px solid #f1c40f' : '1px solid #bdc3c7'),
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', position: 'relative',
-                  color: getSuitColor(card.suit),
-                  transform: selectedIndex === index ? 'scale(1.1)' : 'scale(1)',
-                  transition: 'all 0.2s',
+                wrapperStyle={{
                   boxShadow: highlighted ? '0 0 10px #f1c40f' : 'none'
                 }}
-              >
-                <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>{card.suit}</div>
-                <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>{card.rank}</div>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>{card.name}</div>
-              </div>
+              />
             );
           })}
         </div>
@@ -3248,25 +3109,17 @@ const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard }) => {
             <h4>手牌</h4>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
             {hand.map((card, index) => (
-                <div
+              <CardPictureButton
                 key={`hand-${index}`}
+                card={card}
+                width={80}
+                height={120}
+                selected={isSelected('hand', index)}
+                outline="3px solid #00ffff"
+                outlineIdle="1px solid #bdc3c7"
+                scaleSelected={1.1}
                 onClick={() => toggleSelection({ type: 'hand', index })}
-                style={{
-                    width: '80px', height: '120px',
-                    backgroundColor: '#ecf0f1',
-                    borderRadius: '6px',
-                    border: isSelected('hand', index) ? '3px solid #00ffff' : '1px solid #bdc3c7',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', position: 'relative',
-                    color: getSuitColor(card.suit),
-                    transform: isSelected('hand', index) ? 'scale(1.1)' : 'scale(1)',
-                    transition: 'all 0.2s'
-                }}
-                >
-                <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>{card.suit}</div>
-                <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>{card.rank}</div>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>{card.name}</div>
-                </div>
+              />
             ))}
             </div>
         </div>
@@ -3354,26 +3207,21 @@ const MieJiLiRuTakeModal = ({ targetHand, targetEquipments, onConfirm }) => {
                     {targetHand.map((card, index) => {
                         const valid = isBlackTrick(card);
                         return (
-                            <div
-                                key={`hand-${index}`}
-                                onClick={() => valid && setSelected({ type: 'hand', index })}
-                                style={{
-                                    width: '80px', height: '120px',
-                                    backgroundColor: valid ? '#ecf0f1' : '#7f8c8d',
-                                    borderRadius: '6px',
-                                    border: (selected && selected.type === 'hand' && selected.index === index) ? '3px solid #e74c3c' : (valid ? '1px solid #bdc3c7' : '1px solid #555'),
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                    cursor: valid ? 'pointer' : 'not-allowed', position: 'relative',
-                                    color: valid ? getSuitColor(card.suit) : '#333',
-                                    transform: (selected && selected.type === 'hand' && selected.index === index) ? 'scale(1.1)' : 'scale(1)',
-                                    transition: 'all 0.2s',
-                                    opacity: valid ? 1 : 0.6
-                                }}
-                            >
-                                <div style={{ position: 'absolute', top: '5px', left: '5px', fontSize: '16px' }}>{card.suit}</div>
-                                <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '16px' }}>{card.rank}</div>
-                                <div style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>{card.name}</div>
-                            </div>
+                          <CardPictureButton
+                            key={`hand-${index}`}
+                            card={card}
+                            width={80}
+                            height={120}
+                            selected={!!(selected && selected.type === 'hand' && selected.index === index)}
+                            outline="3px solid #e74c3c"
+                            outlineIdle={valid ? '1px solid #bdc3c7' : '1px solid #555'}
+                            scaleSelected={1.1}
+                            disabled={!valid}
+                            onClick={() => setSelected({ type: 'hand', index })}
+                            wrapperStyle={{
+                              filter: valid ? 'none' : 'grayscale(1) brightness(0.6)'
+                            }}
+                          />
                         );
                     })}
                     </div>

@@ -1715,7 +1715,7 @@ export const CardGame = {
       G.gameResult = { winnerRole, scoreChanges };
     },
 
-    voteRematch: ({ G, playerID }) => {
+    voteRematch: ({ G, ctx, playerID }) => {
       if (G.rematchVotes.includes(playerID)) return;
       
       G.rematchVotes.push(playerID);
@@ -1729,7 +1729,7 @@ export const CardGame = {
         };
         
         // Reset G
-        const newG = CardGame.setup();
+        const newG = CardGame.setup({ ctx });
         
         // Restore scores
         newG.players['0'].score = currentScores['0'];

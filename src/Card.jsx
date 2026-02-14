@@ -24,19 +24,29 @@ export const getCardInfo = (card) => {
   return { suit, rank, color, name: '', type: '', card_picture: '' };
 };
 
-export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = false }) => {
+export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = false, width = 60, height = 90, style }) => {
+  const borderRadius = Math.max(4, Math.round(width * 0.133));
+  const padding = Math.max(3, Math.round(width * 0.083));
+  const selectedLift = -Math.round(height * 0.333);
+
   if (isHidden) {
     return (
       <div 
+        onClick={onClick}
         style={{
-          width: '60px',
-          height: '90px',
+          width,
+          height,
           backgroundColor: '#1a4c8c',
           border: '2px solid white',
-          borderRadius: '8px',
+          borderRadius,
           backgroundImage: 'repeating-linear-gradient(45deg, #1a4c8c 0, #1a4c8c 10px, #143a6b 10px, #143a6b 20px)',
           boxShadow: '2px 2px 5px rgba(0,0,0,0.3)',
-          margin: '0 2px'
+          margin: '0 2px',
+          cursor: onClick ? 'pointer' : 'default',
+          transform: isSelected ? `translateY(${selectedLift}px)` : 'none',
+          transition: 'transform 0.2s',
+          userSelect: 'none',
+          ...style
         }}
       />
     );
@@ -48,18 +58,18 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
     <div 
       onClick={onClick}
       style={{
-        width: '60px',
-        height: '90px',
+        width,
+        height,
         backgroundColor: '#f5e6cb',
         border: '1px solid #8b4513',
-        borderRadius: '8px',
+        borderRadius,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        padding: '5px',
+        padding,
         color: color,
         cursor: onClick ? 'pointer' : 'default',
-        transform: isSelected ? 'translateY(-30px)' : 'none',
+        transform: isSelected ? `translateY(${selectedLift}px)` : 'none',
         transition: 'transform 0.2s',
         boxShadow: '2px 2px 5px rgba(0,0,0,0.2)',
         userSelect: 'none',
@@ -68,7 +78,8 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
         backgroundImage: card_picture ? `url(${card_picture})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
+        backgroundRepeat: 'no-repeat',
+        ...style
       }}
     >
       <div style={{ 
