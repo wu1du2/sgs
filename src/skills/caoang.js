@@ -46,7 +46,7 @@ export const caoangSkill = {
         G.hands[targetID].push(movedCard);
         const sourceName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
-        G.actionLog.push(`${sourceName} used 慷忾 to give a card to ${targetName}`);
+        G.actionLog.push(`${sourceName} 使用了慷忾，给了 ${targetName} 一张牌`);
       }
 
       G.kangkaiSelect = {

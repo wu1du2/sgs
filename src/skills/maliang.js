@@ -19,7 +19,7 @@ export const maliangSkill = {
       // Log
       const sourceName = G.players[G.maliang.sourcePlayerID] && G.players[G.maliang.sourcePlayerID].general ? G.players[G.maliang.sourcePlayerID].general.name : 'Ma Liang';
       const targetName = G.players[targetID] && G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
-      G.actionLog.push(`${sourceName} transferred ${cards.length} cards to ${targetName} from Cheering Area`);
+      G.actionLog.push(`${sourceName} 从助威区向 ${targetName} 转移了 ${cards.length} 张牌`);
 
       // Clear area
       G.maliang.cheeringPile = [];
@@ -38,7 +38,7 @@ export const maliangSkill = {
     G.discardPile.push(...cards);
     
     const sourceName = G.players[playerID] && G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-    G.actionLog.push(`${sourceName} discarded ${cards.length} cards from Cheering Area`);
+    G.actionLog.push(`${sourceName} 从助威区弃置了 ${cards.length} 张牌`);
 
     G.maliang.cheeringPile = [];
   }

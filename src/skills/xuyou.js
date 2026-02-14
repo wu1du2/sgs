@@ -52,7 +52,7 @@ export const xuyouSkill = {
             if (player.skipNextDraw) {
                 player.skipNextDraw = false;
                 const playerName = player.general ? player.general.name : `Player ${playerID}`;
-                G.actionLog.push(`${playerName} skips draw phase`);
+                G.actionLog.push(`${playerName} 跳过摸牌阶段`);
                 return;
             }
 
@@ -156,7 +156,7 @@ export const xuyouSkill = {
             
             // Record suits
             const suits = discarded.map(c => c.suit).join(', ');
-            G.actionLog.push(`成略: Discarded ${suits}`);
+            G.actionLog.push(`成略: 弃置了 ${suits}`);
             
             // Store recorded suits for UI display? User says "Record ... in below".
             if (!G.players[playerID].chengLueSuits) {
@@ -180,7 +180,7 @@ export const xuyouSkill = {
              if (G.players[playerID].shicai && G.players[playerID].shicai.length > 0) {
                  addToDiscardPile(G, [...G.players[playerID].shicai]);
                  G.players[playerID].shicai = [];
-                 G.actionLog.push(`Shi Cai area cleared before playing card.`);
+                 G.actionLog.push(`恃才区域在出牌前被清空。`);
              }
 
              // This replicates playCards but redirects to Shi Cai Area
@@ -195,10 +195,10 @@ export const xuyouSkill = {
              const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
              const cardNames = cardsPlayed.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
              
-             let logEntry = `${playerName} played ${cardNames}`;
+             let logEntry = `${playerName} 使用了 ${cardNames}`;
              if (targetIds && targetIds.length > 0) {
                 const targetNames = targetIds.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
-                logEntry += ` targeting ${targetNames}`;
+                logEntry += ` 目标为 ${targetNames}`;
              }
              G.actionLog.push(logEntry);
 
@@ -220,7 +220,7 @@ export const xuyouSkill = {
                         addToDiscardPile(G, oldCard);
                     }
                     G.players[playerID].equipments[slot] = card;
-                    G.actionLog.push(`${playerName} equipped ${card.name}`);
+                    G.actionLog.push(`${playerName} 装备了 ${card.name}`);
                     // Equipment stays on board, NOT to Shi Cai area immediately?
                     // "Xu You played a card... settle...".
                     // Equipment is "used". Does it go to Shi Cai?
@@ -266,10 +266,10 @@ export const xuyouSkill = {
                              // So here it goes to Shi Cai.
                              if (!G.players[playerID].shicai) G.players[playerID].shicai = [];
                              G.players[playerID].shicai.push(card);
-                             G.actionLog.push(`Judgment slot occupied. Card moved to Shi Cai.`);
+                             G.actionLog.push(`判定区已被占用。卡牌移动到恃才区域。`);
                          } else {
                              G.players[targetID].judges[judgeSlot] = card;
-                             G.actionLog.push(`${playerName} placed ${card.name} on target's judgment area`);
+                             G.actionLog.push(`${playerName} 将 ${card.name} 置于目标的判定区`);
                          }
                      }
                 }
@@ -279,7 +279,7 @@ export const xuyouSkill = {
                     if (card.name === '桃') {
                         if (G.players[playerID].hp < G.players[playerID].hpMax) {
                              G.players[playerID].hp++;
-                             G.actionLog.push(`${playerName} used Peach, HP +1`);
+                             G.actionLog.push(`${playerName} 使用了桃，体力+1`);
                         }
                     } 
                     // ... (Other card effects like Harvest, Dismantlement etc. - duplicating Game.js logic is tedious and error prone)
@@ -310,7 +310,7 @@ export const xuyouSkill = {
                     // MOVE TO SHI CAI
                     if (!G.players[playerID].shicai) G.players[playerID].shicai = [];
                     G.players[playerID].shicai.push(card);
-                    G.actionLog.push(`${card.name} moved to Shi Cai area`);
+                    G.actionLog.push(`${card.name} 移动到恃才区域`);
                 }
              });
         },
@@ -323,7 +323,7 @@ export const xuyouSkill = {
             
             // Move to top of deck
             G.deck.unshift(card);
-            G.actionLog.push(`Shi Cai: Moved ${card.name} to top of deck`);
+            G.actionLog.push(`恃才: 将 ${card.name} 置于牌堆顶`);
 
             // Draw 1 card from BOTTOM (Cun Mu)
             if (G.deck.length === 0) {
@@ -335,7 +335,7 @@ export const xuyouSkill = {
             const drawnCard = G.deck.pop();
             if (drawnCard) {
                 G.hands[playerID].push(drawnCard);
-                G.actionLog.push(`Xu You drew a card from bottom (Shi Cai)`);
+                G.actionLog.push(`许攸从牌堆底摸了一张牌（恃才）`);
             }
         },
         
@@ -345,7 +345,7 @@ export const xuyouSkill = {
             
             addToDiscardPile(G, [...shicai]);
             G.players[playerID].shicai = [];
-            G.actionLog.push(`Shi Cai: Moved all cards to discard pile`);
+            G.actionLog.push(`恃才: 所有卡牌移入弃牌堆`);
         },
         
         xuyouEquipToTop: ({ G, playerID }, slot) => {
@@ -360,7 +360,7 @@ export const xuyouSkill = {
             G.deck.unshift(card);
             
             const playerName = player.general ? player.general.name : `Player ${playerID}`;
-            G.actionLog.push(`${playerName} moved equipment ${card.name} to top of deck (Control Top)`);
+            G.actionLog.push(`${playerName} 将装备 ${card.name} 置于牌堆顶（控顶）`);
 
             // Draw 1 card from BOTTOM
             if (G.deck.length === 0) {
@@ -372,7 +372,7 @@ export const xuyouSkill = {
             const drawnCard = G.deck.pop();
             if (drawnCard) {
                 G.hands[playerID].push(drawnCard);
-                G.actionLog.push(`${playerName} drew a card from bottom (Control Top)`);
+                G.actionLog.push(`${playerName} 从牌堆底摸了一张牌（控顶）`);
             }
         }
     }

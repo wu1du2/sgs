@@ -10,7 +10,7 @@ export const jiexushengSkill = {
             limit: hp
         };
         
-        G.actionLog.push(`Player ${playerID} used Po Jun on Player ${targetID}`);
+        G.actionLog.push(`Player ${playerID} 对 Player ${targetID} 使用了破军`);
     },
     pojun: {
         name: "破军",
@@ -102,7 +102,7 @@ export const jiexushengSkill = {
             // Clear cards for this target
             delete source.pojun[targetID];
             
-            G.actionLog.push(`Player ${targetID} retrieved cards from Po Jun.`);
+            G.actionLog.push(`Player ${targetID} 从破军中取回了牌。`);
         }
     }
 };

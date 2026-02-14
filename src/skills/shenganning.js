@@ -19,7 +19,7 @@ export const shenganningSkill = {
                 targetPlayerID: null,
                 stage: 'target_selection',
             };
-            G.actionLog.push(`Player ${playerID} activated Poxi (魄袭), selecting target...`);
+            G.actionLog.push(`Player ${playerID} 发动了魄袭，正在选择目标...`);
         },
 
         selectTarget: ({ G, playerID }, targetID) => {
@@ -27,7 +27,7 @@ export const shenganningSkill = {
                 if (targetID === playerID) return; // Cannot select self
                 G.poxiSelect.targetPlayerID = targetID;
                 G.poxiSelect.stage = 'card_selection';
-                G.actionLog.push(`Player ${playerID} selected Player ${targetID} for Poxi`);
+                G.actionLog.push(`Player ${playerID} 为魄袭选择了 Player ${targetID}`);
             }
         },
 
@@ -68,11 +68,11 @@ export const shenganningSkill = {
             
             const totalDiscarded = discardedCards.length;
             const selfDiscardedCount = myCardIndices.length;
-            G.actionLog.push(`${playerName} used Poxi on ${targetName}, discarding ${totalDiscarded} cards (${selfDiscardedCount} from self)`);
+            G.actionLog.push(`${playerName} 对 ${targetName} 使用了魄袭，弃置了 ${totalDiscarded} 张牌（其中 ${selfDiscardedCount} 张来自自身）`);
 
             // Apply effects based on number of discarded cards from SELF
             if (selfDiscardedCount === 0) {
-                G.actionLog.push(`${playerName} discarded 0 cards from self: Max HP - 1`);
+                G.actionLog.push(`${playerName} 自身未弃牌：体力上限-1`);
                 if (G.players[playerID].hpMax > 0) {
                     G.players[playerID].hpMax -= 1;
                     // Clamp HP to new Max HP
@@ -86,12 +86,12 @@ export const shenganningSkill = {
                 
                 if (currentHp < maxHp) {
                     G.players[playerID].hp += 1;
-                    G.actionLog.push(`${playerName} recovered 1 HP. New HP: ${G.players[playerID].hp}`);
+                    G.actionLog.push(`${playerName} 回复了1点体力。当前体力：${G.players[playerID].hp}`);
                 } else {
-                    G.actionLog.push(`${playerName} is at full health, cannot recover HP.`);
+                    G.actionLog.push(`${playerName} 体力已满，无法回复体力。`);
                 }
             } else if (selfDiscardedCount === 4) {
-                G.actionLog.push(`${playerName} discarded 4 cards from self: Drawing 4 cards`);
+                G.actionLog.push(`${playerName} 自身弃置了4张牌：摸4张牌`);
                 const deck = G.deck;
                 const hand = G.hands[playerID];
                 for (let i = 0; i < 4; i++) {
@@ -131,7 +131,7 @@ export const shenganningSkill = {
                     targetPlayerID: null,
                     stage: null,
                 };
-                G.actionLog.push(`Player ${playerID} cancelled Poxi`);
+                G.actionLog.push(`Player ${playerID} 取消了魄袭`);
             }
         }
     },
@@ -147,7 +147,7 @@ export const shenganningSkill = {
                 targetPlayerID: null,
                 stage: 'target_selection',
             };
-            G.actionLog.push(`Player ${playerID} activated Jieying (劫营), selecting target...`);
+            G.actionLog.push(`Player ${playerID} 发动了劫营，正在选择目标...`);
         },
 
         selectTarget: ({ G, playerID }, targetID) => {
@@ -164,7 +164,7 @@ export const shenganningSkill = {
                 const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
                 const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
                 
-                G.actionLog.push(`${playerName} used Jieying on ${targetName}, obtaining ${count} cards`);
+                G.actionLog.push(`${playerName} 对 ${targetName} 使用了劫营，获得了 ${count} 张牌`);
                 
                 // Reset Jieying state
                 G.jieyingSelect = {
@@ -184,7 +184,7 @@ export const shenganningSkill = {
                     targetPlayerID: null,
                     stage: null,
                 };
-                G.actionLog.push(`Player ${playerID} cancelled Jieying`);
+                G.actionLog.push(`Player ${playerID} 取消了劫营`);
             }
         }
     }

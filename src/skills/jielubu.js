@@ -8,7 +8,7 @@ export const jielubuSkill = {
             selectedTargetID: null
         };
         // Log that the player is using the skill
-        G.actionLog.push(`Player ${playerID} used skill "利驭"`);
+        G.actionLog.push(`Player ${playerID} 使用了技能 "利驭"`);
     },
 
     // 1.5 Select target (update G state)

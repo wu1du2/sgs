@@ -26,14 +26,14 @@ export const yangbiaoSkill = {
                 // Max HP + 1, HP + 1
                 player.hpMax += 1;
                 player.hp += 1;
-                G.actionLog.push(`Player ${playerID} used Zhaohan (x=${x}): Max HP +1, HP +1`);
+                G.actionLog.push(`Player ${playerID} 使用了昭汉（x=${x}）：体力上限+1，体力+1`);
             } else if (x >= 5 && x <= 7) {
                 // Max HP - 1
                 player.hpMax -= 1;
                 if (player.hp > player.hpMax) {
                     player.hp = player.hpMax;
                 }
-                G.actionLog.push(`Player ${playerID} used Zhaohan (x=${x}): Max HP -1`);
+                G.actionLog.push(`Player ${playerID} 使用了昭汉（x=${x}）：体力上限-1`);
             }
             
             // Increment x

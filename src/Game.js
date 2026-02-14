@@ -408,7 +408,7 @@ export const CardGame = {
             G.deck = shuffle(G.discardPile, ctx.random);
             G.discardPile = [];
         } else {
-             G.actionLog.push("Deck and discard pile empty, cannot judge.");
+             G.actionLog.push("牌堆和弃牌堆为空，无法判定。");
              return;
         }
       }
@@ -416,7 +416,7 @@ export const CardGame = {
       addToDiscardPile(G, drawnCard);
       
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      G.actionLog.push(`${playerName} performed a judgment: drew ${drawnCard.suit}${drawnCard.rank} ${drawnCard.name}`);
+      G.actionLog.push(`${playerName} 进行判定：摸到 ${drawnCard.suit}${drawnCard.rank} ${drawnCard.name}`);
     },
 
     drawCard: ({ G, ctx, playerID }, actionId) => {
@@ -433,7 +433,7 @@ export const CardGame = {
       if (player.skipNextDraw) {
         player.skipNextDraw = false;
         const playerName = player.general ? player.general.name : `Player ${playerID}`;
-        G.actionLog.push(`${playerName} skips draw phase`);
+        G.actionLog.push(`${playerName} 跳过摸牌阶段`);
         return;
       }
       const cards = drawCards(G, playerID, 1, ctx.random);
@@ -567,7 +567,7 @@ export const CardGame = {
             targetHand.push(cardToMove);
             const sourceName = sourcePlayer.general ? sourcePlayer.general.name : `Player ${sourcePlayerID}`;
             const targetName = G.players[targetPlayerID].general ? G.players[targetPlayerID].general.name : `Player ${targetPlayerID}`;
-            G.actionLog.push(`${sourceName} gave a card to ${targetName} via Cong Jian`);
+            G.actionLog.push(`${sourceName} 通过从谏给了${targetName}一张牌`);
         }
 
         // Reset state
@@ -605,7 +605,7 @@ export const CardGame = {
         player.luckCardCount--;
         
         const playerName = player.general ? player.general.name : `Player ${playerID}`;
-        G.actionLog.push(`${playerName} used Luck Card (${player.luckCardCount} remaining)`);
+        G.actionLog.push(`${playerName} 使用了幸运卡（剩余 ${player.luckCardCount} 次）`);
       }
     },
     confirmLuckCard: ({ G, playerID }) => {
@@ -768,10 +768,10 @@ export const CardGame = {
       // If everyone has lightning (unlikely but possible with multiple decks), discard it
       if (G.players[nextPlayerID].judges.dian) {
         addToDiscardPile(G, card);
-        G.actionLog.push(`Lightning ${card.name} discarded (no valid target)`);
+        G.actionLog.push(`闪电 ${card.name} 被弃置（无有效目标）`);
       } else {
         G.players[nextPlayerID].judges.dian = card;
-        G.actionLog.push(`Lightning moved to Player ${nextPlayerID}`);
+        G.actionLog.push(`闪电移动到玩家 ${nextPlayerID}`);
       }
     },
     playCards: ({ G, playerID }, cardIndices, targetIds) => {
@@ -800,10 +800,10 @@ export const CardGame = {
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
       const cardNames = cardsPlayed.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
       
-      let logEntry = `${playerName} played ${cardNames}`;
+      let logEntry = `${playerName} 使用了 ${cardNames}`;
       if (targetIds && targetIds.length > 0) {
         const targetNames = targetIds.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
-        logEntry += ` targeting ${targetNames}`;
+        logEntry += ` 目标为 ${targetNames}`;
       }
       G.actionLog.push(logEntry);
 
@@ -856,10 +856,10 @@ export const CardGame = {
                 if (targetPlayer.judges[judgeSlot]) {
                     if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
                        G.maliang.cheeringPile.push(card);
-                       G.actionLog.push(`Cannot play ${card.name}, judgment slot occupied. Card moved to Cheering Area.`);
+                       G.actionLog.push(`无法使用 ${card.name}，判定区已被占用。卡牌移动到助威区。`);
                     } else {
                        addToDiscardPile(G, card);
-                       G.actionLog.push(`Cannot play ${card.name}, judgment slot occupied. Card discarded.`);
+                       G.actionLog.push(`无法使用 ${card.name}，判定区已被占用。卡牌被弃置。`);
                     }
                 } else {
                     targetPlayer.judges[judgeSlot] = card;
@@ -869,10 +869,10 @@ export const CardGame = {
             } else {
                 if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
                    G.maliang.cheeringPile.push(card);
-                   G.actionLog.push(`No target for ${card.name}, moved to Cheering Area.`);
+                   G.actionLog.push(`${card.name} 无目标，移动到助威区。`);
                 } else {
                    addToDiscardPile(G, card);
-                   G.actionLog.push(`No target for ${card.name}, discarded.`);
+                   G.actionLog.push(`${card.name} 无目标，被弃置。`);
                 }
             }
         }
@@ -943,7 +943,7 @@ export const CardGame = {
       const combined = [...G.deck, ...G.discardPile];
       G.deck = shuffle(combined, ctx.random);
       G.discardPile = [];
-      G.actionLog.push(`Deck shuffled (merged with discard pile). Total cards: ${G.deck.length}`);
+      G.actionLog.push(`牌堆已洗牌（与弃牌堆合并）。总牌数：${G.deck.length}`);
     },
 
     discardEquipment: ({ G, playerID }, slot) => {
@@ -970,7 +970,7 @@ export const CardGame = {
       };
       const sourceName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
       const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
-      G.actionLog.push(`${sourceName} initiated Pin Dian against ${targetName}`);
+      G.actionLog.push(`${sourceName} 对 ${targetName} 发起拼点`);
     },
 
     selectPinDianCard: ({ G, playerID }, cardIndex) => {
@@ -996,7 +996,7 @@ export const CardGame = {
       }
       
       const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      G.actionLog.push(`${playerName} selected a card for Pin Dian`);
+      G.actionLog.push(`${playerName} 选择了拼点牌`);
       
       // Check if both selected
       if (pindian.sourceCard && pindian.targetCard) {
@@ -1009,21 +1009,21 @@ export const CardGame = {
         const sourceName = G.players[pindian.sourcePlayerID].general ? G.players[pindian.sourcePlayerID].general.name : `Player ${pindian.sourcePlayerID}`;
         const targetName = G.players[pindian.targetPlayerID].general ? G.players[pindian.targetPlayerID].general.name : `Player ${pindian.targetPlayerID}`;
         
-        G.actionLog.push(`Pin Dian Comparison: ${pindian.sourceCard.rank} (${val1}) vs ${pindian.targetCard.rank} (${val2})`);
+        G.actionLog.push(`拼点对比：${pindian.sourceCard.rank}（${val1}）对 ${pindian.targetCard.rank}（${val2}）`);
         
         if (val1 > val2) {
-             G.actionLog.push(`${sourceName} wins Pin Dian!`);
+             G.actionLog.push(`${sourceName} 拼点胜利！`);
              if (pindian.skillName === '义争') {
                  G.players[pindian.targetPlayerID].skipNextDraw = true;
-                 G.actionLog.push(`${targetName} will skip next draw phase`);
+                 G.actionLog.push(`${targetName} 将跳过下次摸牌阶段`);
              }
         } else {
-             G.actionLog.push(`${sourceName} did not win Pin Dian.`);
+             G.actionLog.push(`${sourceName} 拼点未胜。`);
              if (pindian.skillName === '义争') {
                  const player = G.players[pindian.sourcePlayerID];
                  player.hpMax = Math.max(0, player.hpMax - 1);
                  if (player.hp > player.hpMax) player.hp = player.hpMax;
-                 G.actionLog.push(`${sourceName} lost Pin Dian (Yi Zheng), Max HP -1`);
+                 G.actionLog.push(`${sourceName} 拼点失败（义争），体力上限-1`);
              }
         }
         
@@ -1285,7 +1285,7 @@ export const CardGame = {
     jiezhonghuiQuanJiConfirm: ({ G, playerID }, cardIndex) => {
         const card = jiezhonghuiSkill.quanji.addToQuan(G, playerID, cardIndex);
         if (card) {
-            G.actionLog.push(`Player ${playerID} put ${card.name} into Quan`);
+            G.actionLog.push(`Player ${playerID} 将 ${card.name} 置于权`);
         }
         G.jiezhonghuiQuanJiSelect = { active: false, playerID: null };
     },
@@ -1295,7 +1295,7 @@ export const CardGame = {
 
     jiezhonghuiZiLi: ({ G, playerID }) => {
         jiezhonghuiSkill.zili.action(G, playerID);
-        G.actionLog.push(`Player ${playerID} used Zi Li, Max HP -1`);
+        G.actionLog.push(`Player ${playerID} 使用了资力，体力上限-1`);
     },
 
     jiezhonghuiPaiYi: ({ G, playerID }) => {
@@ -1307,7 +1307,7 @@ export const CardGame = {
     jiezhonghuiPaiYiConfirm: ({ G, playerID }, cardIndexInQuan) => {
         const card = jiezhonghuiSkill.paiyi.discardFromQuan(G, playerID, cardIndexInQuan);
         if (card) {
-            G.actionLog.push(`Player ${playerID} used Pai Yi, discarded ${card.name} from Quan`);
+            G.actionLog.push(`Player ${playerID} 使用了排异，从权中弃置 ${card.name}`);
         }
         G.jiezhonghuiPaiYiSelect = { active: false, playerID: null };
     },
@@ -1365,7 +1365,7 @@ export const CardGame = {
         // We should validate discardCount, but for now let's trust the client or clamp it.
         const count = Math.min(discardCount, maxDiscard);
         
-        G.actionLog.push(`Player ${playerID} used Shanjia, drew 3 cards and needs to discard ${count} cards.`);
+        G.actionLog.push(`Player ${playerID} 使用了善骑，摸了3张牌并需要弃置 ${count} 张牌。`);
         
         // If count > 0, we should probably trigger a discard phase.
         // For now, let's just implement the draw part and log the discard requirement.
@@ -1493,7 +1493,7 @@ export const CardGame = {
 
                 if (card) {
                     G.hands[playerID].push(card);
-                    G.actionLog.push(`Player ${playerID} stole a card from Player ${targetID}`);
+                    G.actionLog.push(`Player ${playerID} 从 Player ${targetID} 处偷了一张牌`);
                 }
             }
         } else if (actionType === 'discard') {
@@ -1525,7 +1525,7 @@ export const CardGame = {
 
                 if (card) {
                     addToDiscardPile(G, card);
-                    G.actionLog.push(`Player ${playerID} discarded a card from Player ${targetID}`);
+                    G.actionLog.push(`Player ${playerID} 对 Player ${targetID} 使用了过河拆桥，弃置了 ${card.suit}${card.rank} ${card.name}`);
                 }
             }
         } else if (actionType === 'collateral') {
@@ -1552,7 +1552,7 @@ export const CardGame = {
                 if (card) {
                     // Add to current player's hand
                     G.hands[playerID].push(card);
-                    G.actionLog.push(`Player ${playerID} obtained ${card.name} from Player ${targetID} via Collateral`);
+                    G.actionLog.push(`Player ${playerID} 通过借刀杀人从 Player ${targetID} 处获得了 ${card.name}`);
                 }
             }
         }
@@ -1586,7 +1586,7 @@ export const CardGame = {
                  targetPlayerID: targetPlayerID
              };
         } else {
-             G.actionLog.push(`Player ${playerID} confirmed effect for ${pendingCard.name} (Logic not fully implemented)`);
+             G.actionLog.push(`Player ${playerID} 确认了 ${pendingCard.name} 的效果（逻辑未完全实现）`);
         }
         
         G.pendingEffect = null;
@@ -1605,7 +1605,7 @@ export const CardGame = {
         const sourceName = G.players[sourceID].general ? G.players[sourceID].general.name : `Player ${sourceID}`;
         const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
         
-        G.actionLog.push(`${targetName} showed ${card.suit}${card.rank} ${card.name} to ${sourceName} for Fire Attack`);
+        G.actionLog.push(`${targetName} 向 ${sourceName} 展示了 ${card.suit}${card.rank} ${card.name}（火攻）`);
         
         G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
     },
@@ -1618,7 +1618,7 @@ export const CardGame = {
     cancelEffect: ({ G, playerID }) => {
         if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
         
-        G.actionLog.push(`Player ${playerID} cancelled/disabled effect for ${G.pendingEffect.pendingCard.name}`);
+        G.actionLog.push(`Player ${playerID} 取消了 ${G.pendingEffect.pendingCard.name} 的效果`);
         G.pendingEffect = null;
     },
 
