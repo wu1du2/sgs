@@ -5634,7 +5634,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               {(G.discardPile || []).length === 0 ? (
                 <div style={{ color: '#95a5a6' }}>空</div>
               ) : (
-                (G.discardPile || []).map((card, index) => (
+                (G.discardPile || []).reverse().map((card, index) => (
                   <div key={`${card.name}-${index}`} style={{ marginBottom: '2px' }}>
                     {card.suit} {card.rank} {card.name}
                   </div>
