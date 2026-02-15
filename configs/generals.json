@@ -1115,17 +1115,15 @@
     "skills": [
       "武库",
       "三陈",
-      "灭吴",
       "灭吴"
     ],
     "portrait": "https://patchwiki.biligame.com/images/msgs/c/cd/nt4g92rrrh1abm4fds30y2z36vaxtfj.jpg",
     "skills_description": [
       "武库:锁定技，当一名角色使用装备牌时，若你的“武库”标记数小于3，你获得1个“武库”标记。",
       "三陈:觉醒技，结束阶段，若你的“武库”标记数为3，你加1点体力上限并回复1点体力，然后获得技能“灭吴”。",
-      "灭吴:每回合限一次，你可以移去1个“武库”标记，将一张牌当任意一张非装备牌使用或打出，然后你摸一张牌。",
-      "灭吴:"
+      "灭吴:每回合限一次，你可以移去1个“武库”标记，将一张牌当任意一张非装备牌使用或打出，然后你摸一张牌。"
     ],
-    "enable": false,
+    "enable": true,
     "localPortrait": "/images/generals/杜预.jpg",
     "initial_armor": 0
   },

@@ -28,7 +28,7 @@ import { lijueSkill } from './skills/lijue.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['许攸', '张让', '杨彪'];
+const TESTING_GENERAL_LIST = ['杜预', '张让', '杨彪'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
@@ -84,6 +84,8 @@ const createPlayerState = () => ({
   lastActionId: null, // For idempotency
   pojun: {},
   jianying: { suit: null, rank: null }, // For Jie Jushou
+  duyuWuku: 0,
+  duyuSanchenAwakened: false,
   ...createEmptyZones()
 });
 
@@ -263,6 +265,12 @@ const getTaoluanDeclaredType = (declaredName) => {
   return card ? card.type : null;
 };
 
+const getMiewuDeclaredType = (declaredName) => {
+  const equipTypes = new Set(['武器', '防具', '加一', '减一']);
+  const card = SGS_CARDS.find(c => c && c.name === declaredName && !equipTypes.has(c.type));
+  return card ? card.type : null;
+};
+
 const advanceTaoluanAfterResolution = (G) => {
   if (!G.taoluan || !G.taoluan.active || G.taoluan.stage !== 'waiting_resolution') return;
   if (G.pendingEffect && G.pendingEffect.active) return;
@@ -273,6 +281,31 @@ const advanceTaoluanAfterResolution = (G) => {
   G.taoluan.stage = 'after_choose_other';
   G.taoluan.otherID = null;
   G.taoluan.option = null;
+};
+
+const advanceMiewuAfterResolution = (G) => {
+  if (!G.miewu || !G.miewu.active || G.miewu.stage !== 'waiting_resolution') return;
+  if (G.pendingEffect && G.pendingEffect.active) return;
+  if (G.selectCard && G.selectCard.active) return;
+  if (G.fireAttackShowCard && G.fireAttackShowCard.active) return;
+  if (G.harvestCountSelect && G.harvestCountSelect.active) return;
+  if (Array.isArray(G.harvestCards) && G.harvestCards.length > 0) return;
+  G.miewu = null;
+};
+
+const duyuGainWukuIfPossible = (G, sourcePlayerID, card) => {
+  const equipTypes = new Set(['武器', '防具', '加一', '减一']);
+  if (!card || !equipTypes.has(card.type)) return;
+  Object.keys(G.players || {}).forEach(pid => {
+    const p = G.players[pid];
+    if (!p || !p.general || p.general.name !== '杜预') return;
+    const current = typeof p.duyuWuku === 'number' ? p.duyuWuku : 0;
+    if (current >= 3) return;
+    p.duyuWuku = current + 1;
+    const duyuName = p.general ? p.general.name : `Player ${pid}`;
+    const srcName = G.players[sourcePlayerID] && G.players[sourcePlayerID].general ? G.players[sourcePlayerID].general.name : `Player ${sourcePlayerID}`;
+    G.actionLog.push(`${duyuName} 因 ${srcName} 使用装备牌获得1个“武库”（${p.duyuWuku}/3）`);
+  });
 };
 
 
@@ -721,6 +754,139 @@ export const CardGame = {
       }
       G.taoluan = null;
     },
+
+    duyuSanchen: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '杜预') return;
+      const wuku = typeof player.duyuWuku === 'number' ? player.duyuWuku : 0;
+      const playerName = player.general ? player.general.name : `Player ${playerID}`;
+      if (player.duyuSanchenAwakened) {
+        G.actionLog.push(`${playerName} 的【三陈】已觉醒`);
+        return;
+      }
+      if (wuku !== 3) {
+        G.actionLog.push(`${playerName} 觉醒【三陈】失败（武库=${wuku}/3）`);
+        return;
+      }
+      player.hpMax = (player.hpMax || 0) + 1;
+      player.hp = Math.min((player.hp || 0) + 1, player.hpMax);
+      player.duyuSanchenAwakened = true;
+      G.actionLog.push(`${playerName} 觉醒【三陈】，加1点体力上限并回复1点体力，获得【灭吴】`);
+    },
+
+    duyuMiewuStart: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '杜预') return;
+      if (!player.duyuSanchenAwakened) return;
+      const wuku = typeof player.duyuWuku === 'number' ? player.duyuWuku : 0;
+      if (wuku <= 0) return;
+      G.miewu = {
+        active: true,
+        stage: 'select_material',
+        sourceID: playerID,
+        material: null,
+        declaredName: null,
+        declaredType: null,
+        targetIDs: [],
+      };
+    },
+    duyuMiewuSelectMaterial: ({ G, playerID }, selected) => {
+      const m = G.miewu;
+      if (!m || !m.active || m.sourceID !== playerID || m.stage !== 'select_material') return;
+      const hand = G.hands[playerID] || [];
+      const player = G.players[playerID];
+      if (!selected || (selected.type !== 'hand' && selected.type !== 'equip')) return;
+      if (selected.type === 'hand') {
+        if (typeof selected.index !== 'number' || selected.index < 0 || selected.index >= hand.length) return;
+        m.material = { type: 'hand', index: selected.index };
+      } else {
+        if (!player || !player.equipments) return;
+        if (typeof selected.slot !== 'string') return;
+        if (!player.equipments[selected.slot]) return;
+        m.material = { type: 'equip', slot: selected.slot };
+      }
+      m.stage = 'select_virtual';
+    },
+    duyuMiewuSelectVirtual: ({ G, playerID }, declaredName) => {
+      const m = G.miewu;
+      if (!m || !m.active || m.sourceID !== playerID || m.stage !== 'select_virtual') return;
+      const declaredType = getMiewuDeclaredType(declaredName);
+      if (!declaredType) return;
+      m.declaredName = declaredName;
+      m.declaredType = declaredType;
+      m.stage = 'select_targets';
+    },
+    duyuMiewuConfirmPlay: ({ G, ctx, playerID }, targetIDs) => {
+      const m = G.miewu;
+      if (!m || !m.active || m.sourceID !== playerID || m.stage !== 'select_targets') return;
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '杜预') return;
+      if (!player.duyuSanchenAwakened) return;
+      const wuku = typeof player.duyuWuku === 'number' ? player.duyuWuku : 0;
+      if (wuku <= 0) return;
+      const hand = G.hands[playerID] || [];
+      if (!m.material || (m.material.type !== 'hand' && m.material.type !== 'equip')) return;
+      let cardIndex = null;
+      let card = null;
+      if (m.material.type === 'hand') {
+        cardIndex = m.material.index;
+        card = typeof cardIndex === 'number' ? hand[cardIndex] : null;
+      } else {
+        if (!player.equipments) return;
+        const fromEquip = player.equipments[m.material.slot];
+        if (!fromEquip) return;
+        player.equipments[m.material.slot] = null;
+        hand.push(fromEquip);
+        cardIndex = hand.length - 1;
+        card = fromEquip;
+      }
+      if (!card || !m.declaredName || !m.declaredType) return;
+
+      let resolvedTargets = Array.isArray(targetIDs) ? targetIDs : [];
+      if (m.declaredName === '五谷丰登') resolvedTargets = [];
+      if (['顺手牵羊', '过河拆桥', '借刀杀人', '火攻'].includes(m.declaredName)) {
+        if (resolvedTargets.length !== 1) return;
+      }
+      if (m.declaredName === '铁索连环') {
+        if (resolvedTargets.length > 2) return;
+      }
+
+      player.duyuWuku = wuku - 1;
+      const playerName = player.general ? player.general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} 发动【灭吴】，移去1个“武库”（${player.duyuWuku}/3）`);
+
+      card.name = m.declaredName;
+      card.type = m.declaredType;
+
+      const playCardsDef = CardGame.moves.playCards;
+      const playCardsMove = typeof playCardsDef === 'function' ? playCardsDef : playCardsDef && typeof playCardsDef.move === 'function' ? playCardsDef.move : null;
+      if (playCardsMove) {
+        playCardsMove({ G, ctx, playerID }, [cardIndex], resolvedTargets);
+      }
+
+      const drawn = drawCards(G, playerID, 1, ctx.random);
+      if (drawn.length > 0) {
+        G.actionLog.push(`${playerName} 因【灭吴】摸一张牌`);
+      }
+
+      m.targetIDs = resolvedTargets;
+      if (
+        (G.pendingEffect && G.pendingEffect.active) ||
+        (G.selectCard && G.selectCard.active) ||
+        (G.fireAttackShowCard && G.fireAttackShowCard.active) ||
+        (G.harvestCountSelect && G.harvestCountSelect.active) ||
+        (Array.isArray(G.harvestCards) && G.harvestCards.length > 0)
+      ) {
+        m.stage = 'waiting_resolution';
+      } else {
+        G.miewu = null;
+      }
+    },
+    duyuMiewuCancel: ({ G, playerID }) => {
+      const m = G.miewu;
+      if (!m || !m.active || m.sourceID !== playerID) return;
+      G.miewu = null;
+    },
     rangjieChooseOption: ({ G, ctx, playerID }, option) => {
       if (option === 'cancel') {
         G.rangjieSelect.active = false;
@@ -1068,6 +1234,8 @@ export const CardGame = {
     playCards: ({ G, ctx, playerID }, cardIndices, targetIds) => {
       const hand = G.hands[playerID];
       const cardsPlayed = cardIndices.map(i => hand[i]);
+
+      cardsPlayed.forEach(card => duyuGainWukuIfPossible(G, playerID, card));
       
       // Record for Jie Jushou (Jianying)
       if (G.players[playerID].general && G.players[playerID].general.name === '界沮授' && cardsPlayed.length > 0) {
@@ -1531,6 +1699,7 @@ export const CardGame = {
       if (G.harvestCards.length === 0) {
         G.harvestCards = [];
         advanceTaoluanAfterResolution(G);
+        advanceMiewuAfterResolution(G);
       }
     },
     
@@ -1542,12 +1711,15 @@ export const CardGame = {
        }
        G.harvestCards = [];
        advanceTaoluanAfterResolution(G);
+       advanceMiewuAfterResolution(G);
     },
 
     equipCard: ({ G, playerID }, cardIndex) => {
       const hand = G.hands[playerID];
       const card = hand[cardIndex];
       
+      duyuGainWukuIfPossible(G, playerID, card);
+
       // Remove from hand
       hand.splice(cardIndex, 1);
 
@@ -1993,12 +2165,14 @@ export const CardGame = {
         // Reset selection state
         G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
         advanceTaoluanAfterResolution(G);
+        advanceMiewuAfterResolution(G);
     },
 
     cancel_select_card: ({ G, playerID }) => {
         if (!G.selectCard || !G.selectCard.active || G.selectCard.sourcePlayerID !== playerID) return;
         G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
         advanceTaoluanAfterResolution(G);
+        advanceMiewuAfterResolution(G);
     },
 
     confirmEffect: ({ G, playerID }) => {
@@ -2044,12 +2218,14 @@ export const CardGame = {
         
         G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
         advanceTaoluanAfterResolution(G);
+        advanceMiewuAfterResolution(G);
     },
 
     cancelFireAttackShowCard: ({ G, playerID }) => {
          if (!G.fireAttackShowCard || !G.fireAttackShowCard.active || G.fireAttackShowCard.targetPlayerID !== playerID) return;
          G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
          advanceTaoluanAfterResolution(G);
+         advanceMiewuAfterResolution(G);
     },
 
     cancelEffect: ({ G, playerID }) => {
@@ -2058,6 +2234,7 @@ export const CardGame = {
         G.actionLog.push(`Player ${playerID} 取消了 ${G.pendingEffect.pendingCard.name} 的效果`);
         G.pendingEffect = null;
         advanceTaoluanAfterResolution(G);
+        advanceMiewuAfterResolution(G);
     },
 
     changeGeneral: ({ G, ctx, playerID }, generalId, actionId, clickid, sessionid) => {
