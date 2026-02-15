@@ -3561,6 +3561,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (G.yimouSelect && G.yimouSelect.active && G.yimouSelect.stage === 'select_recipient' && G.yimouSelect.targetPlayerID === playerID) {
+      moves.baoxinYimouSelectRecipient(targetId);
+      return;
+    }
+
     if (activeSkill === '义争') {
       if (targetId === playerID) {
         alert("不能选择自己");
@@ -3582,6 +3587,24 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     if (activeSkill === '慷忾') {
       if (selectedTargetIds.includes(targetId)) {
         setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
+      } else {
+        setSelectedTargetIds([targetId]);
+      }
+      return;
+    }
+
+    if (activeSkill === '募讨') {
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds([]);
+      } else {
+        setSelectedTargetIds([targetId]);
+      }
+      return;
+    }
+
+    if (activeSkill === '毅谋') {
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds([]);
       } else {
         setSelectedTargetIds([targetId]);
       }
@@ -4254,6 +4277,28 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         return;
     }
 
+    if (skillName === '募讨') {
+      if (activeSkill === '募讨') {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+      } else {
+        setActiveSkill('募讨');
+        setSelectedTargetIds([]);
+      }
+      return;
+    }
+
+    if (skillName === '毅谋') {
+      if (activeSkill === '毅谋') {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+      } else {
+        setActiveSkill('毅谋');
+        setSelectedTargetIds([]);
+      }
+      return;
+    }
+
     moves.useSkill(skillName);
   };
 
@@ -4364,7 +4409,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     // Target Selection Logic
     const mizhaoSelecting = mizhaoStage === 'selectA' || mizhaoStage === 'selectB';
-    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting;
+    const yimouSelecting = G.yimouSelect && G.yimouSelect.active && G.yimouSelect.stage === 'select_recipient' && G.yimouSelect.targetPlayerID === playerID;
+    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting || !!activeSkill || yimouSelecting;
     const isSelected = selectedTargetIds.includes(id) || (mizhaoStage === 'selectA' && mizhaoTargetA === id) || (mizhaoStage === 'selectB' && (mizhaoTargetA === id || mizhaoTargetB === id));
 
     // Dynamic overlap calculation
@@ -5452,6 +5498,75 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               确定
             </button>
           )}
+          {activeSkill === '募讨' && selectedTargetIds.length > 0 && (
+            <button
+              onClick={() => {
+                if (selectedTargetIds.length !== 1) {
+                  alert("请选择一名目标");
+                  return;
+                }
+                moves.baoxinMutao(selectedTargetIds[0]);
+                setActiveSkill(null);
+                setSelectedTargetIds([]);
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          )}
+          {activeSkill === '毅谋' && selectedTargetIds.length > 0 && (
+            <>
+              <button
+                onClick={() => {
+                  if (selectedTargetIds.length !== 1) {
+                    alert("请选择一名目标");
+                    return;
+                  }
+                  moves.baoxinYimouOptionOne(selectedTargetIds[0]);
+                  setActiveSkill(null);
+                  setSelectedTargetIds([]);
+                }}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#2ecc71',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                获得一张【杀】
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedTargetIds.length !== 1) {
+                    alert("请选择一名目标");
+                    return;
+                  }
+                  moves.baoxinYimouOptionTwo(selectedTargetIds[0]);
+                  setActiveSkill(null);
+                  setSelectedTargetIds([]);
+                }}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#3498db',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                交给一名角色一张手牌并摸一张
+              </button>
+            </>
+          )}
           {activeSkill === '慷忾' && selectedTargetIds.length > 0 && (
             <button 
               onClick={() => {
@@ -5701,6 +5816,52 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           equipments={G.players[playerID].equipments}
           onConfirm={(selected) => moves.confirmKangkaiCard(selected)}
           onCancel={() => moves.cancelKangkai()}
+        />
+      )}
+
+      {G.yimouSelect && G.yimouSelect.active && G.yimouSelect.stage === 'select_recipient' && G.yimouSelect.targetPlayerID === playerID && (
+        <div style={{
+          position: 'fixed',
+          bottom: '250px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '20px',
+          zIndex: 2000
+        }}>
+          <div style={{
+            padding: '10px 20px',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            borderRadius: '6px'
+          }}>
+            请选择交给谁
+          </div>
+          <button
+            onClick={() => moves.baoxinYimouCancel()}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      )}
+
+      {G.yimouSelect && G.yimouSelect.active && G.yimouSelect.stage === 'card_selection' && G.yimouSelect.targetPlayerID === playerID && (
+        <CardSelectionModal
+          targetPlayer={G.players[playerID]}
+          targetHand={G.hands[playerID]}
+          onConfirm={(selected) => moves.baoxinYimouConfirmCard(selected)}
+          onCancel={() => moves.baoxinYimouCancel()}
+          title="毅谋：选择交出的手牌"
+          singleSelection={true}
+          revealHand={true}
         />
       )}
 

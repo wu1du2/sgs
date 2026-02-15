@@ -22,11 +22,12 @@ import { xizhicaiSkill } from './skills/xizhicai.js';
 import { shenlubuSkill } from './skills/shenlubu.js';
 import { jieliruSkill } from './skills/jieliru.js';
 import { youxushuSkill } from './skills/youxushu.js';
+import { baoxinSkill } from './skills/baoxin.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['界李儒'];
+const TESTING_GENERAL_LIST = ['鲍信'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
@@ -368,6 +369,13 @@ export const CardGame = {
       targetPlayerID: null,
       selectedCard: null,
     },
+    yimouSelect: {
+      active: false,
+      stage: null,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      recipientPlayerID: null,
+    },
     liyuTargeting: {
       active: false,
       sourceID: null,
@@ -401,6 +409,24 @@ export const CardGame = {
     ...jieliruSkill.moves,
     ...youxushuSkill.moves,
     ...xuyouSkill.moves,
+    baoxinMutao: ({ G, ctx, playerID }, targetID) => {
+      baoxinSkill.mutao.action({ G, ctx, playerID }, targetID);
+    },
+    baoxinYimouOptionOne: ({ G, ctx, playerID }, targetID) => {
+      baoxinSkill.yimou.optionOne({ G, ctx, playerID }, targetID);
+    },
+    baoxinYimouOptionTwo: ({ G, playerID }, targetID) => {
+      baoxinSkill.yimou.optionTwo({ G, playerID }, targetID);
+    },
+    baoxinYimouSelectRecipient: ({ G, playerID }, recipientID) => {
+      baoxinSkill.yimou.selectRecipient({ G, playerID }, recipientID);
+    },
+    baoxinYimouConfirmCard: ({ G, ctx, playerID }, selected) => {
+      baoxinSkill.yimou.confirmCard({ G, ctx, playerID }, selected);
+    },
+    baoxinYimouCancel: ({ G, playerID }) => {
+      baoxinSkill.yimou.cancel({ G, playerID });
+    },
     performJudgment: ({ G, ctx, playerID }) => {
       // Draw judgment card
       if (G.deck.length === 0) {
