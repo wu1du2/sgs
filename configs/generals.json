@@ -149,7 +149,7 @@
     "skills_description": [
       "滔乱:当你需要使用一张基本牌或普通锦囊牌时，若没有角色处于濒死状态，你可以将一张牌当任意一张基本牌或普通锦囊牌使用（每种牌名限一次），然后此牌结算结束后令一名其他角色选择一项：1.交给你一张与“滔乱”声明的牌类别不同的牌；2.令你失去1点体力且本回合“滔乱”失效。"
     ],
-    "enable": false,
+    "enable": true,
     "localPortrait": "/images/generals/张让.jpg",
     "initial_armor": 0
   },
@@ -1192,8 +1192,7 @@
     "portrait": "https://patchwiki.biligame.com/images/msgs/6/61/bgp0lq2kvmon1nbrcbxacyj414a5fmz.jpg",
     "skills_description": [
       "集智:当你使用一张普通锦囊牌时，你可以摸一张牌。",
-      "奇才:锁定技，你使用锦囊牌无距离限制。",
-      "藏机:"
+      "奇才:锁定技，你使用锦囊牌无距离限制。"
     ],
     "enable": true,
     "localPortrait": "/images/generals/黄月英.jpg",
@@ -1220,7 +1219,7 @@
   {
     "id": "李傕",
     "name": "李傕",
-    "hpMax": 4,
+    "hpMax": 6,
     "hp": 4,
     "skills": [
       "狼袭",
@@ -1231,7 +1230,7 @@
       "狼袭:准备阶段，你可以对一名体力值不大于你的其他角色造成0~2点随机伤害。",
       "亦算:出牌阶段限一次，当你使用的普通锦囊牌结算结算后进入弃牌堆时，你可以减1点体力上限，获得之。"
     ],
-    "enable": false,
+    "enable": true,
     "localPortrait": "/images/generals/李傕.jpg",
     "initial_armor": 0
   },
@@ -1265,7 +1264,7 @@
       "马术:锁定技，你计算与其他角色的距离-1。",
       "铁骑:当你使用【杀】指定一名角色为目标后，你可以令其不能使用【闪】响应此【杀】且其所有非锁定技失效直到回合结束，使用然后你与该角色进行一次“谋弈”：\n【直取敌营】你获得其一张牌；\n【扰阵疲敌】你摸两张牌。"
     ],
-    "enable": false,
+    "enable": true,
     "localPortrait": "/images/generals/谋马超.jpg",
     "initial_armor": 0
   },

@@ -72,81 +72,87 @@ export const youxushuSkill = {
             if (!player.qiHui) {
                 player.qiHui = {
                     litButtons: [],
-                    stage: 'lighting', // 'lighting', 'selecting_option', 'dimming'
+                    stage: 'lighting', // 'lighting', 'selecting_option'
                     selectedOption: null
                 };
             }
 
             const { qiHui } = player;
 
+            if (qiHui.stage === 'dimming') {
+              qiHui.stage = 'selecting_option';
+            }
+
+            const toggle = () => {
+              if (qiHui.litButtons.includes(button)) {
+                qiHui.litButtons = qiHui.litButtons.filter(b => b !== button);
+              } else {
+                qiHui.litButtons.push(button);
+              }
+            };
+
             if (qiHui.stage === 'lighting') {
-                if (!qiHui.litButtons.includes(button)) {
-                    qiHui.litButtons.push(button);
-                    
-                    // Check if all 3 are lit
-                    const allButtons = ['基本', '锦囊', '装备'];
-                    const allLit = allButtons.every(b => qiHui.litButtons.includes(b));
-                    
-                    if (allLit) {
-                        qiHui.stage = 'selecting_option';
-                    }
-                }
-            } else if (qiHui.stage === 'dimming') {
-                if (qiHui.litButtons.includes(button)) {
-                    // Remove button (dim it)
-                    qiHui.litButtons = qiHui.litButtons.filter(b => b !== button);
-                    
-                    // Check if 2 buttons dimmed (meaning 1 left)
-                    // Wait, logic says "Dim 2 buttons". Initially 3 lit. So 3 - 2 = 1 left.
-                    if (qiHui.litButtons.length === 1) {
-                        // Execute option
-                        const option = qiHui.selectedOption;
-                        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+              toggle();
 
-                        if (option === 1) {
-                            // Recover 1 HP
-                            if (player.hp < player.hpMax) {
-                                player.hp++;
-                                G.actionLog.push(`${playerName} 通过启诲回复了1点体力`);
-                            } else {
-                                G.actionLog.push(`${playerName} 通过启诲试图回复体力，但体力已满`);
-                            }
-                        } else if (option === 2) {
-                            // Draw 2 cards
-                            // Helper draw logic
-                            for (let i = 0; i < 2; i++) {
-                                if (G.deck.length === 0) {
-                                    if (G.discardPile.length > 0) {
-                                        G.deck = shuffle(G.discardPile, ctx.random);
-                                        G.discardPile = [];
-                                    } else {
-                                        break;
-                                    }
-                                }
-                                const card = G.deck.shift();
-                                if (card) G.hands[playerID].push(card);
-                            }
-                            G.actionLog.push(`${playerName} 通过启诲摸了两张牌`);
-                        } else if (option === 3) {
-                            // Log action
-                            G.actionLog.push(`${playerName} 选择：使用的下一张牌不计入使用次数且无次数限制`);
-                        }
+              const allButtons = ['基本', '锦囊', '装备'];
+              const allLit = allButtons.every(b => qiHui.litButtons.includes(b));
+              if (allLit) {
+                qiHui.stage = 'selecting_option';
+                qiHui.selectedOption = null;
+              }
+              return;
+            }
 
-                        // Reset state
-                        qiHui.litButtons = [];
-                        qiHui.stage = 'lighting';
-                        qiHui.selectedOption = null;
-                    }
-                }
+            if (qiHui.stage === 'selecting_option') {
+              toggle();
+              return;
             }
         },
 
         youxushuQiHuiSelectOption: ({ G, playerID }, option) => {
             const player = G.players[playerID];
-            if (player.qiHui && player.qiHui.stage === 'selecting_option') {
-                player.qiHui.selectedOption = option;
-                player.qiHui.stage = 'dimming';
+            if (!player.qiHui || player.qiHui.stage !== 'selecting_option') return;
+            player.qiHui.selectedOption = option;
+        },
+
+        youxushuQiHuiConfirm: ({ G, ctx, playerID }) => {
+          const player = G.players[playerID];
+          if (!player || !player.qiHui || player.qiHui.stage !== 'selecting_option') return;
+          const qiHui = player.qiHui;
+          if (!qiHui.selectedOption) return;
+          if (!Array.isArray(qiHui.litButtons) || qiHui.litButtons.length !== 1) return;
+
+          const option = qiHui.selectedOption;
+          const playerName = player.general ? player.general.name : `Player ${playerID}`;
+
+          if (option === 1) {
+            if (player.hp < player.hpMax) {
+              player.hp++;
+              G.actionLog.push(`${playerName} 通过启诲回复了1点体力`);
+            } else {
+              G.actionLog.push(`${playerName} 通过启诲试图回复体力，但体力已满`);
             }
+            G.actionLog.push(`${playerName} 请重铸一张牌`);
+          } else if (option === 2) {
+            for (let i = 0; i < 2; i++) {
+              if (G.deck.length === 0) {
+                if (G.discardPile.length > 0) {
+                  G.deck = shuffle(G.discardPile, ctx.random);
+                  G.discardPile = [];
+                } else {
+                  break;
+                }
+              }
+              const card = G.deck.shift();
+              if (card) G.hands[playerID].push(card);
+            }
+            G.actionLog.push(`${playerName} 通过启诲摸了两张牌`);
+          } else if (option === 3) {
+            G.actionLog.push(`${playerName} 选择：使用的下一张牌不计入使用次数且无次数限制`);
+          }
+
+          qiHui.stage = 'lighting';
+          qiHui.selectedOption = null;
         }
     }
 };

@@ -7,6 +7,8 @@ import { yangbiaoSkill } from './skills/yangbiao';
 import { shenluxunSkill } from './skills/shenluxun';
 import { SHOW_DEBUG_INFO } from './Game';
 
+const enable_voice = false;
+
 // Helper for suit colors
 const getSuitColor = (suit) => {
   if (suit === '♥') return '#d63031'; // Red
@@ -849,7 +851,11 @@ const KuangbaoSelector = ({ onSelect, onCancel }) => {
   );
 };
 
-const QiHuiModal = ({ onSelect }) => {
+const QiHuiModal = ({ qiHui, onSelectOption, onToggleButton, onConfirm }) => {
+  const selectedOption = qiHui?.selectedOption ?? null;
+  const litButtons = Array.isArray(qiHui?.litButtons) ? qiHui.litButtons : [];
+  const canConfirm = !!selectedOption && litButtons.length === 1;
+
   return (
     <div style={{
       position: 'fixed',
@@ -872,23 +878,74 @@ const QiHuiModal = ({ onSelect }) => {
         boxShadow: '0 0 20px rgba(0,0,0,0.5)'
       }}>
         <h3 style={{ margin: 0, color: '#f1c40f', textAlign: 'center' }}>启诲：请选择一项</h3>
-        <button 
-            onClick={() => onSelect(1)}
-            style={{ padding: '10px', cursor: 'pointer', backgroundColor: '#3498db', border: 'none', color: 'white', borderRadius: '5px' }}
+        {[1, 2, 3].map(opt => {
+          const text = opt === 1
+            ? '1. 你回复1点体力并重铸一张牌'
+            : opt === 2
+              ? '2. 你摸两张牌'
+              : '3. 你使用的下一张牌不计入使用次数且无次数限制';
+          const isSelected = selectedOption === opt;
+          return (
+            <button
+              key={opt}
+              onClick={() => onSelectOption(opt)}
+              style={{
+                padding: '10px',
+                cursor: 'pointer',
+                backgroundColor: isSelected ? '#2ecc71' : '#3498db',
+                border: 'none',
+                color: 'white',
+                borderRadius: '5px',
+                fontWeight: isSelected ? 'bold' : 'normal'
+              }}
+            >
+              {text}
+            </button>
+          );
+        })}
+
+        <div style={{ marginTop: '5px', fontSize: '12px', color: '#bdc3c7', textAlign: 'center' }}>
+          请点灭两个按钮（保留一个标记）
+        </div>
+
+        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+          {['基本', '锦囊', '装备'].map(btn => {
+            const isLit = litButtons.includes(btn);
+            return (
+              <button
+                key={btn}
+                onClick={() => onToggleButton(btn)}
+                style={{
+                  fontSize: '10px',
+                  padding: '4px 8px',
+                  backgroundColor: isLit ? '#f1c40f' : '#34495e',
+                  color: isLit ? '#000' : '#bdc3c7',
+                  border: isLit ? '1px solid #f39c12' : '1px solid #2c3e50',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  boxShadow: isLit ? '0 0 5px #f1c40f' : 'none'
+                }}
+              >
+                {btn}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={onConfirm}
+          disabled={!canConfirm}
+          style={{
+            padding: '10px',
+            cursor: canConfirm ? 'pointer' : 'not-allowed',
+            backgroundColor: canConfirm ? '#e67e22' : '#7f8c8d',
+            border: 'none',
+            color: 'white',
+            borderRadius: '5px',
+            fontWeight: 'bold'
+          }}
         >
-            1. 回复1点体力
-        </button>
-        <button 
-            onClick={() => onSelect(2)}
-            style={{ padding: '10px', cursor: 'pointer', backgroundColor: '#3498db', border: 'none', color: 'white', borderRadius: '5px' }}
-        >
-            2. 摸两张牌
-        </button>
-        <button 
-            onClick={() => onSelect(3)}
-            style={{ padding: '10px', cursor: 'pointer', backgroundColor: '#3498db', border: 'none', color: 'white', borderRadius: '5px' }}
-        >
-            3. 下一张牌不计次数
+          确定
         </button>
       </div>
     </div>
@@ -950,7 +1007,7 @@ const TianduModal = ({ card, onConfirm, onCancel }) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0 }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
@@ -1119,6 +1176,24 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
           zIndex: 5, borderRadius: '8px', pointerEvents: 'none',
           boxShadow: '0 0 20px rgba(0, 255, 0, 0.8)'
         }} />
+      )}
+
+      {jiuAnimKey > 0 && (
+        <div
+          key={`jiu-${jiuAnimKey}`}
+          className="hero-jiu-fire"
+          style={{
+            position: 'absolute',
+            inset: '-6px',
+            zIndex: 6,
+            borderRadius: '12px',
+            pointerEvents: 'none',
+            background: 'radial-gradient(circle at 50% 70%, rgba(255, 120, 0, 0.55) 0%, rgba(255, 60, 0, 0.25) 40%, rgba(0,0,0,0) 70%)',
+            boxShadow: '0 0 14px rgba(255, 120, 0, 0.8), 0 0 30px rgba(255, 40, 0, 0.55)',
+            mixBlendMode: 'screen',
+            border: '1px solid rgba(255, 160, 60, 0.75)'
+          }}
+        />
       )}
 
       {/* Chain Effect Icon */}
@@ -2472,6 +2547,345 @@ const QuanJiSelectionModal = ({ hand, onConfirm, onCancel }) => {
   );
 };
 
+const TaoluanSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) => {
+  const [selected, setSelected] = React.useState(null);
+  const equipEntries = Object.entries(equipments || {}).filter(([, c]) => !!c);
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <h3>滔乱：请选择一张素材牌</h3>
+        {equipEntries.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontWeight: 'bold' }}>装备区</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+              {equipEntries.map(([slot, card]) => (
+                <div
+                  key={slot}
+                  onClick={() => setSelected({ type: 'equip', slot })}
+                  style={{
+                    transform: selected && selected.type === 'equip' && selected.slot === slot ? 'scale(1.1)' : 'scale(1)',
+                    border: selected && selected.type === 'equip' && selected.slot === slot ? '3px solid #00ffff' : 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <Card card={card} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div style={{ fontWeight: 'bold' }}>手牌</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {(hand || []).map((card, index) => (
+            <div
+              key={index}
+              onClick={() => setSelected({ type: 'hand', index })}
+              style={{
+                transform: selected && selected.type === 'hand' && selected.index === index ? 'scale(1.1)' : 'scale(1)',
+                border: selected && selected.type === 'hand' && selected.index === index ? '3px solid #00ffff' : 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Card card={card} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={() => selected && onConfirm(selected)}
+            disabled={!selected}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: selected ? '#2ecc71' : '#7f8c8d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: selected ? 'pointer' : 'not-allowed'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TaoluanSelectVirtualModal = ({ usedNames, onSelect, onCancel }) => {
+  const used = new Set(Array.isArray(usedNames) ? usedNames : []);
+  const candidates = React.useMemo(() => {
+    const map = new Map();
+    SGS_CARDS.forEach((c) => {
+      if (!c) return;
+      if (c.type !== '基本' && c.type !== '锦囊') return;
+      if (!map.has(c.name)) map.set(c.name, c.type);
+    });
+    const basics = [];
+    const tricks = [];
+    for (const [name, type] of map.entries()) {
+      if (type === '基本') basics.push(name);
+      else tricks.push(name);
+    }
+    basics.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+    tricks.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+    return { basics, tricks };
+  }, []);
+
+  const renderList = (names) => (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+      {names.filter(n => !used.has(n)).map((name) => (
+        <button
+          key={name}
+          onClick={() => onSelect(name)}
+          style={{
+            padding: '6px 10px',
+            backgroundColor: '#34495e',
+            color: 'white',
+            border: '1px solid #2c3e50',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          {name}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '90%',
+        maxWidth: '1000px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <h3 style={{ margin: 0 }}>滔乱：请选择声明牌名</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ fontWeight: 'bold' }}>基本牌</div>
+          {renderList(candidates.basics)}
+          <div style={{ fontWeight: 'bold' }}>普通锦囊</div>
+          {renderList(candidates.tricks)}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TaoluanOtherChoiceModal = ({ onGive, onPunish }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '700px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        alignItems: 'center'
+      }}>
+        <h3 style={{ margin: 0 }}>滔乱：请选择一项</h3>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={onGive}
+            style={{
+              padding: '10px 18px',
+              backgroundColor: '#2ecc71',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            交给张让一张牌
+          </button>
+          <button
+            onClick={onPunish}
+            style={{
+              padding: '10px 18px',
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            令张让失去1体力
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TaoluanGiveCardModal = ({ hand, equipments, onConfirm }) => {
+  const [selected, setSelected] = React.useState(null);
+  const equipEntries = Object.entries(equipments || {}).filter(([, c]) => !!c);
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '800px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+      }}>
+        <h3 style={{ margin: 0 }}>滔乱：请选择要交出的牌</h3>
+        {equipEntries.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontWeight: 'bold' }}>装备区</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+              {equipEntries.map(([slot, card]) => (
+                <div
+                  key={slot}
+                  onClick={() => setSelected({ type: 'equip', slot })}
+                  style={{
+                    transform: selected && selected.type === 'equip' && selected.slot === slot ? 'scale(1.1)' : 'scale(1)',
+                    border: selected && selected.type === 'equip' && selected.slot === slot ? '3px solid #00ffff' : 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <Card card={card} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div style={{ fontWeight: 'bold' }}>手牌</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {(hand || []).map((card, index) => (
+            <div
+              key={index}
+              onClick={() => setSelected({ type: 'hand', index })}
+              style={{
+                transform: selected && selected.type === 'hand' && selected.index === index ? 'scale(1.1)' : 'scale(1)',
+                border: selected && selected.type === 'hand' && selected.index === index ? '3px solid #00ffff' : 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Card card={card} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={() => selected && onConfirm(selected)}
+            disabled={!selected}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: selected ? '#2ecc71' : '#7f8c8d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: selected ? 'pointer' : 'not-allowed',
+              fontWeight: 'bold'
+            }}
+          >
+            确定交牌
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PaiYiSelectionModal = ({ quan, onConfirm, onCancel }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
@@ -2979,7 +3393,7 @@ const JianyingNameModal = ({ onConfirm, onCancel }) => {
   );
 };
 
-const LiMuModal = ({ hand, onConfirm, onCancel }) => {
+const LiMuModal = ({ cards, onConfirm, onCancel }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -2994,7 +3408,8 @@ const LiMuModal = ({ hand, onConfirm, onCancel }) => {
         <h3 style={{ color: 'white', textAlign: 'center', margin: 0 }}>立牧: 选择一张牌当【乐不思蜀】</h3>
         
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
-          {hand.map((card, index) => {
+          {cards.map((item, index) => {
+             const card = item.card;
              const isDiamond = card.suit === '♦';
              
              return (
@@ -3017,7 +3432,7 @@ const LiMuModal = ({ hand, onConfirm, onCancel }) => {
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
              <button 
-                onClick={() => selectedIndex !== null && onConfirm(selectedIndex)} 
+                onClick={() => selectedIndex !== null && onConfirm(cards[selectedIndex]?.selection)} 
                 disabled={selectedIndex === null}
                 style={{ padding: '8px 16px', backgroundColor: selectedIndex !== null ? '#2ecc71' : '#7f8c8d', color: 'white', border: 'none', borderRadius: '4px', cursor: selectedIndex !== null ? 'pointer' : 'not-allowed' }}>
                 确定
@@ -3375,10 +3790,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [zhenFengHanZhan, setZhenFengHanZhan] = React.useState('hpMax');
   const [zhenFengZhanLie, setZhenFengZhanLie] = React.useState('attackRange');
   const [fenYinMessage, setFenYinMessage] = React.useState(null);
+  const [fenYinDrawPending, setFenYinDrawPending] = React.useState(false);
 
   // Xu You State
   const [showShiCaiModal, setShowShiCaiModal] = React.useState(false);
   const [generalIntro, setGeneralIntro] = React.useState(null);
+  const [quanjiAutoPrompt, setQuanjiAutoPrompt] = React.useState(false);
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
@@ -3433,6 +3850,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   }, [playerID, G.readyPlayers, moves]);
 
   React.useEffect(() => {
+    if (!enable_voice) return;
     const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     if (!synth) return;
     const chooseVoice = () => {
@@ -3460,6 +3878,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   }, []);
 
   const speakCardNames = React.useCallback((names) => {
+    if (!enable_voice) return;
     const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     if (!synth || !Array.isArray(names) || names.length === 0) return;
     try {
@@ -3529,6 +3948,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onHeroClick = (targetId) => {
+    if (G.taoluan && G.taoluan.active && G.taoluan.stage === 'after_choose_other' && G.taoluan.sourceID === playerID) {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.taoluanSelectOther(targetId);
+      return;
+    }
+
     // Ma Liang Transfer
     if (G.maliang && G.maliang.status === 'selecting_transfer_target') {
       if (targetId === playerID) {
@@ -3657,6 +4085,25 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (activeSkill === '狼袭') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      const myPlayer = G.players[playerID];
+      const targetPlayer = G.players[targetId];
+      if (targetPlayer.hp > myPlayer.hp) {
+        alert("目标体力值必须不大于你");
+        return;
+      }
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds([]);
+      } else {
+        setSelectedTargetIds([targetId]);
+      }
+      return;
+    }
+
     // Poxi Target Selection
     if (G.poxiSelect && G.poxiSelect.active && G.poxiSelect.stage === 'target_selection') {
       if (targetId === playerID) {
@@ -3709,6 +4156,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (G.taoluan && G.taoluan.active && G.taoluan.stage === 'select_targets' && G.taoluan.sourceID === playerID) {
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
+      } else {
+        setSelectedTargetIds([...selectedTargetIds, targetId]);
+      }
+      return;
+    }
+
     if (selectedCardIndices.length > 0) {
        if (selectedTargetIds.includes(targetId)) {
          setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
@@ -3726,6 +4182,61 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         speakCardNames([card.name]);
       }
     };
+
+    const updateFenYinIfNeeded = (card) => {
+      const me = G.players[playerID];
+      if (!me || !me.general || me.general.name !== '留赞' || !card) return;
+      let message = '';
+      if (['♥', '♦'].includes(card.suit)) {
+        message = '奋音(红)';
+      } else if (['♠', '♣'].includes(card.suit)) {
+        message = '奋音(黑)';
+      }
+      if (message) {
+        setFenYinMessage(message);
+      }
+    };
+
+    updateFenYinIfNeeded(G.hands[playerID][selectedCardIndices[0]]);
+
+    if (!pojunAutoPrompt && selectedCardIndices.length === 1) {
+      const cardIndex = selectedCardIndices[0];
+      const card = G.hands[playerID][cardIndex];
+      const isSlash = card && ['杀', '火杀', '雷杀'].includes(card.name);
+      if (isSlash && selectedTargetIds.length !== 1) {
+        alert("请选择一名目标玩家");
+        return;
+      }
+
+      const me = G.players[playerID];
+      if (isSlash && me.general && me.general.name === '界徐盛' && selectedTargetIds.length === 1) {
+        setPojunAutoPrompt({
+          cardIndices: [...selectedCardIndices],
+          targetIds: [...selectedTargetIds],
+          cardName: card.name,
+        });
+        return;
+      }
+    }
+
+    if (!tieqiAutoPrompt && selectedCardIndices.length === 1) {
+      const cardIndex = selectedCardIndices[0];
+      const card = G.hands[playerID][cardIndex];
+      const isSlash = card && ['杀', '火杀', '雷杀'].includes(card.name);
+      if (isSlash && selectedTargetIds.length !== 1) {
+        alert("请选择一名目标玩家");
+        return;
+      }
+      const me = G.players[playerID];
+      if (isSlash && me.general && me.general.name === '谋马超' && selectedTargetIds.length === 1) {
+        setTieqiAutoPrompt({
+          cardIndices: [...selectedCardIndices],
+          targetIds: [...selectedTargetIds],
+          cardName: card.name,
+        });
+        return;
+      }
+    }
     
     // Check if single equipment card is selected, if so, equip it
     if (selectedCardIndices.length === 1) {
@@ -3788,13 +4299,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       if (card.name === '火攻') {
         if (selectedTargetIds.length !== 1) {
           alert("请选择一名目标玩家");
-          return;
-        }
-      }
-
-      if (card.name === '铁索连环') {
-        if (selectedTargetIds.length === 0) {
-          alert("请选择目标玩家");
           return;
         }
       }
@@ -3864,37 +4368,42 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     const me = G.players[playerID];
 
-    // Liu Zan Fen Yin Effect
-    if (me.general && me.general.name === '留赞' && selectedCardIndices.length > 0) {
-        const cardIndex = selectedCardIndices[0];
-        const card = G.hands[playerID][cardIndex];
-        let message = '';
-        if (['♥', '♦'].includes(card.suit)) {
-            message = '奋音(红)';
-        } else if (['♠', '♣'].includes(card.suit)) {
-            message = '奋音(黑)';
-        }
-        if (message) {
-            setFenYinMessage(message);
-            // Removed timeout for FenYin message cleanup
-            // It will persist until next update or needs another trigger to clear?
-            // To ensure it doesn't block view, maybe we should keep a short one?
-            // User said "remove ALL timeouts". 
-            // We can let it stay, or perhaps use CSS animation onEnd to clear?
-            // For now, let's just remove the JS timeout. 
-            // NOTE: This might cause the message to stick. 
-            // But if we remove it, the message stays.
-            // Let's rely on React key update or just let it stick for now as requested.
-        }
-    }
-
     if (me.general && me.general.name === '许攸') {
         moves.xuyouPlayCards(selectedCardIndices, selectedTargetIds);
     } else {
         moves.playCards(selectedCardIndices, selectedTargetIds);
     }
+    if (me.general && me.general.name === '留赞' && fenYinMessage && fenYinMessage.startsWith('奋音')) {
+      setFenYinDrawPending(true);
+    } else {
+      setFenYinDrawPending(false);
+    }
     setSelectedCardIndices([]);
     setSelectedTargetIds([]);
+  };
+
+  const resolvePoJunAutoPrompt = (shouldUsePoJun) => {
+    if (!pojunAutoPrompt) return;
+    const { cardIndices, targetIds } = pojunAutoPrompt;
+    if (shouldUsePoJun && targetIds && targetIds.length > 0) {
+      moves.usePoJun(targetIds[0]);
+    }
+    moves.playCards(cardIndices, targetIds);
+    setSelectedCardIndices([]);
+    setSelectedTargetIds([]);
+    setPojunAutoPrompt(null);
+  };
+
+  const resolveTieQiAutoPrompt = (shouldUseTieQi) => {
+    if (!tieqiAutoPrompt) return;
+    const { cardIndices, targetIds } = tieqiAutoPrompt;
+    if (shouldUseTieQi && targetIds && targetIds.length > 0) {
+      moves.moumachaoStartMouyi(targetIds[0]);
+    }
+    moves.playCards(cardIndices, targetIds);
+    setSelectedCardIndices([]);
+    setSelectedTargetIds([]);
+    setTieqiAutoPrompt(null);
   };
 
   const handleEquipCard = () => {
@@ -3962,6 +4471,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const [activeSkill, setActiveSkill] = React.useState(null);
+  const [pojunAutoPrompt, setPojunAutoPrompt] = React.useState(null);
+  const [tieqiAutoPrompt, setTieqiAutoPrompt] = React.useState(null);
   const [showZhuangShiModal, setShowZhuangShiModal] = React.useState(false);
   const [showKuangbaoSelector, setShowKuangbaoSelector] = React.useState(false);
   const [shanJiaState, setShanJiaState] = React.useState(3);
@@ -4082,6 +4593,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (skillName === '滔乱') {
+      setSelectedCardIndices([]);
+      setSelectedTargetIds([]);
+      moves.taoluanStart();
+      return;
+    }
+
     if (skillName.startsWith('军略')) {
       moves.shenluxunJunlueAdd();
       return;
@@ -4106,7 +4624,19 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       } else {
         setActiveSkill('慷忾');
         setSelectedTargetIds([]);
-        moves.activateKangkai();
+        moves.activateKangkaiWithDraw();
+      }
+      return;
+    }
+
+    if (skillName === '应援') {
+      const me = G.players[playerID];
+      if (me && me.general && me.general.name === '马良') {
+        if (G.maliang && G.maliang.status === 'selecting_transfer_target') {
+          moves.maliangTransferCancel();
+        } else {
+          moves.maliangTransferStart();
+        }
       }
       return;
     }
@@ -4221,7 +4751,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     }
 
     if (skillName === '权计') {
-      moves.jiezhonghuiQuanJi();
+      setQuanjiAutoPrompt(true);
       return;
     }
 
@@ -4275,6 +4805,22 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         }
         moves.liMuStart();
         return;
+    }
+
+    if (skillName === '狼袭') {
+      if (activeSkill === '狼袭') {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+      } else {
+        setActiveSkill('狼袭');
+        setSelectedTargetIds([]);
+      }
+      return;
+    }
+
+    if (skillName.startsWith('亦算')) {
+      moves.lijueYiSuan();
+      return;
     }
 
     if (skillName === '募讨') {
@@ -4401,6 +4947,25 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         displaySkills = general.skills.map(s => {
           if (s === '奋音') {
             return fenYinMessage;
+          }
+          return s;
+        });
+      }
+
+      if (general.name === '界钟会') {
+        const quanCount = Array.isArray(player.quan) ? player.quan.length : 0;
+        displaySkills = general.skills.map(s => {
+          if (s === '权计') return `权计(${quanCount})`;
+          return s;
+        });
+      }
+
+      if (general.name === '李傕') {
+        const yiSuanCardId = player.yiSuanLastTrickCardId;
+        const yiSuanCard = yiSuanCardId ? G.discardPile.find(c => c && c.id === yiSuanCardId) : null;
+        displaySkills = general.skills.map(s => {
+          if (s === '亦算' && yiSuanCard && yiSuanCard.type === '锦囊') {
+            return `亦算(${yiSuanCard.suit} ${yiSuanCard.rank} ${yiSuanCard.name})`;
           }
           return s;
         });
@@ -4563,6 +5128,202 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               zIndex: 20
             }}>
               {/* Shen Gan Ning Skills - Removed as they are now triggered via HeroArea */}
+              {general && general.name === '许攸' && (
+                <button
+                  onClick={() => setShowShiCaiModal(true)}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#8e44ad',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                    animation: 'fadeIn 0.3s'
+                  }}
+                >
+                  恃才
+                </button>
+              )}
+              {general && general.name === '马良' && (
+                <button
+                  onClick={() => {
+                    if (G.maliang && G.maliang.status === 'selecting_transfer_target') {
+                      moves.maliangTransferCancel();
+                    } else {
+                      moves.maliangTransferStart();
+                    }
+                  }}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#3498db',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                    animation: 'fadeIn 0.3s'
+                  }}
+                >
+                  应援
+                </button>
+              )}
+              {general && general.name === '界吕布' && selectedCardIndices.length === 1 && selectedTargetIds.length === 1 && !G.liyuTargeting?.active && !G.liyuCardSelecting?.active && (() => {
+                const card = hand[selectedCardIndices[0]];
+                return card && ['杀', '火杀', '雷杀'].includes(card.name);
+              })() && (
+                <button
+                  onClick={() => {
+                    moves.useLiyu();
+                    moves.selectLiyuTarget(selectedTargetIds[0]);
+                    moves.confirmLiyuTarget();
+                  }}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#f1c40f',
+                    color: '#2c3e50',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                    animation: 'fadeIn 0.3s'
+                  }}
+                >
+                  利驭
+                </button>
+              )}
+              {general && general.name === '留赞' && fenYinDrawPending && selectedCardIndices.length === 0 && (
+                <button
+                  data-fenyin-draw-btn="true"
+                  onClick={() => {
+                    setFenYinDrawPending(false);
+                    moves.liuzanFenyinDraw();
+                  }}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: '#e74c3c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                    animation: 'fadeIn 0.3s'
+                  }}
+                >
+                  奋音摸牌
+                </button>
+              )}
+              {G.taoluan && G.taoluan.active && G.taoluan.stage === 'select_targets' && G.taoluan.sourceID === playerID && (
+                (() => {
+                  const name = G.taoluan.declaredName;
+                  const needsZero = name === '五谷丰登';
+                  const needsOne = ['顺手牵羊', '过河拆桥', '借刀杀人', '火攻'].includes(name);
+                  const isChain = name === '铁索连环';
+                  let ok = true;
+                  let hint = '';
+                  if (needsZero) {
+                    ok = selectedTargetIds.length === 0;
+                    hint = '无需选择目标';
+                  } else if (needsOne) {
+                    ok = selectedTargetIds.length === 1;
+                    hint = '请选择1名目标';
+                  } else if (isChain) {
+                    ok = selectedTargetIds.length <= 2;
+                    hint = '可选择0-2名目标（0=摸1张）';
+                  }
+                  return (
+                    <>
+                      {hint && <div style={{ color: '#f1c40f', fontWeight: 'bold', alignSelf: 'center' }}>滔乱：{hint}</div>}
+                      <button
+                        onClick={() => {
+                          const targets = needsZero ? [] : selectedTargetIds;
+                          moves.taoluanConfirmPlay(targets);
+                          setSelectedTargetIds([]);
+                        }}
+                        disabled={!ok}
+                        style={{
+                          padding: '8px 20px',
+                          backgroundColor: ok ? '#2ecc71' : '#7f8c8d',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: ok ? 'pointer' : 'not-allowed',
+                          fontWeight: 'bold',
+                          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                          animation: 'fadeIn 0.3s'
+                        }}
+                      >
+                        确定使用
+                      </button>
+                      <button
+                        onClick={() => {
+                          moves.taoluanCancel();
+                          setSelectedTargetIds([]);
+                        }}
+                        style={{
+                          padding: '8px 20px',
+                          backgroundColor: '#95a5a6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                          animation: 'fadeIn 0.3s'
+                        }}
+                      >
+                        取消滔乱
+                      </button>
+                    </>
+                  );
+                })()
+              )}
+              {G.taoluan && G.taoluan.active && G.taoluan.stage === 'waiting_resolution' && G.taoluan.sourceID === playerID && (
+                <>
+                  <div style={{ color: '#f1c40f', fontWeight: 'bold', alignSelf: 'center' }}>滔乱：请先结算该牌效果</div>
+                  <button
+                    onClick={() => moves.taoluanCancel()}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#95a5a6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                      animation: 'fadeIn 0.3s'
+                    }}
+                  >
+                    取消滔乱
+                  </button>
+                </>
+              )}
+              {G.taoluan && G.taoluan.active && G.taoluan.stage === 'after_choose_other' && G.taoluan.sourceID === playerID && (
+                <>
+                  <div style={{ color: '#f1c40f', fontWeight: 'bold', alignSelf: 'center' }}>滔乱：请选择一名其他角色</div>
+                  <button
+                    onClick={() => moves.taoluanCancel()}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#95a5a6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                      animation: 'fadeIn 0.3s'
+                    }}
+                  >
+                    取消滔乱
+                  </button>
+                </>
+              )}
               {selectedCardIndices.length > 0 && (
                 <>
                   <button 
@@ -4718,6 +5479,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               qiHui={player.qiHui}
               onQiHuiClick={(btn) => moves.youxushuQiHuiClick(btn)}
               onAvatarClick={() => openGeneralIntro(general)}
+              jiuAnimKey={player.jiuAnimKey}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </div>
@@ -4753,6 +5515,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               qiHui={player.qiHui}
               onQiHuiClick={(btn) => moves.youxushuQiHuiClick(btn)}
               onAvatarClick={() => openGeneralIntro(general)}
+              jiuAnimKey={player.jiuAnimKey}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </>
@@ -4764,7 +5527,14 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   return (
-    <div style={{ 
+    <div
+      onClickCapture={(e) => {
+        if (!fenYinDrawPending) return;
+        const target = e.target;
+        if (target && typeof target.closest === 'function' && target.closest('[data-fenyin-draw-btn="true"]')) return;
+        setFenYinDrawPending(false);
+      }}
+      style={{ 
       width: '100vw', 
       height: '100vh', 
       backgroundColor: '#2c3e50',
@@ -4772,16 +5542,348 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       position: 'relative',
       overflow: 'auto'
     }}>
+      {pojunAutoPrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          zIndex: 5000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '20px',
+            borderRadius: '10px',
+            width: '360px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            color: 'white'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}>
+              是否对目标发动破军？
+            </div>
+            <div style={{ fontSize: '12px', color: '#bdc3c7', textAlign: 'center' }}>
+              你使用了【{pojunAutoPrompt.cardName}】指定 {G.players[pojunAutoPrompt.targetIds?.[0]]?.general?.name || `Player ${pojunAutoPrompt.targetIds?.[0]}`} 为目标
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button
+                onClick={() => resolvePoJunAutoPrompt(true)}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#2ecc71',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                确定
+              </button>
+              <button
+                onClick={() => resolvePoJunAutoPrompt(false)}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#7f8c8d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {quanjiAutoPrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          zIndex: 5000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '20px',
+            borderRadius: '10px',
+            width: '360px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            color: 'white'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}>
+              是否发动【权计】？
+            </div>
+            <div style={{ fontSize: '12px', color: '#bdc3c7', textAlign: 'center' }}>
+              确定后先摸一张牌，再选择一张牌置于权
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button
+                onClick={() => {
+                  moves.jiezhonghuiQuanJiAutoStart();
+                  setQuanjiAutoPrompt(false);
+                }}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#2ecc71',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                确定
+              </button>
+              <button
+                onClick={() => setQuanjiAutoPrompt(false)}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#7f8c8d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tieqiAutoPrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          zIndex: 5000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '20px',
+            borderRadius: '10px',
+            width: '380px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            color: 'white'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}>
+              是否发动铁骑进行谋弈？
+            </div>
+            <div style={{ fontSize: '12px', color: '#bdc3c7', textAlign: 'center' }}>
+              你使用了【{tieqiAutoPrompt.cardName}】指定 {G.players[tieqiAutoPrompt.targetIds?.[0]]?.general?.name || `Player ${tieqiAutoPrompt.targetIds?.[0]}`} 为目标
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button
+                onClick={() => resolveTieQiAutoPrompt(true)}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#2ecc71',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                确定
+              </button>
+              <button
+                onClick={() => resolveTieQiAutoPrompt(false)}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#7f8c8d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {G.mouyi && G.mouyi.active && (G.mouyi.sourcePlayerID === playerID || G.mouyi.targetPlayerID === playerID) && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          zIndex: 5000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '20px',
+            borderRadius: '10px',
+            width: '420px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            color: 'white'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}>
+              谋弈：请选择一项
+            </div>
+            <div style={{ fontSize: '12px', color: '#bdc3c7', textAlign: 'center' }}>
+              你与对手同时选择；若相同则不执行，若不同则谋马超按其选择执行
+            </div>
+            {(() => {
+              const isSource = G.mouyi.sourcePlayerID === playerID;
+              const myChoice = isSource ? G.mouyi.sourceChoice : G.mouyi.targetChoice;
+              if (myChoice) {
+                return (
+                  <div style={{ textAlign: 'center', color: '#f1c40f', fontWeight: 'bold' }}>
+                    已选择，等待对方选择…
+                  </div>
+                );
+              }
+              return (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => moves.moumachaoChooseMouyi('steal')}
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: '#3498db',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    直取敌营（获得其一张牌）
+                  </button>
+                  <button
+                    onClick={() => moves.moumachaoChooseMouyi('draw')}
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: '#e67e22',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    扰阵疲敌（摸两张牌）
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {G.caoangAutoPrompt && G.caoangAutoPrompt.active && G.caoangAutoPrompt.playerID === playerID && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          zIndex: 5000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '20px',
+            borderRadius: '10px',
+            width: '380px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            color: 'white'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}>
+              是否发动【慷忾】？
+            </div>
+            <div style={{ fontSize: '12px', color: '#bdc3c7', textAlign: 'center' }}>
+              {G.players[G.caoangAutoPrompt.slashSourceID]?.general?.name || `Player ${G.caoangAutoPrompt.slashSourceID}`} 使用了【{G.caoangAutoPrompt.cardName || '杀'}】，
+              目标为 {G.players[G.caoangAutoPrompt.slashTargetID]?.general?.name || `Player ${G.caoangAutoPrompt.slashTargetID}`}
+            </div>
+            <div style={{ fontSize: '12px', color: '#f1c40f', textAlign: 'center' }}>
+              确定后你先摸一张牌，再选择目标交牌
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button
+                onClick={() => {
+                  setActiveSkill('慷忾');
+                  setSelectedTargetIds([]);
+                  moves.caoangAutoPromptAccept();
+                }}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#2ecc71',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                确定
+              </button>
+              <button
+                onClick={() => moves.caoangAutoPromptCancel()}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#7f8c8d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Qi Hui Selection Modal */}
       {G.players[playerID] && G.players[playerID].qiHui && G.players[playerID].qiHui.stage === 'selecting_option' && (
-         <QiHuiModal onSelect={(opt) => moves.youxushuQiHuiSelectOption(opt)} />
+         <QiHuiModal
+           qiHui={G.players[playerID].qiHui}
+           onSelectOption={(opt) => moves.youxushuQiHuiSelectOption(opt)}
+           onToggleButton={(btn) => moves.youxushuQiHuiClick(btn)}
+           onConfirm={() => moves.youxushuQiHuiConfirm()}
+         />
       )}
 
       {/* Xu You Shi Cai Modal */}
       {showShiCaiModal && (
         <ShiCaiModal
             cards={G.players[playerID].shicai || []}
-            onMoveToTop={(index) => moves.xuyouShiCaiToTop(index)}
+            onMoveToTop={(index) => {
+              moves.xuyouShiCaiToTop(index);
+              setShowShiCaiModal(false);
+            }}
             onDiscardAll={() => moves.xuyouShiCaiToDiscard()}
             onClose={() => setShowShiCaiModal(false)}
         />
@@ -4935,8 +6037,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       {/* Liu Yan Li Mu Modal */}
       {G.liMuSelect && G.liMuSelect.active && G.liMuSelect.playerID === playerID && (
         <LiMuModal
-          hand={G.hands[playerID]}
-          onConfirm={(index) => moves.liMuConfirm(index)}
+          cards={[
+            ...(G.hands[playerID] || []).map((card, index) => ({ card, selection: { source: 'hand', index } })),
+            ...Object.entries(G.players[playerID]?.equipments || {})
+              .filter(([, card]) => !!card)
+              .map(([slot, card]) => ({ card, selection: { source: 'equip', slot } }))
+          ]}
+          onConfirm={(selection) => moves.liMuConfirm(selection)}
           onCancel={() => moves.liMuCancel()}
         />
       )}
@@ -5292,6 +6399,41 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         />
       )}
 
+      {G.taoluan && G.taoluan.active && G.taoluan.stage === 'select_card' && G.taoluan.sourceID === playerID && (
+        <TaoluanSelectMaterialModal
+          hand={G.hands[playerID]}
+          equipments={G.players[playerID]?.equipments}
+          onConfirm={(selected) => moves.taoluanSelectMaterial(selected)}
+          onCancel={() => moves.taoluanCancel()}
+        />
+      )}
+
+      {G.taoluan && G.taoluan.active && G.taoluan.stage === 'select_virtual' && G.taoluan.sourceID === playerID && (
+        <TaoluanSelectVirtualModal
+          usedNames={G.taoluanGlobalUsedNames}
+          onSelect={(name) => {
+            setSelectedTargetIds([]);
+            moves.taoluanSelectVirtual(name);
+          }}
+          onCancel={() => moves.taoluanCancel()}
+        />
+      )}
+
+      {G.taoluan && G.taoluan.active && G.taoluan.stage === 'other_choose_option' && G.taoluan.otherID === playerID && (
+        <TaoluanOtherChoiceModal
+          onGive={() => moves.taoluanOtherChoose(1)}
+          onPunish={() => moves.taoluanOtherChoose(2)}
+        />
+      )}
+
+      {G.taoluan && G.taoluan.active && G.taoluan.stage === 'other_give_card' && G.taoluan.otherID === playerID && (
+        <TaoluanGiveCardModal
+          hand={G.hands[playerID]}
+          equipments={G.players[playerID]?.equipments}
+          onConfirm={(selected) => moves.taoluanOtherGiveCard(selected)}
+        />
+      )}
+
       {/* Jie Zhonghui Quan Ji Selection */}
       {G.jiezhonghuiQuanJiSelect && G.jiezhonghuiQuanJiSelect.active && G.jiezhonghuiQuanJiSelect.playerID === playerID && (
         <QuanJiSelectionModal
@@ -5506,6 +6648,29 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                   return;
                 }
                 moves.baoxinMutao(selectedTargetIds[0]);
+                setActiveSkill(null);
+                setSelectedTargetIds([]);
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          )}
+          {activeSkill === '狼袭' && selectedTargetIds.length > 0 && (
+            <button
+              onClick={() => {
+                if (selectedTargetIds.length !== 1) {
+                  alert("请选择一名目标");
+                  return;
+                }
+                moves.lijueLangXi(selectedTargetIds[0]);
                 setActiveSkill(null);
                 setSelectedTargetIds([]);
               }}
@@ -5794,7 +6959,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onConfirm={(selected) => moves.confirm_select_card(selected)}
           onCancel={() => moves.cancel_select_card()}
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
-          singleSelection={['过河拆桥', '顺手牵羊', '借刀杀人'].includes(G.selectCard.pendingCard?.name)}
+          singleSelection={['steal', 'discard', 'collateral'].includes(G.selectCard.actionType)}
         />
       )}
 

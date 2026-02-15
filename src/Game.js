@@ -23,11 +23,12 @@ import { shenlubuSkill } from './skills/shenlubu.js';
 import { jieliruSkill } from './skills/jieliru.js';
 import { youxushuSkill } from './skills/youxushu.js';
 import { baoxinSkill } from './skills/baoxin.js';
+import { lijueSkill } from './skills/lijue.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['鲍信'];
+const TESTING_GENERAL_LIST = ['许攸', '张让', '杨彪'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
@@ -72,7 +73,9 @@ const createPlayerState = () => ({
   qz_cnt: 0, // Qin Zheng counter for Luo Tong
   junlueCount: 0,
   kuangbaoCount: 0, // Shen Lubu Kuangbao
+  jiuAnimKey: 0,
   quan: [], // For Jie Zhonghui
+  taoluanDisabledTurn: null,
   hp: 4,
   hpMax: 4,
   armor: 0,
@@ -222,6 +225,56 @@ const drawCards = (G, playerID, count, rng) => {
   return cardsToDraw;
 };
 
+const youxushuQiHuiAutoLight = (G, playerID, card) => {
+  const player = G.players[playerID];
+  if (!player || !player.general || player.general.name !== '友徐庶' || !card) return;
+
+  if (!player.qiHui) {
+    player.qiHui = {
+      litButtons: [],
+      stage: 'lighting',
+      selectedOption: null
+    };
+  }
+
+  const qiHui = player.qiHui;
+  if (!qiHui || qiHui.stage !== 'lighting') return;
+  if (!Array.isArray(qiHui.litButtons)) qiHui.litButtons = [];
+
+  let btn = '锦囊';
+  if (card.type === '基本') btn = '基本';
+  else if (['武器', '防具', '加一', '减一'].includes(card.type)) btn = '装备';
+  else if (['锦囊', '乐', '兵', '电'].includes(card.type)) btn = '锦囊';
+
+  if (!qiHui.litButtons.includes(btn)) {
+    qiHui.litButtons.push(btn);
+  }
+
+  const allButtons = ['基本', '锦囊', '装备'];
+  const allLit = allButtons.every(b => qiHui.litButtons.includes(b));
+  if (allLit) {
+    qiHui.stage = 'selecting_option';
+    qiHui.selectedOption = null;
+  }
+};
+
+const getTaoluanDeclaredType = (declaredName) => {
+  const card = SGS_CARDS.find(c => c && c.name === declaredName && (c.type === '基本' || c.type === '锦囊'));
+  return card ? card.type : null;
+};
+
+const advanceTaoluanAfterResolution = (G) => {
+  if (!G.taoluan || !G.taoluan.active || G.taoluan.stage !== 'waiting_resolution') return;
+  if (G.pendingEffect && G.pendingEffect.active) return;
+  if (G.selectCard && G.selectCard.active) return;
+  if (G.fireAttackShowCard && G.fireAttackShowCard.active) return;
+  if (G.harvestCountSelect && G.harvestCountSelect.active) return;
+  if (Array.isArray(G.harvestCards) && G.harvestCards.length > 0) return;
+  G.taoluan.stage = 'after_choose_other';
+  G.taoluan.otherID = null;
+  G.taoluan.option = null;
+};
+
 
 
 export const CardGame = {
@@ -255,6 +308,8 @@ export const CardGame = {
     gameResult: null, // { winnerRole: string, scoreChanges: object }
     rematchVotes: [],
     lastAction: null,
+    taoluan: null,
+    taoluanGlobalUsedNames: [],
     actionLog: [],
     pendingEffect: null, // { active: boolean, sourcePlayerID, targetPlayerID, actionType, pendingCard }
     selectCard: {
@@ -396,6 +451,20 @@ export const CardGame = {
       stage: null, // 'discard_2_yang', 'discard_1_yin'
       playerID: null,
     },
+    caoangAutoPrompt: {
+      active: false,
+      playerID: null,
+      slashSourceID: null,
+      slashTargetID: null,
+      cardName: null,
+    },
+    mouyi: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      sourceChoice: null,
+      targetChoice: null,
+    },
     debugInfo: [], // Store clickid and sessionid for debugging
   }),
 
@@ -409,6 +478,7 @@ export const CardGame = {
     ...jieliruSkill.moves,
     ...youxushuSkill.moves,
     ...xuyouSkill.moves,
+    ...lijueSkill.moves,
     baoxinMutao: ({ G, ctx, playerID }, targetID) => {
       baoxinSkill.mutao.action({ G, ctx, playerID }, targetID);
     },
@@ -468,11 +538,200 @@ export const CardGame = {
         G.actionLog.push(`${playerName} 摸牌`);
       }
     },
+    liuzanFenyinDraw: ({ G, ctx, playerID }) => {
+      const cards = drawCards(G, playerID, 1, ctx.random);
+      if (cards.length > 0) {
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 通过奋音摸一张牌`);
+      }
+    },
+    taoluanStart: ({ G, ctx, playerID }) => {
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '张让') return;
+
+      G.taoluan = {
+        active: true,
+        stage: 'select_card',
+        sourceID: playerID,
+        material: null,
+        declaredName: null,
+        declaredType: null,
+        targetIDs: [],
+        otherID: null,
+        option: null,
+        reservedName: null,
+        played: false,
+      };
+    },
+    taoluanSelectMaterial: ({ G, playerID }, selected) => {
+      const t = G.taoluan;
+      if (!t || !t.active || t.sourceID !== playerID || t.stage !== 'select_card') return;
+      const hand = G.hands[playerID] || [];
+      const player = G.players[playerID];
+      if (!selected || (selected.type !== 'hand' && selected.type !== 'equip')) return;
+      if (selected.type === 'hand') {
+        if (typeof selected.index !== 'number' || selected.index < 0 || selected.index >= hand.length) return;
+        t.material = { type: 'hand', index: selected.index };
+      } else {
+        if (!player || !player.equipments) return;
+        if (typeof selected.slot !== 'string') return;
+        if (!player.equipments[selected.slot]) return;
+        t.material = { type: 'equip', slot: selected.slot };
+      }
+      t.stage = 'select_virtual';
+    },
+    taoluanSelectVirtual: ({ G, playerID }, declaredName) => {
+      const t = G.taoluan;
+      if (!t || !t.active || t.sourceID !== playerID || t.stage !== 'select_virtual') return;
+      const declaredType = getTaoluanDeclaredType(declaredName);
+      if (!declaredType) return;
+      if (Array.isArray(G.taoluanGlobalUsedNames) && G.taoluanGlobalUsedNames.includes(declaredName)) return;
+      if (!Array.isArray(G.taoluanGlobalUsedNames)) G.taoluanGlobalUsedNames = [];
+
+      G.taoluanGlobalUsedNames.push(declaredName);
+      t.reservedName = declaredName;
+      t.declaredName = declaredName;
+      t.declaredType = declaredType;
+      t.stage = 'select_targets';
+    },
+    taoluanConfirmPlay: ({ G, ctx, playerID }, targetIDs) => {
+      const t = G.taoluan;
+      if (!t || !t.active || t.sourceID !== playerID || t.stage !== 'select_targets') return;
+      const hand = G.hands[playerID] || [];
+      const player = G.players[playerID];
+      if (!t.material || (t.material.type !== 'hand' && t.material.type !== 'equip')) return;
+      let cardIndex = null;
+      let card = null;
+      if (t.material.type === 'hand') {
+        cardIndex = t.material.index;
+        card = typeof cardIndex === 'number' ? hand[cardIndex] : null;
+      } else {
+        if (!player || !player.equipments) return;
+        const fromEquip = player.equipments[t.material.slot];
+        if (!fromEquip) return;
+        player.equipments[t.material.slot] = null;
+        hand.push(fromEquip);
+        cardIndex = hand.length - 1;
+        card = fromEquip;
+      }
+      if (!card || !t.declaredName || !t.declaredType) return;
+
+      card.name = t.declaredName;
+      card.type = t.declaredType;
+
+      let resolvedTargets = Array.isArray(targetIDs) ? targetIDs : [];
+      if (t.declaredName === '五谷丰登') resolvedTargets = [];
+      if (['顺手牵羊', '过河拆桥', '借刀杀人', '火攻'].includes(t.declaredName)) {
+        if (resolvedTargets.length !== 1) return;
+      }
+      if (t.declaredName === '铁索连环') {
+        if (resolvedTargets.length > 2) return;
+      }
+      const playCardsDef = CardGame.moves.playCards;
+      const playCardsMove = typeof playCardsDef === 'function' ? playCardsDef : playCardsDef && typeof playCardsDef.move === 'function' ? playCardsDef.move : null;
+      if (playCardsMove) {
+        playCardsMove({ G, ctx, playerID }, [cardIndex], resolvedTargets);
+      }
+
+      t.played = true;
+      t.targetIDs = resolvedTargets;
+      if (
+        (G.pendingEffect && G.pendingEffect.active) ||
+        (G.selectCard && G.selectCard.active) ||
+        (G.fireAttackShowCard && G.fireAttackShowCard.active) ||
+        (G.harvestCountSelect && G.harvestCountSelect.active) ||
+        (Array.isArray(G.harvestCards) && G.harvestCards.length > 0)
+      ) {
+        t.stage = 'waiting_resolution';
+        t.otherID = null;
+        t.option = null;
+      } else {
+        t.stage = 'after_choose_other';
+        t.otherID = null;
+        t.option = null;
+      }
+    },
+    taoluanSelectOther: ({ G, playerID }, otherID) => {
+      const t = G.taoluan;
+      if (!t || !t.active || t.sourceID !== playerID || t.stage !== 'after_choose_other') return;
+      if (otherID === playerID) return;
+      if (!G.players[otherID]) return;
+      t.otherID = otherID;
+      t.stage = 'other_choose_option';
+    },
+    taoluanOtherChoose: ({ G, ctx, playerID }, option) => {
+      const t = G.taoluan;
+      if (!t || !t.active || t.stage !== 'other_choose_option') return;
+      if (t.otherID !== playerID) return;
+      if (option !== 1 && option !== 2) return;
+
+      const sourceID = t.sourceID;
+      const source = G.players[sourceID];
+      const sourceName = source && source.general ? source.general.name : `Player ${sourceID}`;
+      const otherName = G.players[playerID] && G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+
+      if (option === 1) {
+        t.option = 1;
+        t.stage = 'other_give_card';
+        G.actionLog.push(`${otherName} 选择交给 ${sourceName} 一张牌（滔乱）`);
+        return;
+      }
+
+      if (source) {
+        source.hp = Math.max((source.hp || 0) - 1, 0);
+      }
+      G.actionLog.push(`${otherName} 令 ${sourceName} 失去1点体力，本回合滔乱失效`);
+      G.taoluan = null;
+    },
+    taoluanOtherGiveCard: ({ G, playerID }, selected) => {
+      const t = G.taoluan;
+      if (!t || !t.active || t.stage !== 'other_give_card') return;
+      if (t.otherID !== playerID) return;
+
+      const otherHand = G.hands[playerID] || [];
+      const otherPlayer = G.players[playerID];
+      if (!selected || (selected.type !== 'hand' && selected.type !== 'equip')) return;
+      let card = null;
+      if (selected.type === 'hand') {
+        if (typeof selected.index !== 'number' || selected.index < 0 || selected.index >= otherHand.length) return;
+        card = otherHand.splice(selected.index, 1)[0];
+      } else {
+        if (!otherPlayer || !otherPlayer.equipments) return;
+        if (typeof selected.slot !== 'string') return;
+        if (!otherPlayer.equipments[selected.slot]) return;
+        card = otherPlayer.equipments[selected.slot];
+        otherPlayer.equipments[selected.slot] = null;
+      }
+      if (!card) return;
+
+      if (!G.hands[t.sourceID]) G.hands[t.sourceID] = [];
+      G.hands[t.sourceID].push(card);
+
+      const sourceName = G.players[t.sourceID] && G.players[t.sourceID].general ? G.players[t.sourceID].general.name : `Player ${t.sourceID}`;
+      const otherName = G.players[playerID] && G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      G.actionLog.push(`${otherName} 交给 ${sourceName} 一张牌（滔乱）`);
+
+      G.taoluan = null;
+    },
+    taoluanCancel: ({ G, playerID }) => {
+      const t = G.taoluan;
+      if (!t || !t.active || t.sourceID !== playerID) return;
+      if (!t.played && t.reservedName && Array.isArray(G.taoluanGlobalUsedNames)) {
+        G.taoluanGlobalUsedNames = G.taoluanGlobalUsedNames.filter(n => n !== t.reservedName);
+      }
+      G.taoluan = null;
+    },
     rangjieChooseOption: ({ G, ctx, playerID }, option) => {
       if (option === 'cancel') {
         G.rangjieSelect.active = false;
         G.rangjieSelect.stage = null;
         return;
+      }
+
+      const cards = drawCards(G, playerID, 1, ctx.random);
+      if (cards.length > 0) {
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 发动让节，摸一张牌`);
       }
 
       if (option === 'move') {
@@ -678,6 +937,10 @@ export const CardGame = {
                 selectedOption: null
             };
         }
+
+        if (selected.name === '李傕') {
+          G.players[playerID].yiSuanLastTrickCardId = null;
+        }
       }
       
       // Check if all players have selected
@@ -732,13 +995,15 @@ export const CardGame = {
         }
       }
     },
-    playCardToJudgment: ({ G, playerID }, { card, targetPlayerID, type }) => {
+    playCardToJudgment: ({ G, ctx, playerID }, { card, targetPlayerID, type }) => {
       // Remove card from hand
       const hand = G.hands[playerID];
       const cardIndex = hand.findIndex(c => c.id === card.id);
       if (cardIndex !== -1) {
         hand.splice(cardIndex, 1);
       }
+
+      youxushuQiHuiAutoLight(G, playerID, card);
 
       // Luo Tong Skill: Qin Zheng
       if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
@@ -800,7 +1065,7 @@ export const CardGame = {
         G.actionLog.push(`闪电移动到玩家 ${nextPlayerID}`);
       }
     },
-    playCards: ({ G, playerID }, cardIndices, targetIds) => {
+    playCards: ({ G, ctx, playerID }, cardIndices, targetIds) => {
       const hand = G.hands[playerID];
       const cardsPlayed = cardIndices.map(i => hand[i]);
       
@@ -832,6 +1097,28 @@ export const CardGame = {
         logEntry += ` 目标为 ${targetNames}`;
       }
       G.actionLog.push(logEntry);
+
+      cardsPlayed.forEach(card => youxushuQiHuiAutoLight(G, playerID, card));
+
+      if (cardsPlayed.some(c => c && c.name === '酒')) {
+        const player = G.players[playerID];
+        player.jiuAnimKey = (typeof player.jiuAnimKey === 'number' ? player.jiuAnimKey : 0) + 1;
+      }
+
+      const isSlashCardName = (name) => ['杀', '火杀', '雷杀'].includes(name);
+      const playedSlash = cardsPlayed.find(c => c && isSlashCardName(c.name));
+      if (playedSlash && targetIds && targetIds.length > 0) {
+        const caoangPlayerID = Object.keys(G.players).find(pid => G.players[pid].general && G.players[pid].general.name === '曹昂');
+        if (caoangPlayerID) {
+          G.caoangAutoPrompt = {
+            active: true,
+            playerID: caoangPlayerID,
+            slashSourceID: playerID,
+            slashTargetID: targetIds[0],
+            cardName: playedSlash.name,
+          };
+        }
+      }
 
       // Luo Tong Skill: Qin Zheng
       if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
@@ -904,11 +1191,23 @@ export const CardGame = {
         }
         // 3. Regular Cards (Basic, Scroll)
         else {
+            if (card.name === '铁索连环' && (!targetIds || targetIds.length === 0)) {
+               addToDiscardPile(G, card);
+               drawCards(G, playerID, 1, ctx.random);
+               G.actionLog.push(`${playerName} 使用铁索连环未选择目标，摸一张牌`);
+               return;
+            }
+
             if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
                G.maliang.cheeringPile.push(card);
                G.actionLog.push(`${playerName} put ${card.name} into Cheering Area`);
             } else {
                addToDiscardPile(G, card);
+            }
+
+            const sourcePlayer = G.players[playerID];
+            if (sourcePlayer && sourcePlayer.general && sourcePlayer.general.name === '李傕' && card.type === '锦囊') {
+              sourcePlayer.yiSuanLastTrickCardId = card.id;
             }
             
             // Handle Card Effects for Regular Cards
@@ -1231,6 +1530,7 @@ export const CardGame = {
       // If no cards left, clear harvest state
       if (G.harvestCards.length === 0) {
         G.harvestCards = [];
+        advanceTaoluanAfterResolution(G);
       }
     },
     
@@ -1241,6 +1541,7 @@ export const CardGame = {
            G.actionLog.push(`${G.harvestCards.length} remaining Harvest cards discarded`);
        }
        G.harvestCards = [];
+       advanceTaoluanAfterResolution(G);
     },
 
     equipCard: ({ G, playerID }, cardIndex) => {
@@ -1249,6 +1550,8 @@ export const CardGame = {
       
       // Remove from hand
       hand.splice(cardIndex, 1);
+
+      youxushuQiHuiAutoLight(G, playerID, card);
 
       // Record for Jie Jushou (Jianying) - Equipments also trigger
       if (G.players[playerID].general && G.players[playerID].general.name === '界沮授') {
@@ -1319,6 +1622,15 @@ export const CardGame = {
             playerID: playerID
         };
     },
+    jiezhonghuiQuanJiAutoStart: ({ G, ctx, playerID }) => {
+        drawCards(G, playerID, 1, ctx.random);
+        G.jiezhonghuiQuanJiSelect = {
+            active: true,
+            playerID: playerID
+        };
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 发动权计，摸一张牌`);
+    },
     jiezhonghuiQuanJiConfirm: ({ G, playerID }, cardIndex) => {
         const card = jiezhonghuiSkill.quanji.addToQuan(G, playerID, cardIndex);
         if (card) {
@@ -1363,6 +1675,12 @@ export const CardGame = {
     activateKangkai: ({ G, playerID }) => {
         caoangSkill.kangkai.activate({ G, playerID });
     },
+    activateKangkaiWithDraw: ({ G, ctx, playerID }) => {
+        drawCards(G, playerID, 1, ctx.random);
+        caoangSkill.kangkai.activate({ G, playerID });
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 发动慷忾，摸一张牌`);
+    },
     confirmKangkaiTarget: ({ G, playerID }, targetID) => {
         caoangSkill.kangkai.confirmTarget({ G, playerID }, targetID);
     },
@@ -1371,6 +1689,84 @@ export const CardGame = {
     },
     cancelKangkai: ({ G, playerID }) => {
         caoangSkill.kangkai.cancel({ G, playerID });
+    },
+    caoangAutoPromptAccept: ({ G, ctx, playerID }) => {
+        if (!G.caoangAutoPrompt || !G.caoangAutoPrompt.active) return;
+        if (G.caoangAutoPrompt.playerID !== playerID) return;
+        drawCards(G, playerID, 1, ctx.random);
+        caoangSkill.kangkai.activate({ G, playerID });
+        G.caoangAutoPrompt = { active: false, playerID: null, slashSourceID: null, slashTargetID: null, cardName: null };
+    },
+    caoangAutoPromptCancel: ({ G, playerID }) => {
+        if (!G.caoangAutoPrompt || !G.caoangAutoPrompt.active) return;
+        if (G.caoangAutoPrompt.playerID !== playerID) return;
+        G.caoangAutoPrompt = { active: false, playerID: null, slashSourceID: null, slashTargetID: null, cardName: null };
+    },
+
+    moumachaoStartMouyi: ({ G, playerID }, targetID) => {
+        const source = G.players[playerID];
+        const target = G.players[targetID];
+        if (!source || !target) return;
+        if (!source.general || source.general.name !== '谋马超') return;
+        if (playerID === targetID) return;
+        if (G.mouyi && G.mouyi.active) return;
+
+        G.mouyi = {
+          active: true,
+          sourcePlayerID: playerID,
+          targetPlayerID: targetID,
+          sourceChoice: null,
+          targetChoice: null,
+        };
+        const sourceName = source.general ? source.general.name : `Player ${playerID}`;
+        const targetName = target.general ? target.general.name : `Player ${targetID}`;
+        G.actionLog.push(`${sourceName} 发动铁骑，与你进行谋弈（${targetName}）`);
+    },
+
+    moumachaoChooseMouyi: ({ G, ctx, playerID }, choice) => {
+        if (!G.mouyi || !G.mouyi.active) return;
+        const { sourcePlayerID, targetPlayerID } = G.mouyi;
+        if (playerID !== sourcePlayerID && playerID !== targetPlayerID) return;
+        if (choice !== 'steal' && choice !== 'draw') return;
+
+        if (playerID === sourcePlayerID) {
+          if (G.mouyi.sourceChoice) return;
+          G.mouyi.sourceChoice = choice;
+        } else {
+          if (G.mouyi.targetChoice) return;
+          G.mouyi.targetChoice = choice;
+        }
+
+        if (!G.mouyi.sourceChoice || !G.mouyi.targetChoice) return;
+
+        const source = G.players[sourcePlayerID];
+        const target = G.players[targetPlayerID];
+        const sourceName = source.general ? source.general.name : `Player ${sourcePlayerID}`;
+        const targetName = target.general ? target.general.name : `Player ${targetPlayerID}`;
+        const sourceChoice = G.mouyi.sourceChoice;
+        const targetChoice = G.mouyi.targetChoice;
+
+        G.mouyi = { active: false, sourcePlayerID: null, targetPlayerID: null, sourceChoice: null, targetChoice: null };
+
+        if (sourceChoice === targetChoice) {
+          G.actionLog.push(`${sourceName} 与 ${targetName} 谋弈选择相同，铁骑不执行效果`);
+          return;
+        }
+
+        if (sourceChoice === 'draw') {
+          drawCards(G, sourcePlayerID, 2, ctx.random);
+          G.actionLog.push(`${sourceName} 谋弈胜出：扰阵疲敌，摸两张牌`);
+          return;
+        }
+
+        G.selectCard = {
+          active: true,
+          sourcePlayerID: sourcePlayerID,
+          targetPlayerID: targetPlayerID,
+          actionType: 'steal',
+          pendingCard: { name: '铁骑' }
+        };
+        G.actionLog.push(`${sourceName} 谋弈胜出：直取敌营，获得 ${targetName} 一张牌`);
     },
 
     // Cao Chun Skills
@@ -1596,11 +1992,13 @@ export const CardGame = {
 
         // Reset selection state
         G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
+        advanceTaoluanAfterResolution(G);
     },
 
     cancel_select_card: ({ G, playerID }) => {
         if (!G.selectCard || !G.selectCard.active || G.selectCard.sourcePlayerID !== playerID) return;
         G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
+        advanceTaoluanAfterResolution(G);
     },
 
     confirmEffect: ({ G, playerID }) => {
@@ -1645,11 +2043,13 @@ export const CardGame = {
         G.actionLog.push(`${targetName} 向 ${sourceName} 展示了 ${card.suit}${card.rank} ${card.name}（火攻）`);
         
         G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
+        advanceTaoluanAfterResolution(G);
     },
 
     cancelFireAttackShowCard: ({ G, playerID }) => {
          if (!G.fireAttackShowCard || !G.fireAttackShowCard.active || G.fireAttackShowCard.targetPlayerID !== playerID) return;
          G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
+         advanceTaoluanAfterResolution(G);
     },
 
     cancelEffect: ({ G, playerID }) => {
@@ -1657,6 +2057,7 @@ export const CardGame = {
         
         G.actionLog.push(`Player ${playerID} 取消了 ${G.pendingEffect.pendingCard.name} 的效果`);
         G.pendingEffect = null;
+        advanceTaoluanAfterResolution(G);
     },
 
     changeGeneral: ({ G, ctx, playerID }, generalId, actionId, clickid, sessionid) => {
@@ -1816,7 +2217,7 @@ export const CardGame = {
         G.jianyingSelect.selectedCard = cardData;
         G.jianyingSelect.stage = 'name_selection';
     },
-    selectJianyingName: ({ G, playerID }, newName) => {
+    selectJianyingName: ({ G, ctx, playerID }, newName) => {
         if (!G.jianyingSelect.active || G.jianyingSelect.playerID !== playerID) return;
         const selectedCard = G.jianyingSelect.selectedCard;
         const hand = G.hands[playerID];
@@ -1860,7 +2261,7 @@ export const CardGame = {
             // Since we modified the card IN PLACE in the hand, playCards will see the modified version.
             // We pass empty targets array. If '杀' needs target, it will likely be discarded or just played without target.
             // The requirement "execute the logic of playing this card" is satisfied by invoking the standard play function.
-            CardGame.moves.playCards({ G, playerID }, [cardIndex], []);
+            CardGame.moves.playCards({ G, ctx, playerID }, [cardIndex], []);
             
             const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
             G.actionLog.push(`${playerName} activated Jianying: played ${card._originalName} as ${newName}`);
@@ -1895,14 +2296,28 @@ export const CardGame = {
             playerID: playerID
         };
     },
-    liMuConfirm: ({ G, playerID }, cardIndex) => {
+    liMuConfirm: ({ G, playerID }, selection) => {
         const player = G.players[playerID];
         const hand = G.hands[playerID];
-        
-        if (cardIndex < 0 || cardIndex >= hand.length) return;
-        
-        // Remove card from hand
-        const card = hand.splice(cardIndex, 1)[0];
+        if (player.judges.le) return;
+
+        let card = null;
+        if (typeof selection === 'number') {
+          const cardIndex = selection;
+          if (cardIndex < 0 || cardIndex >= hand.length) return;
+          card = hand.splice(cardIndex, 1)[0];
+        } else if (selection && selection.source === 'hand') {
+          const cardIndex = selection.index;
+          if (cardIndex < 0 || cardIndex >= hand.length) return;
+          card = hand.splice(cardIndex, 1)[0];
+        } else if (selection && selection.source === 'equip') {
+          const slot = selection.slot;
+          if (!slot || !player.equipments[slot]) return;
+          card = player.equipments[slot];
+          player.equipments[slot] = null;
+        } else {
+          return;
+        }
         
         // Treat as Indulgence (Le Bu Si Shu)
         // Modify card properties to match Indulgence
@@ -2123,3 +2538,15 @@ export const CardGame = {
     }
   },
 };
+
+const wrapMovesNoOptimistic = (moves) => {
+  if (!moves) return moves;
+  return Object.fromEntries(
+    Object.entries(moves).map(([name, def]) => {
+      if (typeof def === 'function') return [name, { move: def, client: false }];
+      return [name, def];
+    })
+  );
+};
+
+CardGame.moves = wrapMovesNoOptimistic(CardGame.moves);
