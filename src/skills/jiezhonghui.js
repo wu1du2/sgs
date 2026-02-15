@@ -4,17 +4,16 @@ export const jiezhonghuiSkill = {
         description: "出牌阶段结束时，若你的手牌数大于体力值，或当你受到1点伤害后，你可以摸一张牌并将一张手牌置于你的武将牌上，称为“权”（你的手牌上限增加“权”的数量）。",
         
         // Helper to draw a card
-        drawCard: (G, playerID) => {
+        drawCard: (G, playerID, rng) => {
             if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
-                    // Simple shuffle
-                    let currentIndex = G.discardPile.length, randomIndex;
+                    let currentIndex = G.discardPile.length;
+                    let randomIndex;
                     const newArray = [...G.discardPile];
-                    while (currentIndex != 0) {
-                        randomIndex = Math.floor(Math.random() * currentIndex);
+                    while (currentIndex !== 0) {
+                        randomIndex = Math.floor((rng ? rng.Number() : Math.random()) * currentIndex);
                         currentIndex--;
-                        [newArray[currentIndex], newArray[randomIndex]] = [
-                        newArray[randomIndex], newArray[currentIndex]];
+                        [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
                     }
                     G.deck = newArray;
                     G.discardPile = [];

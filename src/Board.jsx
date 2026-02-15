@@ -207,6 +207,94 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
   );
 };
 
+const GeneralIntroModal = ({ general, onClose }) => {
+  if (!general) return null;
+  const portrait = general.portrait || general.localPortrait;
+  const skills = Array.isArray(general.skills) ? general.skills : [];
+  const descriptions = Array.isArray(general.skills_description) ? general.skills_description : [];
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 4000
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'relative',
+          width: '70%',
+          maxWidth: '800px',
+          maxHeight: '80%',
+          overflowY: 'auto',
+          backgroundColor: '#2d3436',
+          borderRadius: '12px',
+          padding: '20px',
+          color: '#f1f2f6',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+        }}
+      >
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{
+            width: '180px',
+            height: '240px',
+            backgroundColor: '#555',
+            borderRadius: '8px',
+            border: '1px solid #aaa',
+            backgroundSize: 'cover',
+            backgroundPosition: 'top center',
+            backgroundImage: portrait ? `url(${portrait})` : 'none',
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px'
+          }}>
+            {!portrait && '👤'}
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffd700' }}>{general.name}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {skills.map((skill, index) => (
+                <div key={`${skill}-${index}`} style={{ backgroundColor: '#1e272e', borderRadius: '8px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '6px', color: '#70a1ff' }}>{skill}</div>
+                  <div style={{ fontSize: '12px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {descriptions[index] || ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            right: '16px',
+            bottom: '16px',
+            padding: '8px 16px',
+            backgroundColor: '#2ecc71',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          返回
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const KangkaiCardModal = ({ hand, equipments, onConfirm, onCancel }) => {
   const [selected, setSelected] = React.useState(null);
 
@@ -862,7 +950,7 @@ const TianduModal = ({ card, onConfirm, onCancel }) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
@@ -1077,7 +1165,12 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
       {/* Avatar & Name Row */}
       <div style={{ display: 'flex', width: '100%', marginBottom: '4px', alignItems: 'flex-start' }}>
         {/* Avatar */}
-        <div style={{ 
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onAvatarClick && onAvatarClick();
+          }}
+          style={{ 
           width: '64px', 
           height: '64px', 
           backgroundColor: '#555', 
@@ -1092,7 +1185,8 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
           backgroundSize: 'cover',
           backgroundPosition: 'top center',
           backgroundImage: portrait ? `url(${portrait})` : 'none',
-          flexShrink: 0
+          flexShrink: 0,
+          cursor: onAvatarClick ? 'pointer' : 'default'
         }}>
           {!portrait && '👤'}
         </div>
@@ -1346,6 +1440,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
 const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord, debugInfo }) => {
   const isCompact = typeof window !== 'undefined' && window.innerWidth <= 700;
   const [renderLogs, setRenderLogs] = React.useState([]);
+  const [generalIntro, setGeneralIntro] = React.useState(null);
 
   React.useEffect(() => {
       const timestamp = new Date().toISOString();
@@ -1432,6 +1527,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
                 armor={general.initial_armor || 0}
                 skills={general.skills} 
                 portrait={general.portrait || general.localPortrait}
+                onAvatarClick={() => setGeneralIntro(general)}
               />
             </div>
             <button 
@@ -1472,6 +1568,12 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
           </div>
         ))}
       </div>
+      {generalIntro && (
+        <GeneralIntroModal
+          general={generalIntro}
+          onClose={() => setGeneralIntro(null)}
+        />
+      )}
     </div>
   );
 };
@@ -2987,35 +3089,6 @@ const ShiCaiModal = ({ cards, onMoveToTop, onDiscardAll, onClose }) => {
   );
 };
 
-const FenYinEffect = ({ message }) => {
-  if (!message) return null;
-  const isRed = message.includes('红');
-  return (
-    <div style={{
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      zIndex: 4000,
-      pointerEvents: 'none',
-      animation: 'fadeInOut 2s ease-in-out'
-    }}>
-      <div style={{
-        fontSize: '48px',
-        fontWeight: 'bold',
-        color: isRed ? '#ff0000' : '#000000',
-        textShadow: '0 0 10px white',
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        padding: '20px 40px',
-        borderRadius: '10px',
-        border: `5px solid ${isRed ? '#ff0000' : '#000000'}`
-      }}>
-        {message}
-      </div>
-    </div>
-  );
-};
-
 const MieJiCardSelectionModal = ({ hand, onConfirm, onCancel }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
@@ -3305,13 +3378,21 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   // Xu You State
   const [showShiCaiModal, setShowShiCaiModal] = React.useState(false);
+  const [generalIntro, setGeneralIntro] = React.useState(null);
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
+  const speechVoiceRef = React.useRef(null);
   const handleSafeAction = (action, delay = 200) => {
     // Removed throttling as per request to remove timeouts and increase fluency
     // This allows rapid clicking (e.g., drawing cards quickly)
     action();
+  };
+
+  const openGeneralIntro = (general) => {
+    if (general) {
+      setGeneralIntro(general);
+    }
   };
 
   // Responsive hand width state
@@ -3350,6 +3431,54 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       moves.playerReady();
     }
   }, [playerID, G.readyPlayers, moves]);
+
+  React.useEffect(() => {
+    const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+    if (!synth) return;
+    const chooseVoice = () => {
+      const voices = synth.getVoices();
+      const zhVoices = voices.filter(voice => voice.lang && voice.lang.startsWith('zh'));
+      const strongMaleKeywords = ['male', 'man', '男', 'nansheng', 'nan', 'bo', 'guang', 'kai', 'liang', 'peng', 'zhi', 'dong', 'shen', 'tian'];
+      const preferred =
+        zhVoices.find(voice => strongMaleKeywords.some(k => (voice.name || '').toLowerCase().includes(k))) ||
+        zhVoices.find(voice => strongMaleKeywords.some(k => (voice.voiceURI || '').toLowerCase().includes(k))) ||
+        zhVoices[0] ||
+        null;
+      speechVoiceRef.current = preferred;
+    };
+    chooseVoice();
+    if (typeof synth.addEventListener === 'function') {
+      synth.addEventListener('voiceschanged', chooseVoice);
+    } else if ('onvoiceschanged' in synth) {
+      synth.onvoiceschanged = chooseVoice;
+    }
+    return () => {
+      if (typeof synth.removeEventListener === 'function') {
+        synth.removeEventListener('voiceschanged', chooseVoice);
+      }
+    };
+  }, []);
+
+  const speakCardNames = React.useCallback((names) => {
+    const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+    if (!synth || !Array.isArray(names) || names.length === 0) return;
+    try {
+      synth.cancel();
+      const voice = speechVoiceRef.current;
+      names.forEach((text) => {
+        const utterance = new SpeechSynthesisUtterance(`${text}！`);
+        utterance.lang = 'zh-CN';
+        if (voice) utterance.voice = voice;
+        utterance.rate = 0.72;
+        utterance.pitch = 0.5;
+        utterance.volume = 1;
+        synth.speak(utterance);
+      });
+    } catch (e) {
+      return;
+    }
+  }, []);
+
   
   // Helper to get relative player positions
   const getPosition = (id) => {
@@ -3382,20 +3511,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onClickDraw = () => {
-    if (G.phase === 'playing') {
-      const actionId = Date.now() + Math.random();
-      const me = G.players[playerID];
-      if (me.general && me.general.name === '许攸') {
-        handleSafeAction(() => moves.xuyouDrawCard(actionId));
-      } else {
-        handleSafeAction(() => moves.drawCard(actionId));
-      }
+    const actionId = Date.now() + Math.random();
+    const me = G.players[playerID];
+    if (me.general && me.general.name === '许攸') {
+      handleSafeAction(() => moves.xuyouDrawCard(actionId));
+    } else {
+      handleSafeAction(() => moves.drawCard(actionId));
     }
   };
 
   const onCardClick = (index) => {
-    if (G.phase !== 'playing') return;
-    
     if (selectedCardIndices.includes(index)) {
       setSelectedCardIndices(selectedCardIndices.filter(i => i !== index));
     } else {
@@ -3572,6 +3697,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
   const handlePlayCards = () => {
     if (selectedCardIndices.length === 0) return;
+    const speakIfNeeded = (card) => {
+      if (!card) return;
+      if (['基本', '锦囊', '乐', '兵', '电'].includes(card.type)) {
+        speakCardNames([card.name]);
+      }
+    };
     
     // Check if single equipment card is selected, if so, equip it
     if (selectedCardIndices.length === 1) {
@@ -3598,6 +3729,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           return;
         }
 
+        speakIfNeeded(card);
         moves.playCardToJudgment({ card, targetPlayerID: targetID, type });
         setSelectedCardIndices([]);
         setSelectedTargetIds([]);
@@ -3613,6 +3745,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           return;
         }
         
+        speakIfNeeded(card);
         moves.playCardToJudgment({ card, targetPlayerID: playerID, type });
         setSelectedCardIndices([]);
         setSelectedTargetIds([]);
@@ -3632,6 +3765,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       if (card.name === '火攻') {
         if (selectedTargetIds.length !== 1) {
           alert("请选择一名目标玩家");
+          return;
+        }
+      }
+
+      if (card.name === '铁索连环') {
+        if (selectedTargetIds.length === 0) {
+          alert("请选择目标玩家");
           return;
         }
       }
@@ -3680,6 +3820,23 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       // But let's reduce it to match animation length exactly or rely on something else.
       // Animation is 0.6s max in CSS. Let's set to 600ms to be snappy.
       setTimeout(() => setLasers([]), 600);
+    }
+
+    const selectedCards = selectedCardIndices
+      .map(index => G.hands[playerID][index])
+      .filter(Boolean);
+    const speakNames = [];
+    const speakSeen = new Set();
+    selectedCards.forEach((card) => {
+      if (['基本', '锦囊', '乐', '兵', '电'].includes(card.type)) {
+        if (!speakSeen.has(card.name)) {
+          speakSeen.add(card.name);
+          speakNames.push(card.name);
+        }
+      }
+    });
+    if (speakNames.length > 0) {
+      speakCardNames(speakNames);
     }
 
     const me = G.players[playerID];
@@ -4194,6 +4351,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           return [s];
         });
       }
+
+      if (general.name === '留赞' && fenYinMessage && fenYinMessage.startsWith('奋音')) {
+        displaySkills = general.skills.map(s => {
+          if (s === '奋音') {
+            return fenYinMessage;
+          }
+          return s;
+        });
+      }
     }
 
     // Target Selection Logic
@@ -4505,6 +4671,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               onKuangbaoClick={onKuangbaoClick}
               qiHui={player.qiHui}
               onQiHuiClick={(btn) => moves.youxushuQiHuiClick(btn)}
+              onAvatarClick={() => openGeneralIntro(general)}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </div>
@@ -4539,6 +4706,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               kuangbaoCount={G.players[id].kuangbaoCount}
               qiHui={player.qiHui}
               onQiHuiClick={(btn) => moves.youxushuQiHuiClick(btn)}
+              onAvatarClick={() => openGeneralIntro(general)}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </>
@@ -4574,7 +4742,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       )}
 
       {/* Mie Ji Card Selection (Li Ru) */}
-      {G.miejiStage === 'selectCard' && playerID === ctx.currentPlayer && (
+      {G.miejiStage === 'selectCard' && (
         <MieJiCardSelectionModal
           hand={G.hands[playerID]}
           onConfirm={(index) => moves.miejiSelectCard(index)}
@@ -5101,6 +5269,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         <QuanViewModal
           cards={quanView.cards}
           onClose={() => setQuanView({ active: false, cards: [] })}
+        />
+      )}
+
+      {generalIntro && (
+        <GeneralIntroModal
+          general={generalIntro}
+          onClose={() => setGeneralIntro(null)}
         />
       )}
       
@@ -5744,8 +5919,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         />
       )}
 
-      {/* Liu Zan Fen Yin Effect */}
-      <FenYinEffect message={fenYinMessage} />
     </div>
   );
 }

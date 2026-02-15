@@ -315,7 +315,7 @@ export const xuyouSkill = {
              });
         },
         
-        xuyouShiCaiToTop: ({ G, playerID }, index) => {
+        xuyouShiCaiToTop: ({ G, ctx, playerID }, index) => {
             const shicai = G.players[playerID].shicai;
             if (!shicai || !shicai[index]) return;
             
@@ -328,7 +328,7 @@ export const xuyouSkill = {
             // Draw 1 card from BOTTOM (Cun Mu)
             if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
-                    G.deck = shuffle(G.discardPile);
+                    G.deck = shuffle(G.discardPile, ctx.random);
                     G.discardPile = [];
                 }
             }
@@ -348,7 +348,7 @@ export const xuyouSkill = {
             G.actionLog.push(`恃才: 所有卡牌移入弃牌堆`);
         },
         
-        xuyouEquipToTop: ({ G, playerID }, slot) => {
+        xuyouEquipToTop: ({ G, ctx, playerID }, slot) => {
             const player = G.players[playerID];
             const card = player.equipments[slot];
             if (!card) return;
@@ -365,7 +365,7 @@ export const xuyouSkill = {
             // Draw 1 card from BOTTOM
             if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
-                    G.deck = shuffle(G.discardPile);
+                    G.deck = shuffle(G.discardPile, ctx.random);
                     G.discardPile = [];
                 }
             }

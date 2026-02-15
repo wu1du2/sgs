@@ -7,6 +7,18 @@ const addToDiscardPile = (G, cards) => {
   }
 };
 
+const shuffle = (array, rng) => {
+  let currentIndex = array.length;
+  let randomIndex;
+  const newArray = [...array];
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor((rng ? rng.Number() : Math.random()) * currentIndex);
+    currentIndex--;
+    [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
+  }
+  return newArray;
+};
+
 export const shenganningSkill = {
     poxi: {
         name: "魄袭",
@@ -31,7 +43,7 @@ export const shenganningSkill = {
             }
         },
 
-        confirm: ({ G, playerID }, myCardIndices, targetCardIndices) => {
+        confirm: ({ G, ctx, playerID }, myCardIndices, targetCardIndices) => {
             if (!G.poxiSelect.active || G.poxiSelect.sourcePlayerID !== playerID) return;
 
             const targetID = G.poxiSelect.targetPlayerID;
@@ -98,12 +110,7 @@ export const shenganningSkill = {
                     if (deck.length === 0) {
                         // Reshuffle discard pile if deck is empty
                         if (G.discardPile.length > 0) {
-                            G.deck = [...G.discardPile]; // Simple shuffle for now, ideally use shuffle function
-                            // Fisher-Yates shuffle
-                            for (let j = G.deck.length - 1; j > 0; j--) {
-                                const k = Math.floor(Math.random() * (j + 1));
-                                [G.deck[j], G.deck[k]] = [G.deck[k], G.deck[j]];
-                            }
+                            G.deck = shuffle(G.discardPile, ctx.random);
                             G.discardPile = [];
                         }
                     }

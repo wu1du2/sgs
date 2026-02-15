@@ -1,9 +1,18 @@
 import { SGS_CARDS } from './sgs_data';
 
+const SUIT_COLORS = {
+  '♦': '#1f6fe5',
+  '♥': '#d73a49',
+  '♠': '#1f2328',
+  '♣': '#2f7d32'
+};
+
+const getSuitColor = (suit) => SUIT_COLORS[suit] || '#1f2328';
+
 export const getCardInfo = (card) => {
   if (typeof card === 'object' && card !== null) {
     const { suit, rank, name, type, card_picture } = card;
-    const color = '#2d3436'; // Black (Dark Grey) -统一为黑桃颜色
+    const color = getSuitColor(suit);
     
     return { suit, rank, color, name, type, card_picture };
   }
@@ -19,7 +28,7 @@ export const getCardInfo = (card) => {
   const suit = SUITS[Math.floor(card / 13)];
   const rank = RANKS[card % 13];
   
-  const color = '#2d3436'; // Black (Dark Grey) -统一为黑桃颜色
+  const color = getSuitColor(suit);
 
   return { suit, rank, color, name: '', type: '', card_picture: '' };
 };

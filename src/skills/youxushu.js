@@ -17,6 +17,18 @@ const addToDiscardPile = (G, cards) => {
   }
 };
 
+const shuffle = (array, rng) => {
+  let currentIndex = array.length;
+  let randomIndex;
+  const newArray = [...array];
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor((rng ? rng.Number() : Math.random()) * currentIndex);
+    currentIndex--;
+    [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
+  }
+  return newArray;
+};
+
 export const youxushuSkill = {
     moves: {
         youxushuXiaXing: ({ G, playerID }) => {
@@ -53,7 +65,7 @@ export const youxushuSkill = {
             G.actionLog.push(`${playerName} 触发侠行，装备了玄剑`);
         },
 
-        youxushuQiHuiClick: ({ G, playerID }, button) => {
+        youxushuQiHuiClick: ({ G, ctx, playerID }, button) => {
             const player = G.players[playerID];
             
             // Initialize state if not exists
@@ -105,15 +117,7 @@ export const youxushuSkill = {
                             for (let i = 0; i < 2; i++) {
                                 if (G.deck.length === 0) {
                                     if (G.discardPile.length > 0) {
-                                        // Simple shuffle
-                                        let currentIndex = G.discardPile.length, randomIndex;
-                                        const newArray = [...G.discardPile];
-                                        while (currentIndex != 0) {
-                                            randomIndex = Math.floor(Math.random() * currentIndex);
-                                            currentIndex--;
-                                            [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
-                                        }
-                                        G.deck = newArray;
+                                        G.deck = shuffle(G.discardPile, ctx.random);
                                         G.discardPile = [];
                                     } else {
                                         break;

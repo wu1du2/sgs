@@ -810,7 +810,7 @@ export const CardGame = {
       // Luo Tong Skill: Qin Zheng
       if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
           G.players[playerID].qz_cnt += 1;
-          const logs = luotongSkill.qinzheng.trigger(G, playerID);
+          const logs = luotongSkill.qinzheng.trigger(G, playerID, ctx.random);
           if (logs && logs.length > 0) {
               G.actionLog.push(...logs);
           }
@@ -891,6 +891,17 @@ export const CardGame = {
                if (player.hp < player.hpMax) {
                  player.hp = Math.min(player.hp + 1, player.hpMax);
                  G.actionLog.push(`${playerName} used Peach, HP +1`);
+               }
+            } else if (card.name === '铁索连环') {
+               if (targetIds && targetIds.length > 0) {
+                 targetIds.forEach(targetId => {
+                   const target = G.players[targetId];
+                   if (target) {
+                     target.is_linked = !target.is_linked;
+                   }
+                 });
+                 const targetNames = targetIds.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
+                 G.actionLog.push(`${playerName} used 铁索连环 on ${targetNames}`);
                }
             } else if (card.name === '五谷丰登') {
                G.harvestCountSelect = {
@@ -2070,6 +2081,11 @@ export const CardGame = {
             playerID: null,
             card: null
         };
+    },
+
+    useSkill: ({ G, playerID }, skillName) => {
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName}发动了${skillName}`);
     },
     
     cancelTiandu: ({ G }) => {
