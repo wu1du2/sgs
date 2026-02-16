@@ -1,3 +1,4 @@
+import React from 'react';
 import { SGS_CARDS } from './sgs_data';
 
 const SUIT_COLORS = {
@@ -11,10 +12,10 @@ const getSuitColor = (suit) => SUIT_COLORS[suit] || '#1f2328';
 
 export const getCardInfo = (card) => {
   if (typeof card === 'object' && card !== null) {
-    const { suit, rank, name, type, card_picture } = card;
+    const { suit, rank, name, type, card_picture, local_card_picture } = card;
     const color = getSuitColor(suit);
     
-    return { suit, rank, color, name, type, card_picture };
+    return { suit, rank, color, name, type, card_picture, local_card_picture };
   }
   // Fallback for legacy number index
   // Try to find it in SGS_CARDS if it's an index
@@ -30,10 +31,10 @@ export const getCardInfo = (card) => {
   
   const color = getSuitColor(suit);
 
-  return { suit, rank, color, name: '', type: '', card_picture: '' };
+  return { suit, rank, color, name: '', type: '', card_picture: '', local_card_picture: '' };
 };
 
-export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = false, width = 60, height = 90, style }) => {
+export const Card = React.memo(({ card, cardIndex, onClick, isHidden = false, isSelected = false, width = 60, height = 90, style, imageMode = 'url' }) => {
   const borderRadius = Math.max(4, Math.round(width * 0.133));
   const padding = Math.max(3, Math.round(width * 0.083));
   const selectedLift = -Math.round(height * 0.333);
@@ -61,7 +62,10 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
     );
   }
 
-  const { suit, rank, color, name, card_picture } = getCardInfo(card || cardIndex);
+  const { suit, rank, color, name, card_picture, local_card_picture } = getCardInfo(card || cardIndex);
+  const resolvedCardPicture = imageMode === 'local'
+    ? (local_card_picture || (typeof card_picture === 'string' && card_picture.startsWith('/') ? card_picture : ''))
+    : card_picture;
 
   return (
     <div 
@@ -84,7 +88,7 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
         userSelect: 'none',
         margin: '0 2px',
         position: 'relative',
-        backgroundImage: card_picture ? `url(${card_picture})` : 'none',
+        backgroundImage: resolvedCardPicture ? `url(${resolvedCardPicture})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -96,7 +100,7 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
         fontWeight: 'bold', 
         textAlign: 'left', 
         lineHeight: '1',
-        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.8)' 
+        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.8)'
       }}>
         {rank}<br/>
         <span style={{ fontSize: '12px' }}>{suit}</span>
@@ -108,11 +112,11 @@ export const Card = ({ card, cardIndex, onClick, isHidden = false, isSelected = 
         textAlign: 'right', 
         transform: 'rotate(180deg)', 
         lineHeight: '1',
-        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.8)' 
+        textShadow: '0 0 2px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.8)'
       }}>
         {rank}<br/>
         <span style={{ fontSize: '12px' }}>{suit}</span>
       </div>
     </div>
   );
-};
+});

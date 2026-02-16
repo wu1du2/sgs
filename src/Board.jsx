@@ -18,7 +18,7 @@ const getSuitColor = (suit) => {
   return '#fff';
 };
 
-const CardPictureButton = ({ card, onClick, width = 60, height = 90, isHidden = false, selected = false, outline = '3px solid #00ffff', outlineIdle = '1px solid #aaa', scaleSelected = 1.1, scaleIdle = 1, disabled = false, wrapperStyle, cardStyle, onMouseEnter, onMouseLeave, onMouseOver, onMouseOut }) => {
+const CardPictureButton = React.memo(({ card, onClick, width = 60, height = 90, isHidden = false, selected = false, outline = '3px solid #00ffff', outlineIdle = '1px solid #aaa', scaleSelected = 1.1, scaleIdle = 1, disabled = false, wrapperStyle, cardStyle, onMouseEnter, onMouseLeave, onMouseOver, onMouseOut, imageMode = 'url' }) => {
   return (
     <div
       onMouseEnter={onMouseEnter}
@@ -44,14 +44,27 @@ const CardPictureButton = ({ card, onClick, width = 60, height = 90, isHidden = 
         width={width}
         height={height}
         isHidden={isHidden}
+        imageMode={imageMode}
         onClick={disabled ? undefined : onClick}
         style={{ margin: 0, ...(cardStyle || {}) }}
       />
     </div>
   );
-};
+});
 
-const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title, singleSelection, revealHand }) => {
+const HandCardItem = React.memo(({ card, index, marginLeft, isMe, isSelected, isHidden, onCardClick, imageMode = 'url' }) => (
+  <div style={{ marginLeft: index === 0 ? 0 : `${marginLeft}px`, zIndex: index, transition: 'margin-left 0.3s ease' }}>
+    <Card
+      card={card}
+      isHidden={isHidden}
+      imageMode={imageMode}
+      onClick={() => isMe && onCardClick(index)}
+      isSelected={isSelected}
+    />
+  </div>
+));
+
+const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title, singleSelection, revealHand, imageMode = 'url' }) => {
   const [selected, setSelected] = React.useState([]);
   const safeHand = Array.isArray(targetHand) ? targetHand : [];
   const safeEquipments = targetPlayer?.equipments || {};
@@ -114,6 +127,7 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
                 outline="3px solid #00ffff"
                 outlineIdle="1px solid #aaa"
                 onClick={() => toggleSelection({ type: 'hand', index })}
+                imageMode={imageMode}
                 wrapperStyle={{
                   boxShadow: isSelected('hand', index) ? '0 0 15px #00ffff' : 'none',
                   animation: isSelected('hand', index) ? 'pulse-selected 1.5s infinite' : 'none'
@@ -209,9 +223,11 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
   );
 };
 
-const GeneralIntroModal = ({ general, onClose }) => {
+const GeneralIntroModal = ({ general, onClose, portraitMode = 'url' }) => {
   if (!general) return null;
-  const portrait = general.portrait || general.localPortrait;
+  const portrait = portraitMode === 'local'
+    ? general.localPortrait
+    : (general.portrait || general.localPortrait);
   const skills = Array.isArray(general.skills) ? general.skills : [];
   const descriptions = Array.isArray(general.skills_description) ? general.skills_description : [];
 
@@ -250,14 +266,14 @@ const GeneralIntroModal = ({ general, onClose }) => {
             backgroundColor: '#555',
             borderRadius: '8px',
             border: '1px solid #aaa',
-            backgroundSize: 'cover',
-            backgroundPosition: 'top center',
-            backgroundImage: portrait ? `url(${portrait})` : 'none',
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '32px'
+            fontSize: '32px',
+            backgroundSize: 'cover',
+            backgroundPosition: 'top center',
+            backgroundImage: portrait ? `url(${portrait})` : 'none'
           }}>
             {!portrait && '👤'}
           </div>
@@ -297,7 +313,7 @@ const GeneralIntroModal = ({ general, onClose }) => {
   );
 };
 
-const KangkaiCardModal = ({ hand, equipments, onConfirm, onCancel }) => {
+const KangkaiCardModal = ({ hand, equipments, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selected, setSelected] = React.useState(null);
 
   const selectHand = (index) => {
@@ -350,6 +366,7 @@ const KangkaiCardModal = ({ hand, equipments, onConfirm, onCancel }) => {
               outlineIdle="1px solid #bdc3c7"
               scaleSelected={1.08}
               onClick={() => selectHand(index)}
+              imageMode={imageMode}
             />
           ))}
         </div>
@@ -408,7 +425,7 @@ const KangkaiCardModal = ({ hand, equipments, onConfirm, onCancel }) => {
   );
 };
 
-const FireAttackShowCardModal = ({ hand, onConfirm, onCancel }) => {
+const FireAttackShowCardModal = ({ hand, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -446,6 +463,7 @@ const FireAttackShowCardModal = ({ hand, onConfirm, onCancel }) => {
               outlineIdle="1px solid #bdc3c7"
               scaleSelected={1.1}
               onClick={() => setSelectedIndex(index)}
+              imageMode={imageMode}
             />
           ))}
         </div>
@@ -483,7 +501,7 @@ const FireAttackShowCardModal = ({ hand, onConfirm, onCancel }) => {
   );
 };
 
-const HarvestBox = ({ cards, onPick, onClose }) => {
+const HarvestBox = ({ cards, onPick, onClose, imageMode = 'url' }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
 
   if (isMinimized) {
@@ -566,6 +584,7 @@ const HarvestBox = ({ cards, onPick, onClose }) => {
               onClick={() => onPick(index)}
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+              imageMode={imageMode}
             />
           ))}
         </div>
@@ -952,7 +971,7 @@ const QiHuiModal = ({ qiHui, onSelectOption, onToggleButton, onConfirm }) => {
   );
 };
 
-const TianduModal = ({ card, onConfirm, onCancel }) => {
+const TianduModal = ({ card, onConfirm, onCancel, imageMode = 'url' }) => {
   return (
     <div style={{
       position: 'fixed',
@@ -984,6 +1003,7 @@ const TianduModal = ({ card, onConfirm, onCancel }) => {
             height={120}
             outlineIdle="1px solid #bdc3c7"
             disabled
+            imageMode={imageMode}
           />
         )}
 
@@ -1049,7 +1069,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
   }, [isMinimized, name, hp, hpMax, skills, equipments, judges, isLinked, handCount, portrait, role, isSelectable, isSelected, qiHui]);
 
   const getBorderColor = () => {
-    if (isSelected) return '#00ffff'; // Cyan for selected
+    if (isSelected) return '#1b4f9c';
     if (isSelectable) return '#ffff00'; // Yellow for selectable
     if (role === 'landlord') return '#ff0000'; // Red for Landlord
     if (role === 'peasant') return '#00ff00'; // Green for Peasant
@@ -1081,8 +1101,8 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
           justifyContent: 'space-between',
           color: '#e0e0e0',
           pointerEvents: 'auto',
-          border: `2px solid ${getBorderColor()}`,
-          boxShadow: isSelected ? '0 0 20px 5px #00ffff' : (isSelectable ? '0 0 10px #ffff00' : '0 4px 8px rgba(0,0,0,0.5)'),
+          border: `${isSelected ? 3 : 2}px solid ${getBorderColor()}`,
+          boxShadow: isSelected ? '0 0 0 4px #1b4f9c, 0 0 16px rgba(27, 79, 156, 0.6)' : (isSelectable ? '0 0 10px #ffff00' : '0 4px 8px rgba(0,0,0,0.5)'),
           flexShrink: 0,
           cursor: isSelectable ? 'pointer' : 'default',
           transition: 'all 0.3s ease',
@@ -1130,11 +1150,11 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
         alignItems: 'center',
         color: '#e0e0e0',
         pointerEvents: 'auto',
-        border: `2px solid ${getBorderColor()}`,
-        boxShadow: isSelected ? '0 0 20px 5px #00ffff' : (isSelectable ? '0 0 10px #ffff00' : '0 4px 8px rgba(0,0,0,0.5)'),
+        border: `${isSelected ? 3 : 2}px solid ${getBorderColor()}`,
+        boxShadow: isSelected ? '0 0 0 4px #1b4f9c, 0 0 16px rgba(27, 79, 156, 0.6)' : (isSelectable ? '0 0 10px #ffff00' : '0 4px 8px rgba(0,0,0,0.5)'),
         flexShrink: 0, // Prevent shrinking
         cursor: isSelectable ? 'pointer' : 'default',
-        animation: isSelected ? 'pulse-selected 1.5s infinite' : (isSelectable ? 'pulse 1.5s infinite' : 'none'),
+        animation: isSelectable ? 'pulse 1.5s infinite' : 'none',
         transition: 'all 0.3s ease',
         position: 'relative' // Ensure overlay is positioned correctly
       }}
@@ -1241,7 +1261,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
       <div style={{ display: 'flex', width: '100%', marginBottom: '4px', alignItems: 'flex-start' }}>
         {/* Avatar */}
         <div
-          onClick={(e) => {
+          onDoubleClick={(e) => {
             e.stopPropagation();
             onAvatarClick && onAvatarClick();
           }}
@@ -1256,7 +1276,6 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '24px',
-          overflow: 'hidden',
           backgroundSize: 'cover',
           backgroundPosition: 'top center',
           backgroundImage: portrait ? `url(${portrait})` : 'none',
@@ -1512,7 +1531,7 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
   );
 };
 
-const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord, debugInfo }) => {
+const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord, debugInfo, imageMode = 'url' }) => {
   const isCompact = typeof window !== 'undefined' && window.innerWidth <= 700;
   const [renderLogs, setRenderLogs] = React.useState([]);
   const [generalIntro, setGeneralIntro] = React.useState(null);
@@ -1601,7 +1620,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
                 hpMax={general.hpMax}
                 armor={general.initial_armor || 0}
                 skills={general.skills} 
-                portrait={general.portrait || general.localPortrait}
+                portrait={imageMode === 'local' ? general.localPortrait : (general.portrait || general.localPortrait)}
                 onAvatarClick={() => setGeneralIntro(general)}
               />
             </div>
@@ -1647,6 +1666,7 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
         <GeneralIntroModal
           general={generalIntro}
           onClose={() => setGeneralIntro(null)}
+          portraitMode={imageMode}
         />
       )}
     </div>
@@ -2160,7 +2180,7 @@ const ActionLog = ({ logs }) => {
   );
 };
 
-const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel }) => {
+const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selectedMyCards, setSelectedMyCards] = React.useState([]);
   const [selectedTargetCards, setSelectedTargetCards] = React.useState([]);
 
@@ -2223,6 +2243,7 @@ const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel }) => {
                 outline="3px solid #e74c3c"
                 outlineIdle="1px solid #bdc3c7"
                 onClick={() => toggleTargetCard(index)}
+                imageMode={imageMode}
                 wrapperStyle={{
                   boxShadow: selectedTargetCards.includes(index) ? '0 0 12px rgba(231, 76, 60, 0.9)' : 'none'
                 }}
@@ -2244,6 +2265,7 @@ const PoxiModal = ({ myHand, targetHand, onConfirm, onCancel }) => {
                 outline="3px solid #e74c3c"
                 outlineIdle="1px solid #bdc3c7"
                 onClick={() => toggleMyCard(index)}
+                imageMode={imageMode}
                 wrapperStyle={{
                   boxShadow: selectedMyCards.includes(index) ? '0 0 12px rgba(231, 76, 60, 0.9)' : 'none'
                 }}
@@ -2470,7 +2492,7 @@ const RangjieMoveModal = ({ G, playerID, onFetchConfirm, onPutConfirm, onCancel 
   );
 };
 
-const QuanJiSelectionModal = ({ hand, onConfirm, onCancel }) => {
+const QuanJiSelectionModal = ({ hand, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -2509,7 +2531,7 @@ const QuanJiSelectionModal = ({ hand, onConfirm, onCancel }) => {
                 transition: 'all 0.2s'
               }}
             >
-              <Card card={card} />
+              <Card card={card} imageMode={imageMode} />
             </div>
           ))}
         </div>
@@ -2547,7 +2569,7 @@ const QuanJiSelectionModal = ({ hand, onConfirm, onCancel }) => {
   );
 };
 
-const TaoluanSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) => {
+const TaoluanSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selected, setSelected] = React.useState(null);
   const equipEntries = Object.entries(equipments || {}).filter(([, c]) => !!c);
   return (
@@ -2589,7 +2611,7 @@ const TaoluanSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) =
                     transition: 'all 0.2s'
                   }}
                 >
-                  <Card card={card} />
+                  <Card card={card} imageMode={imageMode} />
                 </div>
               ))}
             </div>
@@ -2609,7 +2631,7 @@ const TaoluanSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) =
                 transition: 'all 0.2s'
               }}
             >
-              <Card card={card} />
+              <Card card={card} imageMode={imageMode} />
             </div>
           ))}
         </div>
@@ -2647,7 +2669,7 @@ const TaoluanSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) =
   );
 };
 
-const MiewuSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) => {
+const MiewuSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selected, setSelected] = React.useState(null);
   const equipEntries = Object.entries(equipments || {}).filter(([, c]) => !!c);
   return (
@@ -2672,7 +2694,7 @@ const MiewuSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) => 
         flexDirection: 'column',
         gap: '20px'
       }}>
-        <h3>灭吴：请选择一张素材牌</h3>
+        <h3>灭吴</h3>
         {equipEntries.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ fontWeight: 'bold' }}>装备区</div>
@@ -2689,7 +2711,7 @@ const MiewuSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) => 
                     transition: 'all 0.2s'
                   }}
                 >
-                  <Card card={card} />
+                  <Card card={card} imageMode={imageMode} />
                 </div>
               ))}
             </div>
@@ -2709,7 +2731,7 @@ const MiewuSelectMaterialModal = ({ hand, equipments, onConfirm, onCancel }) => 
                 transition: 'all 0.2s'
               }}
             >
-              <Card card={card} />
+              <Card card={card} imageMode={imageMode} />
             </div>
           ))}
         </div>
@@ -2929,6 +2951,402 @@ const MiewuSelectVirtualModal = ({ onSelect, onCancel }) => {
   );
 };
 
+const ZuoxingSelectVirtualModal = ({ onSelect, onCancel }) => {
+  const candidates = React.useMemo(() => {
+    const map = new Map();
+    SGS_CARDS.forEach((c) => {
+      if (!c) return;
+      if (c.type !== '锦囊') return;
+      if (!map.has(c.name)) map.set(c.name, true);
+    });
+    const tricks = Array.from(map.keys());
+    tricks.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+    return tricks;
+  }, []);
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '90%',
+        maxWidth: '1000px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <h3 style={{ margin: 0 }}>佐幸：请选择普通锦囊牌名</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+          {candidates.map((name) => (
+            <button
+              key={name}
+              onClick={() => onSelect(name)}
+              style={{
+                padding: '6px 10px',
+                backgroundColor: '#34495e',
+                color: 'white',
+                border: '1px solid #2c3e50',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const HuishiModal = ({ huishi, onJudge, onStop, onCancel, imageMode = 'url', selectedRecipientId, selectedRecipientLabel, onConfirmRecipient }) => {
+  const suits = Array.isArray(huishi?.suits) ? huishi.suits : [];
+  const judges = Array.isArray(huishi?.judges) ? huishi.judges : [];
+  const stage = huishi?.stage;
+  const isBlocking = stage === 'judging';
+  const [isMinimized, setIsMinimized] = React.useState(stage === 'choose_recipient');
+
+  React.useEffect(() => {
+    if (stage === 'judging') {
+      setIsMinimized(false);
+    } else if (stage === 'choose_recipient') {
+      setIsMinimized(true);
+    }
+  }, [stage]);
+
+  const showMinimized = stage === 'choose_recipient' && isMinimized;
+  return (
+    <div style={{
+      position: 'absolute',
+      top: isBlocking ? 0 : (showMinimized ? '50%' : '20px'),
+      left: isBlocking ? 0 : (showMinimized ? '50%' : 'auto'),
+      right: isBlocking ? 0 : (showMinimized ? 'auto' : '20px'),
+      bottom: isBlocking ? 0 : 'auto',
+      transform: showMinimized ? 'translate(-50%, -50%)' : 'none',
+      backgroundColor: isBlocking ? 'rgba(0,0,0,0.8)' : 'transparent',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: isBlocking ? 'center' : 'flex-start',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      {showMinimized ? (
+        <div style={{
+          backgroundColor: '#333',
+          padding: '6px 10px',
+          borderRadius: '999px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          boxShadow: '0 4px 10px rgba(0,0,0,0.35)'
+        }}>
+          <div style={{ fontWeight: 'bold' }}>慧识</div>
+          <div style={{ color: '#f1c40f', fontWeight: 'bold' }}>选目标</div>
+          <div style={{ color: '#ddd' }}>已选：{selectedRecipientLabel || '未选择'}</div>
+          <button
+            onClick={onConfirmRecipient}
+            disabled={selectedRecipientId === null || selectedRecipientId === undefined}
+            style={{
+              padding: '4px 10px',
+              backgroundColor: selectedRecipientId !== null && selectedRecipientId !== undefined ? '#2ecc71' : '#555',
+              color: 'white',
+              border: 'none',
+              borderRadius: '999px',
+              cursor: selectedRecipientId !== null && selectedRecipientId !== undefined ? 'pointer' : 'not-allowed',
+              fontWeight: 'bold'
+            }}
+          >
+            确认
+          </button>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '4px 10px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '999px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={() => setIsMinimized(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: '14px',
+              padding: '0 4px'
+            }}
+          >
+            🔽
+          </button>
+        </div>
+      ) : (
+        <div style={{
+          backgroundColor: '#333',
+          padding: '20px',
+          borderRadius: '10px',
+          width: isBlocking ? '90%' : '360px',
+          maxWidth: isBlocking ? '1000px' : '90%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0 }}>慧识</h3>
+            {stage === 'choose_recipient' && (
+              <button
+                onClick={() => setIsMinimized(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  padding: '0 4px'
+                }}
+              >
+                🔼
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+            {judges.map((card, idx) => (
+              <div key={idx} style={{ transform: 'scale(0.9)' }}>
+                <Card card={card} imageMode={imageMode} />
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', fontWeight: 'bold' }}>已出现花色：{suits.join(' ') || '无'}</div>
+          {stage === 'choose_recipient' && (
+            <>
+              <div style={{ textAlign: 'center', color: '#f1c40f', fontWeight: 'bold' }}>请选择一名角色以交给判定牌</div>
+              <div style={{ textAlign: 'center', color: '#ddd' }}>已选：{selectedRecipientLabel || '未选择'}</div>
+            </>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {stage === 'judging' && (
+              <>
+                <button
+                  onClick={onJudge}
+                  style={{
+                    padding: '10px 18px',
+                    backgroundColor: '#2ecc71',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  判定一次
+                </button>
+                <button
+                  onClick={onStop}
+                  style={{
+                    padding: '10px 18px',
+                    backgroundColor: '#f1c40f',
+                    color: '#2c3e50',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  停止判定
+                </button>
+              </>
+            )}
+            {stage === 'choose_recipient' && (
+              <button
+                onClick={onConfirmRecipient}
+                disabled={selectedRecipientId === null || selectedRecipientId === undefined}
+                style={{
+                  padding: '10px 18px',
+                  backgroundColor: selectedRecipientId !== null && selectedRecipientId !== undefined ? '#2ecc71' : '#555',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: selectedRecipientId !== null && selectedRecipientId !== undefined ? 'pointer' : 'not-allowed',
+                  fontWeight: 'bold'
+                }}
+              >
+                确认
+              </button>
+            )}
+            <button
+              onClick={onCancel}
+              style={{
+                padding: '10px 18px',
+                backgroundColor: '#95a5a6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Huishi2ModeModal = ({ onAwaken, onDraw, onCancel }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '700px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        alignItems: 'center'
+      }}>
+        <h3 style={{ margin: 0 }}>辉逝：请选择一项</h3>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={onAwaken}
+            style={{
+              padding: '10px 18px',
+              backgroundColor: '#2ecc71',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            视为满足觉醒
+          </button>
+          <button
+            onClick={onDraw}
+            style={{
+              padding: '10px 18px',
+              backgroundColor: '#f1c40f',
+              color: '#2c3e50',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            摸四张牌
+          </button>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 18px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SimplePromptModal = ({ title, onCancel, isBlocking = true }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: isBlocking ? 0 : '20px',
+      left: isBlocking ? 0 : '50%',
+      right: isBlocking ? 0 : 'auto',
+      bottom: isBlocking ? 0 : 'auto',
+      transform: isBlocking ? 'none' : 'translateX(-50%)',
+      backgroundColor: isBlocking ? 'rgba(0,0,0,0.5)' : 'transparent',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        color: 'white',
+        alignItems: 'center'
+      }}>
+        <div style={{ fontWeight: 'bold' }}>{title}</div>
+        <button
+          onClick={onCancel}
+          style={{
+            padding: '10px 18px',
+            backgroundColor: '#95a5a6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          取消
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const TaoluanOtherChoiceModal = ({ onGive, onPunish }) => {
   return (
     <div style={{
@@ -2989,7 +3407,7 @@ const TaoluanOtherChoiceModal = ({ onGive, onPunish }) => {
   );
 };
 
-const TaoluanGiveCardModal = ({ hand, equipments, onConfirm }) => {
+const TaoluanGiveCardModal = ({ hand, equipments, onConfirm, imageMode = 'url' }) => {
   const [selected, setSelected] = React.useState(null);
   const equipEntries = Object.entries(equipments || {}).filter(([, c]) => !!c);
   return (
@@ -3031,7 +3449,7 @@ const TaoluanGiveCardModal = ({ hand, equipments, onConfirm }) => {
                     transition: 'all 0.2s'
                   }}
                 >
-                  <Card card={card} />
+                  <Card card={card} imageMode={imageMode} />
                 </div>
               ))}
             </div>
@@ -3051,7 +3469,7 @@ const TaoluanGiveCardModal = ({ hand, equipments, onConfirm }) => {
                 transition: 'all 0.2s'
               }}
             >
-              <Card card={card} />
+              <Card card={card} imageMode={imageMode} />
             </div>
           ))}
         </div>
@@ -3077,7 +3495,7 @@ const TaoluanGiveCardModal = ({ hand, equipments, onConfirm }) => {
   );
 };
 
-const PaiYiSelectionModal = ({ quan, onConfirm, onCancel }) => {
+const PaiYiSelectionModal = ({ quan, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -3116,7 +3534,7 @@ const PaiYiSelectionModal = ({ quan, onConfirm, onCancel }) => {
                 transition: 'all 0.2s'
               }}
             >
-              <Card card={card} />
+              <Card card={card} imageMode={imageMode} />
             </div>
           ))}
         </div>
@@ -3154,7 +3572,7 @@ const PaiYiSelectionModal = ({ quan, onConfirm, onCancel }) => {
   );
 };
 
-const QuanViewModal = ({ cards, onClose }) => {
+const QuanViewModal = ({ cards, onClose, imageMode = 'url' }) => {
   return (
     <div style={{
       position: 'absolute',
@@ -3181,7 +3599,7 @@ const QuanViewModal = ({ cards, onClose }) => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
           {cards.map((card, index) => (
             <div key={index}>
-              <Card card={card} />
+              <Card card={card} imageMode={imageMode} />
             </div>
           ))}
         </div>
@@ -3205,7 +3623,7 @@ const QuanViewModal = ({ cards, onClose }) => {
   );
 };
 
-const PinDianModal = ({ hand, onConfirm, title }) => {
+const PinDianModal = ({ hand, onConfirm, title, imageMode = 'url' }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -3243,6 +3661,7 @@ const PinDianModal = ({ hand, onConfirm, title }) => {
               outlineIdle="1px solid #bdc3c7"
               scaleSelected={1.1}
               onClick={() => setSelectedIndex(index)}
+              imageMode={imageMode}
             />
           ))}
         </div>
@@ -3267,7 +3686,7 @@ const PinDianModal = ({ hand, onConfirm, title }) => {
   );
 };
 
-const CongJianModal = ({ hand, equipments, selectedCard, onSelect, onConfirm, onCancel }) => {
+const CongJianModal = ({ hand, equipments, selectedCard, onSelect, onConfirm, onCancel, imageMode = 'url' }) => {
   const isSelected = (type, value) => {
     if (!selectedCard) return false;
     if (type !== selectedCard.type) return false;
@@ -3311,6 +3730,7 @@ const CongJianModal = ({ hand, equipments, selectedCard, onSelect, onConfirm, on
               outlineIdle="1px solid #bdc3c7"
               scaleSelected={1.08}
               onClick={() => onSelect({ type: 'hand', index })}
+              imageMode={imageMode}
             />
           ))}
         </div>
@@ -3369,7 +3789,7 @@ const CongJianModal = ({ hand, equipments, selectedCard, onSelect, onConfirm, on
   );
 };
 
-const MiZhaoPinDianModal = ({ hand, onConfirm, title }) => {
+const MiZhaoPinDianModal = ({ hand, onConfirm, title, imageMode = 'url' }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -3407,6 +3827,7 @@ const MiZhaoPinDianModal = ({ hand, onConfirm, title }) => {
               outlineIdle="1px solid #bdc3c7"
               scaleSelected={1.1}
               onClick={() => setSelectedIndex(index)}
+              imageMode={imageMode}
             />
           ))}
         </div>
@@ -3584,7 +4005,7 @@ const JianyingNameModal = ({ onConfirm, onCancel }) => {
   );
 };
 
-const LiMuModal = ({ cards, onConfirm, onCancel }) => {
+const LiMuModal = ({ cards, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -3614,6 +4035,7 @@ const LiMuModal = ({ cards, onConfirm, onCancel }) => {
                 outlineIdle={isDiamond ? '3px solid #e74c3c' : '1px solid #aaa'}
                 scaleSelected={1.1}
                 onClick={() => setSelectedIndex(index)}
+                imageMode={imageMode}
                 wrapperStyle={{
                   boxShadow: isDiamond ? '0 0 10px rgba(231, 76, 60, 0.5)' : 'none'
                 }}
@@ -3655,7 +4077,7 @@ const JianyingDisplay = ({ suit, rank }) => {
   );
 };
 
-const ShiCaiModal = ({ cards, onMoveToTop, onDiscardAll, onClose }) => {
+const ShiCaiModal = ({ cards, onMoveToTop, onDiscardAll, onClose, imageMode = 'url' }) => {
   return (
     <div style={{
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -3676,6 +4098,7 @@ const ShiCaiModal = ({ cards, onMoveToTop, onDiscardAll, onClose }) => {
                   height={90}
                   outlineIdle="1px solid #bdc3c7"
                   disabled
+                  imageMode={imageMode}
                 />
                 <button onClick={() => onMoveToTop(index)} style={{ fontSize: '10px', padding: '2px 5px', cursor: 'pointer' }}>置于牌堆顶</button>
              </div>
@@ -3695,7 +4118,7 @@ const ShiCaiModal = ({ cards, onMoveToTop, onDiscardAll, onClose }) => {
   );
 };
 
-const MieJiCardSelectionModal = ({ hand, onConfirm, onCancel }) => {
+const MieJiCardSelectionModal = ({ hand, onConfirm, onCancel, imageMode = 'url' }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   const isHighlighted = (card) => {
@@ -3726,6 +4149,7 @@ const MieJiCardSelectionModal = ({ hand, onConfirm, onCancel }) => {
                 outlineIdle={highlighted ? '3px solid #f1c40f' : '1px solid #bdc3c7'}
                 scaleSelected={1.1}
                 onClick={() => setSelectedIndex(index === selectedIndex ? null : index)}
+                imageMode={imageMode}
                 wrapperStyle={{
                   boxShadow: highlighted ? '0 0 10px #f1c40f' : 'none'
                 }}
@@ -3753,7 +4177,7 @@ const MieJiCardSelectionModal = ({ hand, onConfirm, onCancel }) => {
   );
 };
 
-const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard }) => {
+const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard, imageMode = 'url' }) => {
   const [selected, setSelected] = React.useState([]); // Array of {type, index/slot}
 
   const toggleSelection = (item) => {
@@ -3798,6 +4222,7 @@ const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard }) => {
                 outlineIdle="1px solid #bdc3c7"
                 scaleSelected={1.1}
                 onClick={() => toggleSelection({ type: 'hand', index })}
+                imageMode={imageMode}
               />
             ))}
             </div>
@@ -3860,7 +4285,7 @@ const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard }) => {
   );
 };
 
-const MieJiLiRuTakeModal = ({ targetHand, targetEquipments, onConfirm }) => {
+const MieJiLiRuTakeModal = ({ targetHand, targetEquipments, onConfirm, imageMode = 'url' }) => {
     const [selected, setSelected] = React.useState(null); // {type, index/slot}
 
     const isBlackTrick = (card) => {
@@ -3897,6 +4322,7 @@ const MieJiLiRuTakeModal = ({ targetHand, targetEquipments, onConfirm }) => {
                             scaleSelected={1.1}
                             disabled={!valid}
                             onClick={() => setSelected({ type: 'hand', index })}
+                            imageMode={imageMode}
                             wrapperStyle={{
                               filter: valid ? 'none' : 'grayscale(1) brightness(0.6)'
                             }}
@@ -3973,6 +4399,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [mizhaoStage, setMizhaoStage] = React.useState(null);
   const [mizhaoTargetA, setMizhaoTargetA] = React.useState(null);
   const [mizhaoTargetB, setMizhaoTargetB] = React.useState(null);
+  const [huishiRecipientId, setHuishiRecipientId] = React.useState(null);
   
   // Shi Taishi Ci State
   const [showZhanLieModal, setShowZhanLieModal] = React.useState(false);
@@ -3987,6 +4414,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [showShiCaiModal, setShowShiCaiModal] = React.useState(false);
   const [generalIntro, setGeneralIntro] = React.useState(null);
   const [quanjiAutoPrompt, setQuanjiAutoPrompt] = React.useState(false);
+  const [cardImageMode, setCardImageMode] = React.useState('url');
+  const showCardImageToggle = false;
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
@@ -4001,6 +4430,18 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     if (general) {
       setGeneralIntro(general);
     }
+  };
+
+  React.useEffect(() => {
+    if (!G.huishi || !G.huishi.active || G.huishi.stage !== 'choose_recipient') {
+      if (huishiRecipientId !== null) setHuishiRecipientId(null);
+    }
+  }, [G.huishi, huishiRecipientId]);
+
+  const resolvePortrait = (general) => {
+    if (!general) return null;
+    if (cardImageMode === 'local') return general.localPortrait || null;
+    return general.portrait || general.localPortrait || null;
   };
 
   // Responsive hand width state
@@ -4139,6 +4580,21 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   };
 
   const onHeroClick = (targetId) => {
+    if (G.huishi && G.huishi.active && G.huishi.stage === 'choose_recipient' && G.huishi.sourceID === playerID) {
+      setHuishiRecipientId(targetId);
+      return;
+    }
+
+    if (G.huishi2 && G.huishi2.active && G.huishi2.stage === 'choose_target' && G.huishi2.sourceID === playerID) {
+      moves.shenguojiaHuishi2SelectTarget(targetId);
+      return;
+    }
+
+    if (G.tianyi && G.tianyi.active && G.tianyi.stage === 'choose_grant' && G.tianyi.sourceID === playerID) {
+      moves.shenguojiaTianyiGrant(targetId);
+      return;
+    }
+
     if (G.taoluan && G.taoluan.active && G.taoluan.stage === 'after_choose_other' && G.taoluan.sourceID === playerID) {
       if (targetId === playerID) {
         alert("不能选择自己");
@@ -4356,6 +4812,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (G.zuoxing && G.zuoxing.active && G.zuoxing.stage === 'select_targets' && G.zuoxing.sourceID === playerID) {
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
+      } else {
+        setSelectedTargetIds([...selectedTargetIds, targetId]);
+      }
+      return;
+    }
+
     if (G.taoluan && G.taoluan.active && G.taoluan.stage === 'select_targets' && G.taoluan.sourceID === playerID) {
       if (selectedTargetIds.includes(targetId)) {
         setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
@@ -4403,11 +4868,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       const cardIndex = selectedCardIndices[0];
       const card = G.hands[playerID][cardIndex];
       const isSlash = card && ['杀', '火杀', '雷杀'].includes(card.name);
-      if (isSlash && selectedTargetIds.length !== 1) {
-        alert("请选择一名目标玩家");
-        return;
-      }
-
       const me = G.players[playerID];
       if (isSlash && me.general && me.general.name === '界徐盛' && selectedTargetIds.length === 1) {
         setPojunAutoPrompt({
@@ -4423,10 +4883,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       const cardIndex = selectedCardIndices[0];
       const card = G.hands[playerID][cardIndex];
       const isSlash = card && ['杀', '火杀', '雷杀'].includes(card.name);
-      if (isSlash && selectedTargetIds.length !== 1) {
-        alert("请选择一名目标玩家");
-        return;
-      }
       const me = G.players[playerID];
       if (isSlash && me.general && me.general.name === '谋马超' && selectedTargetIds.length === 1) {
         setTieqiAutoPrompt({
@@ -4499,14 +4955,6 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       if (card.name === '火攻') {
         if (selectedTargetIds.length !== 1) {
           alert("请选择一名目标玩家");
-          return;
-        }
-      }
-
-      // Handle Peach (桃)
-      if (card.name === '桃') {
-        if (G.players[playerID].hp >= G.players[playerID].hpMax) {
-          alert("满血不能吃桃");
           return;
         }
       }
@@ -4768,6 +5216,34 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     }
 
     if (skillName.startsWith('武库')) {
+      return;
+    }
+
+    if (skillName === '慧识') {
+      setSelectedCardIndices([]);
+      setSelectedTargetIds([]);
+      moves.shenguojiaHuishiStart();
+      return;
+    }
+
+    if (skillName === '辉逝') {
+      setSelectedCardIndices([]);
+      setSelectedTargetIds([]);
+      moves.shenguojiaHuishi2Start();
+      return;
+    }
+
+    if (skillName === '天翊') {
+      setSelectedCardIndices([]);
+      setSelectedTargetIds([]);
+      moves.shenguojiaTianyi();
+      return;
+    }
+
+    if (skillName === '佐幸') {
+      setSelectedCardIndices([]);
+      setSelectedTargetIds([]);
+      moves.shenguojiaZuoxingStart();
       return;
     }
 
@@ -5200,8 +5676,12 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     // Target Selection Logic
     const mizhaoSelecting = mizhaoStage === 'selectA' || mizhaoStage === 'selectB';
     const yimouSelecting = G.yimouSelect && G.yimouSelect.active && G.yimouSelect.stage === 'select_recipient' && G.yimouSelect.targetPlayerID === playerID;
-    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting || !!activeSkill || yimouSelecting;
-    const isSelected = selectedTargetIds.includes(id) || (mizhaoStage === 'selectA' && mizhaoTargetA === id) || (mizhaoStage === 'selectB' && (mizhaoTargetA === id || mizhaoTargetB === id));
+    const huishiSelecting = G.huishi && G.huishi.active && G.huishi.stage === 'choose_recipient' && G.huishi.sourceID === playerID;
+    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting || !!activeSkill || yimouSelecting || huishiSelecting;
+    const isSelected = selectedTargetIds.includes(id)
+      || (mizhaoStage === 'selectA' && mizhaoTargetA === id)
+      || (mizhaoStage === 'selectB' && (mizhaoTargetA === id || mizhaoTargetB === id))
+      || (huishiSelecting && huishiRecipientId === id);
 
     // Dynamic overlap calculation
     const CARD_WIDTH = 60;
@@ -5282,14 +5762,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         pointerEvents: 'auto' // Re-enable pointer events
       }}>
         {hand.map((card, index) => (
-          <div key={index} style={{ marginLeft: index === 0 ? 0 : `${marginLeft}px`, zIndex: index, transition: 'margin-left 0.3s ease' }}>
-            <Card 
-              card={card} 
-              isHidden={!(isMe || G.isGameStarted)} // Show cards if game started (for debug) or if it's me
-              onClick={() => isMe && onCardClick(index)}
-              isSelected={isMe && selectedCardIndices.includes(index)}
-            />
-          </div>
+          <HandCardItem
+            key={index}
+            card={card}
+            index={index}
+            marginLeft={marginLeft}
+            isMe={isMe}
+            isHidden={!(isMe || G.isGameStarted)}
+            isSelected={isMe && selectedCardIndices.includes(index)}
+            onCardClick={onCardClick}
+            imageMode={cardImageMode}
+          />
         ))}
       </div>
     );
@@ -5528,6 +6011,92 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                   </button>
                 </>
               )}
+              {G.zuoxing && G.zuoxing.active && G.zuoxing.stage === 'select_targets' && G.zuoxing.sourceID === playerID && (
+                (() => {
+                  const name = G.zuoxing.declaredName;
+                  const needsZero = name === '五谷丰登';
+                  const needsOne = ['顺手牵羊', '过河拆桥', '借刀杀人', '火攻'].includes(name);
+                  const isChain = name === '铁索连环';
+                  let ok = true;
+                  let hint = '';
+                  if (needsZero) {
+                    ok = selectedTargetIds.length === 0;
+                    hint = '无需选择目标';
+                  } else if (needsOne) {
+                    ok = selectedTargetIds.length === 1;
+                    hint = '请选择1名目标';
+                  } else if (isChain) {
+                    ok = selectedTargetIds.length <= 2;
+                    hint = '可选择0-2名目标（0=摸1张）';
+                  }
+                  return (
+                    <>
+                      {hint && <div style={{ color: '#f1c40f', fontWeight: 'bold', alignSelf: 'center' }}>佐幸：{hint}</div>}
+                      <button
+                        onClick={() => {
+                          const targets = needsZero ? [] : selectedTargetIds;
+                          moves.shenguojiaZuoxingConfirmPlay(targets);
+                          setSelectedTargetIds([]);
+                        }}
+                        disabled={!ok}
+                        style={{
+                          padding: '8px 20px',
+                          backgroundColor: ok ? '#2ecc71' : '#7f8c8d',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: ok ? 'pointer' : 'not-allowed',
+                          fontWeight: 'bold',
+                          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                          animation: 'fadeIn 0.3s'
+                        }}
+                      >
+                        确定使用
+                      </button>
+                      <button
+                        onClick={() => {
+                          moves.shenguojiaZuoxingCancel();
+                          setSelectedTargetIds([]);
+                        }}
+                        style={{
+                          padding: '8px 20px',
+                          backgroundColor: '#95a5a6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                          animation: 'fadeIn 0.3s'
+                        }}
+                      >
+                        取消佐幸
+                      </button>
+                    </>
+                  );
+                })()
+              )}
+              {G.zuoxing && G.zuoxing.active && G.zuoxing.stage === 'waiting_resolution' && G.zuoxing.sourceID === playerID && (
+                <>
+                  <div style={{ color: '#f1c40f', fontWeight: 'bold', alignSelf: 'center' }}>佐幸：请先结算该牌效果</div>
+                  <button
+                    onClick={() => moves.shenguojiaZuoxingCancel()}
+                    style={{
+                      padding: '8px 20px',
+                      backgroundColor: '#95a5a6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                      animation: 'fadeIn 0.3s'
+                    }}
+                  >
+                    取消佐幸
+                  </button>
+                </>
+              )}
               {G.taoluan && G.taoluan.active && G.taoluan.stage === 'select_targets' && G.taoluan.sourceID === playerID && (
                 (() => {
                   const name = G.taoluan.declaredName;
@@ -5707,6 +6276,24 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                   </button>
                 </>
               )}
+              {showCardImageToggle && (
+                <button
+                  onClick={() => setCardImageMode(cardImageMode === 'url' ? 'local' : 'url')}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: cardImageMode === 'url' ? '#3498db' : '#9b59b6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                    animation: 'fadeIn 0.3s'
+                  }}
+                >
+                  卡图: {cardImageMode === 'url' ? 'URL' : '本地'}
+                </button>
+              )}
             </div>
             <HandCards />
           </div>
@@ -5763,13 +6350,17 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                 权 {player.quan.length}
               </div>
             )}
+            {(() => {
+              const grantedSkills = isMe && Array.isArray(player?.grantedSkills) ? player.grantedSkills : [];
+              const finalSkills = Array.from(new Set([...(displaySkills || []), ...grantedSkills]));
+              return (
             <HeroArea 
               name={general ? general.name : "My Hero"} 
               hp={player?.hp ?? (general ? general.hp : 4)}
               hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
               armor={player?.armor || 0}
-              skills={displaySkills}
-              portrait={general ? (general.portrait || general.localPortrait) : null}
+              skills={finalSkills}
+              portrait={resolvePortrait(general)}
               isMe={true} 
               role={role}
               onClick={() => onHeroClick(id)}
@@ -5792,6 +6383,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               onAvatarClick={() => openGeneralIntro(general)}
               jiuAnimKey={player.jiuAnimKey}
             />
+              );
+            })()}
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </div>
         </React.Fragment>
@@ -5809,7 +6402,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
               hpMax={player?.hpMax ?? (general ? general.hpMax : 4)}
               armor={player?.armor || 0}
               skills={general ? general.skills : ["Strike", "Dodge"]}
-              portrait={general ? (general.portrait || general.localPortrait) : null}
+              portrait={resolvePortrait(general)}
               role={role}
               onClick={() => onHeroClick(id)}
               isSelectable={isSelectable}
@@ -6197,6 +6790,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             }}
             onDiscardAll={() => moves.xuyouShiCaiToDiscard()}
             onClose={() => setShowShiCaiModal(false)}
+            imageMode={cardImageMode}
         />
       )}
 
@@ -6206,6 +6800,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           hand={G.hands[playerID]}
           onConfirm={(index) => moves.miejiSelectCard(index)}
           onCancel={() => moves.miejiCancel()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6216,6 +6811,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           equipments={G.players[playerID].equipments}
           onGive={(items) => moves.miejiGive(items)}
           onDiscard={(items) => moves.miejiDiscard(items)}
+          imageMode={cardImageMode}
         />
       )}
       
@@ -6239,6 +6835,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             title={G.xuyouChengLueSelect.stage === 'discard_2_yang' ? "成略(阳): 弃置2张手牌" : "成略(阴): 弃置1张手牌"}
             singleSelection={false}
             revealHand={true}
+            imageMode={cardImageMode}
          />
       )}
 
@@ -6356,6 +6953,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           ]}
           onConfirm={(selection) => moves.liMuConfirm(selection)}
           onCancel={() => moves.liMuCancel()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6693,6 +7291,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onBid={onBid}
           landlord={G.landlord}
           debugInfo={G.debugInfo}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6716,6 +7315,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           equipments={G.players[playerID]?.equipments}
           onConfirm={(selected) => moves.taoluanSelectMaterial(selected)}
           onCancel={() => moves.taoluanCancel()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6736,6 +7336,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           equipments={G.players[playerID]?.equipments}
           onConfirm={(selected) => moves.duyuMiewuSelectMaterial(selected)}
           onCancel={() => moves.duyuMiewuCancel()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6746,6 +7347,55 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             moves.duyuMiewuSelectVirtual(name);
           }}
           onCancel={() => moves.duyuMiewuCancel()}
+        />
+      )}
+
+      {G.huishi && G.huishi.active && G.huishi.sourceID === playerID && (
+        <HuishiModal
+          huishi={G.huishi}
+          onJudge={() => moves.shenguojiaHuishiJudge()}
+          onStop={() => moves.shenguojiaHuishiStop()}
+          onCancel={() => moves.shenguojiaHuishiCancel()}
+          imageMode={cardImageMode}
+          selectedRecipientId={huishiRecipientId}
+          selectedRecipientLabel={huishiRecipientId !== null && G.players[huishiRecipientId]?.general ? G.players[huishiRecipientId].general.name : ''}
+          onConfirmRecipient={() => {
+            if (huishiRecipientId === null || huishiRecipientId === undefined) return;
+            moves.shenguojiaHuishiChooseRecipient(huishiRecipientId);
+          }}
+        />
+      )}
+
+      {G.huishi2 && G.huishi2.active && G.huishi2.sourceID === playerID && G.huishi2.stage === 'choose_target' && (
+        <SimplePromptModal
+          title="辉逝：请选择一名目标"
+          onCancel={() => moves.shenguojiaHuishi2Cancel()}
+          isBlocking={false}
+        />
+      )}
+
+      {G.huishi2 && G.huishi2.active && G.huishi2.sourceID === playerID && G.huishi2.stage === 'choose_mode' && (
+        <Huishi2ModeModal
+          onAwaken={() => moves.shenguojiaHuishi2Choose(1)}
+          onDraw={() => moves.shenguojiaHuishi2Choose(2)}
+          onCancel={() => moves.shenguojiaHuishi2Cancel()}
+        />
+      )}
+
+      {G.tianyi && G.tianyi.active && G.tianyi.sourceID === playerID && G.tianyi.stage === 'choose_grant' && (
+        <SimplePromptModal
+          title="天翊：请选择获得【佐幸】的角色"
+          onCancel={() => moves.shenguojiaTianyiCancel()}
+        />
+      )}
+
+      {G.zuoxing && G.zuoxing.active && G.zuoxing.stage === 'select_virtual' && G.zuoxing.sourceID === playerID && (
+        <ZuoxingSelectVirtualModal
+          onSelect={(name) => {
+            setSelectedTargetIds([]);
+            moves.shenguojiaZuoxingSelectVirtual(name);
+          }}
+          onCancel={() => moves.shenguojiaZuoxingCancel()}
         />
       )}
 
@@ -6761,6 +7411,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           hand={G.hands[playerID]}
           equipments={G.players[playerID]?.equipments}
           onConfirm={(selected) => moves.taoluanOtherGiveCard(selected)}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6770,6 +7421,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           hand={G.hands[playerID]}
           onConfirm={(index) => moves.jiezhonghuiQuanJiConfirm(index)}
           onCancel={() => moves.jiezhonghuiQuanJiCancel()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6779,6 +7431,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           quan={G.players[playerID].quan || []}
           onConfirm={(index) => moves.jiezhonghuiPaiYiConfirm(index)}
           onCancel={() => moves.jiezhonghuiPaiYiCancel()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6787,6 +7440,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         <QuanViewModal
           cards={quanView.cards}
           onClose={() => setQuanView({ active: false, cards: [] })}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -6794,6 +7448,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         <GeneralIntroModal
           general={generalIntro}
           onClose={() => setGeneralIntro(null)}
+          portraitMode={cardImageMode}
         />
       )}
       
@@ -7290,6 +7945,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => moves.cancel_select_card()}
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
           singleSelection={['steal', 'discard', 'collateral'].includes(G.selectCard.actionType)}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -7302,6 +7958,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => moves.cancelPoJunSelection()}
           title="Po Jun: Select cards to move"
           singleSelection={false}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -7311,6 +7968,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           equipments={G.players[playerID].equipments}
           onConfirm={(selected) => moves.confirmKangkaiCard(selected)}
           onCancel={() => moves.cancelKangkai()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -7357,6 +8015,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           title="毅谋：选择交出的手牌"
           singleSelection={true}
           revealHand={true}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -7366,6 +8025,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           hand={G.hands[playerID]}
           onConfirm={(index) => moves.confirmFireAttackShowCard(index)}
           onCancel={() => moves.cancelFireAttackShowCard()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -7382,6 +8042,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           cards={G.harvestCards}
           onPick={(index) => moves.pickHarvestCard(index)}
           onClose={() => moves.endHarvest()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -7394,6 +8055,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onSelect={(cardData) => moves.selectCongJianCard(cardData)}
           onConfirm={() => moves.confirmCongJianCard()}
           onCancel={() => moves.cancelCongJian()}
+          imageMode={cardImageMode}
         />
       )}
       
@@ -7496,6 +8158,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           onCancel={() => moves.cancelLiyuTarget()}
           title="利驭: 请选择一张牌"
           singleSelection={true}
+          imageMode={cardImageMode}
         />
       )}
       
@@ -7505,6 +8168,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             card={G.tianduSelect.card}
             onConfirm={() => moves.confirmTiandu()}
             onCancel={() => moves.cancelTiandu()}
+            imageMode={cardImageMode}
         />
       )}
 
@@ -7515,6 +8179,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           targetHand={G.hands[G.poxiSelect.targetPlayerID]}
           onConfirm={(myCards, targetCards) => moves.confirmPoxi(myCards, targetCards)}
           onCancel={() => moves.cancelPoxi()}
+          imageMode={cardImageMode}
         />
       )}
 
@@ -7534,6 +8199,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           hand={G.hands[playerID]} 
           title={pinDianTitle}
           onConfirm={(index) => moves.selectPinDianCard(index)}
+          imageMode={cardImageMode}
         />
       )}
       {showMizhaoPinDianModal && (
@@ -7541,6 +8207,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
           hand={G.hands[playerID]} 
           title={mizhaoPinDianTitle}
           onConfirm={(index) => moves.selectMizhaoPinDianCard(index)}
+          imageMode={cardImageMode}
         />
       )}
 

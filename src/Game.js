@@ -28,7 +28,7 @@ import { lijueSkill } from './skills/lijue.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['杜预', '张让', '杨彪'];
+const TESTING_GENERAL_LIST = ['神郭嘉'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
@@ -86,6 +86,8 @@ const createPlayerState = () => ({
   jianying: { suit: null, rank: null }, // For Jie Jushou
   duyuWuku: 0,
   duyuSanchenAwakened: false,
+  shenguojiaTianyiAwakened: false,
+  grantedSkills: [],
   ...createEmptyZones()
 });
 
@@ -227,6 +229,18 @@ const drawCards = (G, playerID, count, rng) => {
   return cardsToDraw;
 };
 
+const drawTopCard = (G, rng) => {
+  if (G.deck.length === 0) {
+    if (G.discardPile.length > 0) {
+      G.deck = shuffle(G.discardPile, rng);
+      G.discardPile = [];
+    } else {
+      return null;
+    }
+  }
+  return G.deck.shift();
+};
+
 const youxushuQiHuiAutoLight = (G, playerID, card) => {
   const player = G.players[playerID];
   if (!player || !player.general || player.general.name !== '友徐庶' || !card) return;
@@ -271,6 +285,11 @@ const getMiewuDeclaredType = (declaredName) => {
   return card ? card.type : null;
 };
 
+const getZuoxingDeclaredType = (declaredName) => {
+  const card = SGS_CARDS.find(c => c && c.name === declaredName && c.type === '锦囊');
+  return card ? card.type : null;
+};
+
 const advanceTaoluanAfterResolution = (G) => {
   if (!G.taoluan || !G.taoluan.active || G.taoluan.stage !== 'waiting_resolution') return;
   if (G.pendingEffect && G.pendingEffect.active) return;
@@ -291,6 +310,16 @@ const advanceMiewuAfterResolution = (G) => {
   if (G.harvestCountSelect && G.harvestCountSelect.active) return;
   if (Array.isArray(G.harvestCards) && G.harvestCards.length > 0) return;
   G.miewu = null;
+};
+
+const advanceZuoxingAfterResolution = (G) => {
+  if (!G.zuoxing || !G.zuoxing.active || G.zuoxing.stage !== 'waiting_resolution') return;
+  if (G.pendingEffect && G.pendingEffect.active) return;
+  if (G.selectCard && G.selectCard.active) return;
+  if (G.fireAttackShowCard && G.fireAttackShowCard.active) return;
+  if (G.harvestCountSelect && G.harvestCountSelect.active) return;
+  if (Array.isArray(G.harvestCards) && G.harvestCards.length > 0) return;
+  G.zuoxing = null;
 };
 
 const duyuGainWukuIfPossible = (G, sourcePlayerID, card) => {
@@ -887,6 +916,232 @@ export const CardGame = {
       if (!m || !m.active || m.sourceID !== playerID) return;
       G.miewu = null;
     },
+
+    shenguojiaHuishiStart: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '神郭嘉') return;
+      G.huishi = {
+        active: true,
+        stage: 'judging',
+        sourceID: playerID,
+        judges: [],
+        suits: [],
+      };
+    },
+    shenguojiaHuishiJudge: ({ G, ctx, playerID }) => {
+      const h = G.huishi;
+      if (!h || !h.active || h.sourceID !== playerID || h.stage !== 'judging') return;
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '神郭嘉') return;
+      const card = drawTopCard(G, ctx.random);
+      if (!card) return;
+      h.judges.push(card);
+      const suit = card.suit;
+      const suits = Array.isArray(h.suits) ? h.suits : [];
+      const playerName = player.general ? player.general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName}【慧识】判定：${card.suit}${card.rank} ${card.name}`);
+      if (!suits.includes(suit) && (player.hpMax || 0) < 10) {
+        suits.push(suit);
+        h.suits = suits;
+        player.hpMax = Math.min((player.hpMax || 0) + 1, 10);
+        if ((player.hp || 0) > player.hpMax) player.hp = player.hpMax;
+        G.actionLog.push(`${playerName}【慧识】生效，体力上限+1（${player.hpMax}/10）`);
+        return;
+      }
+      h.suits = suits;
+      h.stage = 'choose_recipient';
+      h.recipientID = null;
+      G.actionLog.push(`${playerName}【慧识】判定结束`);
+    },
+    shenguojiaHuishiStop: ({ G, playerID }) => {
+      const h = G.huishi;
+      if (!h || !h.active || h.sourceID !== playerID) return;
+      h.stage = 'choose_recipient';
+      h.recipientID = null;
+    },
+    shenguojiaHuishiChooseRecipient: ({ G, playerID }, targetID) => {
+      const h = G.huishi;
+      if (!h || !h.active || h.sourceID !== playerID || h.stage !== 'choose_recipient') return;
+      if (!G.players[targetID]) return;
+      const cards = Array.isArray(h.judges) ? h.judges : [];
+      if (!G.hands[targetID]) G.hands[targetID] = [];
+      G.hands[targetID].push(...cards);
+      const player = G.players[playerID];
+      const playerName = player && player.general ? player.general.name : `Player ${playerID}`;
+      const targetName = G.players[targetID] && G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
+      if (cards.length > 0) {
+        G.actionLog.push(`${playerName} 将 ${cards.length} 张判定牌交给 ${targetName}（慧识）`);
+      } else {
+        G.actionLog.push(`${playerName} 结束【慧识】`);
+      }
+      const handCounts = Object.keys(G.players).map(pid => (G.hands[pid] || []).length);
+      const maxHand = handCounts.length > 0 ? Math.max(...handCounts) : 0;
+      if ((G.hands[targetID] || []).length === maxHand) {
+        const p = G.players[playerID];
+        if (p) {
+          p.hpMax = Math.max((p.hpMax || 0) - 1, 1);
+          if ((p.hp || 0) > p.hpMax) p.hp = p.hpMax;
+          G.actionLog.push(`${playerName} 因目标手牌数最多，体力上限-1（${p.hpMax}）`);
+        }
+      }
+      G.huishi = null;
+    },
+    shenguojiaHuishiCancel: ({ G, playerID }) => {
+      const h = G.huishi;
+      if (!h || !h.active || h.sourceID !== playerID) return;
+      const cards = Array.isArray(h.judges) ? h.judges : [];
+      if (cards.length > 0) addToDiscardPile(G, cards);
+      G.huishi = null;
+    },
+
+    shenguojiaHuishi2Start: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '神郭嘉') return;
+      G.huishi2 = {
+        active: true,
+        stage: 'choose_target',
+        sourceID: playerID,
+        targetID: null,
+      };
+    },
+    shenguojiaHuishi2SelectTarget: ({ G, playerID }, targetID) => {
+      const h = G.huishi2;
+      if (!h || !h.active || h.sourceID !== playerID || h.stage !== 'choose_target') return;
+      if (!G.players[targetID]) return;
+      h.targetID = targetID;
+      h.stage = 'choose_mode';
+    },
+    shenguojiaHuishi2Choose: ({ G, ctx, playerID }, option) => {
+      const h = G.huishi2;
+      if (!h || !h.active || h.sourceID !== playerID || h.stage !== 'choose_mode') return;
+      if (option !== 1 && option !== 2) return;
+      const source = G.players[playerID];
+      if (!source || !source.general || source.general.name !== '神郭嘉') return;
+      const targetID = h.targetID;
+      const target = G.players[targetID];
+      if (!target) return;
+      const sourceName = source.general ? source.general.name : `Player ${playerID}`;
+      const targetName = target.general ? target.general.name : `Player ${targetID}`;
+      source.hpMax = Math.max((source.hpMax || 0) - 2, 1);
+      if ((source.hp || 0) > source.hpMax) source.hp = source.hpMax;
+      if (option === 1) {
+        target.awakenOverride = true;
+        G.actionLog.push(`${sourceName} 对 ${targetName} 发动【辉逝】，令其视为满足觉醒条件；${sourceName} 体力上限-2（${source.hpMax}）`);
+      } else {
+        drawCards(G, targetID, 4, ctx.random);
+        G.actionLog.push(`${sourceName} 对 ${targetName} 发动【辉逝】，令其摸四张牌；${sourceName} 体力上限-2（${source.hpMax}）`);
+      }
+      G.huishi2 = null;
+    },
+    shenguojiaHuishi2Cancel: ({ G, playerID }) => {
+      const h = G.huishi2;
+      if (!h || !h.active || h.sourceID !== playerID) return;
+      G.huishi2 = null;
+    },
+
+    shenguojiaTianyi: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '神郭嘉') return;
+      const name = player.general ? player.general.name : `Player ${playerID}`;
+      if (player.shenguojiaTianyiAwakened) {
+        G.actionLog.push(`${name} 的【天翊】已觉醒`);
+        return;
+      }
+      player.shenguojiaTianyiAwakened = true;
+      player.hpMax = (player.hpMax || 0) + 2;
+      player.hp = Math.min((player.hp || 0) + 1, player.hpMax);
+      G.actionLog.push(`${name} 觉醒【天翊】，体力上限+2并回复1点体力`);
+      G.tianyi = { active: true, stage: 'choose_grant', sourceID: playerID };
+    },
+    shenguojiaTianyiGrant: ({ G, playerID }, targetID) => {
+      const t = G.tianyi;
+      if (!t || !t.active || t.sourceID !== playerID || t.stage !== 'choose_grant') return;
+      if (!G.players[targetID]) return;
+      const target = G.players[targetID];
+      if (!Array.isArray(target.grantedSkills)) target.grantedSkills = [];
+      if (!target.grantedSkills.includes('佐幸')) target.grantedSkills.push('佐幸');
+      const sourceName = G.players[playerID] && G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+      const targetName = target.general ? target.general.name : `Player ${targetID}`;
+      G.actionLog.push(`${sourceName} 令 ${targetName} 获得技能【佐幸】`);
+      G.tianyi = null;
+    },
+    shenguojiaTianyiCancel: ({ G, playerID }) => {
+      const t = G.tianyi;
+      if (!t || !t.active || t.sourceID !== playerID) return;
+      G.tianyi = null;
+    },
+
+    shenguojiaZuoxingStart: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (!player) return;
+      const has = (player.general && player.general.skills && player.general.skills.includes('佐幸')) || (Array.isArray(player.grantedSkills) && player.grantedSkills.includes('佐幸'));
+      if (!has) return;
+      G.zuoxing = {
+        active: true,
+        stage: 'select_virtual',
+        sourceID: playerID,
+        declaredName: null,
+        declaredType: null,
+        targetIDs: [],
+      };
+    },
+    shenguojiaZuoxingSelectVirtual: ({ G, playerID }, declaredName) => {
+      const z = G.zuoxing;
+      if (!z || !z.active || z.sourceID !== playerID || z.stage !== 'select_virtual') return;
+      const declaredType = getZuoxingDeclaredType(declaredName);
+      if (!declaredType) return;
+      z.declaredName = declaredName;
+      z.declaredType = declaredType;
+      z.stage = 'select_targets';
+    },
+    shenguojiaZuoxingConfirmPlay: ({ G, ctx, playerID }, targetIDs) => {
+      const z = G.zuoxing;
+      if (!z || !z.active || z.sourceID !== playerID || z.stage !== 'select_targets') return;
+      const player = G.players[playerID];
+      if (!player) return;
+      let resolvedTargets = Array.isArray(targetIDs) ? targetIDs : [];
+      if (z.declaredName === '五谷丰登') resolvedTargets = [];
+      if (['顺手牵羊', '过河拆桥', '借刀杀人', '火攻'].includes(z.declaredName)) {
+        if (resolvedTargets.length !== 1) return;
+      }
+      if (z.declaredName === '铁索连环') {
+        if (resolvedTargets.length > 2) return;
+      }
+
+      player.hpMax = Math.max((player.hpMax || 0) - 1, 1);
+      if ((player.hp || 0) > player.hpMax) player.hp = player.hpMax;
+      const playerName = player.general ? player.general.name : `Player ${playerID}`;
+      G.actionLog.push(`${playerName} 发动【佐幸】，体力上限-1（${player.hpMax}）`);
+
+      const card = { suit: '', rank: '', name: z.declaredName, type: z.declaredType };
+      if (!G.hands[playerID]) G.hands[playerID] = [];
+      G.hands[playerID].push(card);
+      const cardIndex = G.hands[playerID].length - 1;
+
+      const playCardsDef = CardGame.moves.playCards;
+      const playCardsMove = typeof playCardsDef === 'function' ? playCardsDef : playCardsDef && typeof playCardsDef.move === 'function' ? playCardsDef.move : null;
+      if (playCardsMove) {
+        playCardsMove({ G, ctx, playerID }, [cardIndex], resolvedTargets);
+      }
+
+      z.targetIDs = resolvedTargets;
+      if (
+        (G.pendingEffect && G.pendingEffect.active) ||
+        (G.selectCard && G.selectCard.active) ||
+        (G.fireAttackShowCard && G.fireAttackShowCard.active) ||
+        (G.harvestCountSelect && G.harvestCountSelect.active) ||
+        (Array.isArray(G.harvestCards) && G.harvestCards.length > 0)
+      ) {
+        z.stage = 'waiting_resolution';
+      } else {
+        G.zuoxing = null;
+      }
+    },
+    shenguojiaZuoxingCancel: ({ G, playerID }) => {
+      const z = G.zuoxing;
+      if (!z || !z.active || z.sourceID !== playerID) return;
+      G.zuoxing = null;
+    },
     rangjieChooseOption: ({ G, ctx, playerID }, option) => {
       if (option === 'cancel') {
         G.rangjieSelect.active = false;
@@ -1384,6 +1639,8 @@ export const CardGame = {
                if (player.hp < player.hpMax) {
                  player.hp = Math.min(player.hp + 1, player.hpMax);
                  G.actionLog.push(`${playerName} used Peach, HP +1`);
+               } else {
+                 G.actionLog.push(`${playerName} used Peach, HP unchanged`);
                }
             } else if (card.name === '铁索连环') {
                if (targetIds && targetIds.length > 0) {
@@ -1700,6 +1957,7 @@ export const CardGame = {
         G.harvestCards = [];
         advanceTaoluanAfterResolution(G);
         advanceMiewuAfterResolution(G);
+        advanceZuoxingAfterResolution(G);
       }
     },
     
@@ -1712,6 +1970,7 @@ export const CardGame = {
        G.harvestCards = [];
        advanceTaoluanAfterResolution(G);
        advanceMiewuAfterResolution(G);
+       advanceZuoxingAfterResolution(G);
     },
 
     equipCard: ({ G, playerID }, cardIndex) => {
@@ -2166,6 +2425,7 @@ export const CardGame = {
         G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
         advanceTaoluanAfterResolution(G);
         advanceMiewuAfterResolution(G);
+        advanceZuoxingAfterResolution(G);
     },
 
     cancel_select_card: ({ G, playerID }) => {
@@ -2173,6 +2433,7 @@ export const CardGame = {
         G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
         advanceTaoluanAfterResolution(G);
         advanceMiewuAfterResolution(G);
+        advanceZuoxingAfterResolution(G);
     },
 
     confirmEffect: ({ G, playerID }) => {
@@ -2219,6 +2480,7 @@ export const CardGame = {
         G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
         advanceTaoluanAfterResolution(G);
         advanceMiewuAfterResolution(G);
+        advanceZuoxingAfterResolution(G);
     },
 
     cancelFireAttackShowCard: ({ G, playerID }) => {
@@ -2226,6 +2488,7 @@ export const CardGame = {
          G.fireAttackShowCard = { active: false, sourcePlayerID: null, targetPlayerID: null };
          advanceTaoluanAfterResolution(G);
          advanceMiewuAfterResolution(G);
+         advanceZuoxingAfterResolution(G);
     },
 
     cancelEffect: ({ G, playerID }) => {
@@ -2235,6 +2498,7 @@ export const CardGame = {
         G.pendingEffect = null;
         advanceTaoluanAfterResolution(G);
         advanceMiewuAfterResolution(G);
+        advanceZuoxingAfterResolution(G);
     },
 
     changeGeneral: ({ G, ctx, playerID }, generalId, actionId, clickid, sessionid) => {
