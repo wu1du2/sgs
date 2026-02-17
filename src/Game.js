@@ -1023,7 +1023,8 @@ export const CardGame = {
 
       const sourceName = G.players[t.sourceID] && G.players[t.sourceID].general ? G.players[t.sourceID].general.name : `Player ${t.sourceID}`;
       const otherName = G.players[playerID] && G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      G.actionLog.push(`${otherName} 交给 ${sourceName} 一张牌（滔乱）`);
+      const cardLabel = card && card.name ? `${card.suit || ''}${card.rank || ''} ${card.name}`.trim() : '一张牌';
+      G.actionLog.push(`${otherName}交给了${sourceName}${cardLabel}（滔乱）`);
 
       G.taoluan = null;
     },

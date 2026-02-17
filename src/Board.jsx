@@ -6567,8 +6567,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       style={{ 
       width: '100vw', 
       height: '100vh', 
-      backgroundColor: '#2c3e50',
-      backgroundImage: 'radial-gradient(circle at center, #34495e 0%, #2c3e50 100%)',
+      backgroundColor: '#f2f4f7',
+      backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), url('/images/backgrounds/b565660909cd981e0314e480fc3562d67b3966a43e0e2-C03NHj_fw1200.jpeg')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
       position: 'relative',
       overflow: 'auto'
     }}>

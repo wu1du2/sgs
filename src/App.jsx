@@ -29,7 +29,11 @@ const App = () => {
         flexDirection: 'column',
         justifyContent: 'center', 
         alignItems: 'center',
-        backgroundColor: '#2d5a27',
+        backgroundColor: '#f2f4f7',
+        backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), url('/images/generals/界徐盛.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         color: 'white',
         fontFamily: 'Arial, sans-serif'
       }}>
