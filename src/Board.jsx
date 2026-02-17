@@ -3026,11 +3026,71 @@ const ZuoxingSelectVirtualModal = ({ onSelect, onCancel }) => {
   );
 };
 
-const HuishiModal = ({ huishi, onJudge, onStop, onCancel, imageMode = 'url', selectedRecipientId, selectedRecipientLabel, onConfirmRecipient }) => {
+const LiegongModal = ({ revealedCards = [], forbidSuits = [], extraDamage = 0, imageMode = 'url', onClose }) => {
+  const suitText = Array.isArray(forbidSuits) && forbidSuits.length > 0 ? forbidSuits.join('、') : '无';
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '90%',
+        maxWidth: '900px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>烈弓判定</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {revealedCards.map((card, idx) => (
+            <div key={idx} style={{ transform: 'scale(0.9)' }}>
+              <Card card={card} imageMode={imageMode} />
+            </div>
+          ))}
+          {revealedCards.length === 0 && (
+            <div style={{ color: '#ddd' }}>无展示牌</div>
+          )}
+        </div>
+        <div style={{ textAlign: 'center', fontWeight: 'bold' }}>
+          加{extraDamage}伤害，不能出{suitText}花色响应
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const HuishiModal = ({ huishi, onJudge, onStop, onCancel, imageMode = 'url', selectedRecipientId, selectedRecipientLabel, onConfirmRecipient, readOnly = false }) => {
   const suits = Array.isArray(huishi?.suits) ? huishi.suits : [];
   const judges = Array.isArray(huishi?.judges) ? huishi.judges : [];
   const stage = huishi?.stage;
   const isBlocking = stage === 'judging';
+  const canControl = !readOnly;
   const [isMinimized, setIsMinimized] = React.useState(stage === 'choose_recipient');
 
   React.useEffect(() => {
@@ -3071,35 +3131,39 @@ const HuishiModal = ({ huishi, onJudge, onStop, onCancel, imageMode = 'url', sel
           <div style={{ fontWeight: 'bold' }}>慧识</div>
           <div style={{ color: '#f1c40f', fontWeight: 'bold' }}>选目标</div>
           <div style={{ color: '#ddd' }}>已选：{selectedRecipientLabel || '未选择'}</div>
-          <button
-            onClick={onConfirmRecipient}
-            disabled={selectedRecipientId === null || selectedRecipientId === undefined}
-            style={{
-              padding: '4px 10px',
-              backgroundColor: selectedRecipientId !== null && selectedRecipientId !== undefined ? '#2ecc71' : '#555',
-              color: 'white',
-              border: 'none',
-              borderRadius: '999px',
-              cursor: selectedRecipientId !== null && selectedRecipientId !== undefined ? 'pointer' : 'not-allowed',
-              fontWeight: 'bold'
-            }}
-          >
-            确认
-          </button>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: '4px 10px',
-              backgroundColor: '#95a5a6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '999px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            取消
-          </button>
+          {canControl && (
+            <>
+              <button
+                onClick={onConfirmRecipient}
+                disabled={selectedRecipientId === null || selectedRecipientId === undefined}
+                style={{
+                  padding: '4px 10px',
+                  backgroundColor: selectedRecipientId !== null && selectedRecipientId !== undefined ? '#2ecc71' : '#555',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '999px',
+                  cursor: selectedRecipientId !== null && selectedRecipientId !== undefined ? 'pointer' : 'not-allowed',
+                  fontWeight: 'bold'
+                }}
+              >
+                确认
+              </button>
+              <button
+                onClick={onCancel}
+                style={{
+                  padding: '4px 10px',
+                  backgroundColor: '#95a5a6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '999px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                取消
+              </button>
+            </>
+          )}
           <button
             onClick={() => setIsMinimized(false)}
             style={{
@@ -3153,12 +3217,16 @@ const HuishiModal = ({ huishi, onJudge, onStop, onCancel, imageMode = 'url', sel
           <div style={{ textAlign: 'center', fontWeight: 'bold' }}>已出现花色：{suits.join(' ') || '无'}</div>
           {stage === 'choose_recipient' && (
             <>
-              <div style={{ textAlign: 'center', color: '#f1c40f', fontWeight: 'bold' }}>请选择一名角色以交给判定牌</div>
-              <div style={{ textAlign: 'center', color: '#ddd' }}>已选：{selectedRecipientLabel || '未选择'}</div>
+              <div style={{ textAlign: 'center', color: '#f1c40f', fontWeight: 'bold' }}>
+                {canControl ? '请选择一名角色以交给判定牌' : '等待神郭嘉选择目标'}
+              </div>
+              <div style={{ textAlign: 'center', color: '#ddd' }}>
+                {canControl ? `已选：${selectedRecipientLabel || '未选择'}` : '请稍候'}
+              </div>
             </>
           )}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {stage === 'judging' && (
+            {stage === 'judging' && canControl && (
               <>
                 <button
                   onClick={onJudge}
@@ -3190,7 +3258,7 @@ const HuishiModal = ({ huishi, onJudge, onStop, onCancel, imageMode = 'url', sel
                 </button>
               </>
             )}
-            {stage === 'choose_recipient' && (
+            {stage === 'choose_recipient' && canControl && (
               <button
                 onClick={onConfirmRecipient}
                 disabled={selectedRecipientId === null || selectedRecipientId === undefined}
@@ -3207,20 +3275,25 @@ const HuishiModal = ({ huishi, onJudge, onStop, onCancel, imageMode = 'url', sel
                 确认
               </button>
             )}
-            <button
-              onClick={onCancel}
-              style={{
-                padding: '10px 18px',
-                backgroundColor: '#95a5a6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
-            >
-              取消
-            </button>
+            {stage === 'judging' && !canControl && (
+              <div style={{ color: '#ddd', fontWeight: 'bold' }}>正在判定中</div>
+            )}
+            {canControl && (
+              <button
+                onClick={onCancel}
+                style={{
+                  padding: '10px 18px',
+                  backgroundColor: '#95a5a6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                取消
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -4893,6 +4966,21 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         return;
       }
     }
+
+    if (!liegongAutoPrompt && selectedCardIndices.length === 1) {
+      const cardIndex = selectedCardIndices[0];
+      const card = G.hands[playerID][cardIndex];
+      const isSlash = card && ['杀', '火杀', '雷杀'].includes(card.name);
+      const me = G.players[playerID];
+      if (isSlash && me.general && me.general.name === '谋黄忠' && selectedTargetIds.length === 1) {
+        setLiegongAutoPrompt({
+          cardIndices: [...selectedCardIndices],
+          targetIds: [...selectedTargetIds],
+          cardName: card.name,
+        });
+        return;
+      }
+    }
     
     // Check if single equipment card is selected, if so, equip it
     if (selectedCardIndices.length === 1) {
@@ -5054,6 +5142,15 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     setTieqiAutoPrompt(null);
   };
 
+  const resolveLiegongAutoPrompt = (shouldUseLiegong) => {
+    if (!liegongAutoPrompt) return;
+    const { cardIndices, targetIds } = liegongAutoPrompt;
+    moves.mouhuangzhongPlayCardsWithLiegong({ cardIndices, targetIds, useLiegong: shouldUseLiegong });
+    setSelectedCardIndices([]);
+    setSelectedTargetIds([]);
+    setLiegongAutoPrompt(null);
+  };
+
   const handleEquipCard = () => {
     if (selectedCardIndices.length !== 1) {
       alert("请选择一张装备牌进行装备");
@@ -5121,6 +5218,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [activeSkill, setActiveSkill] = React.useState(null);
   const [pojunAutoPrompt, setPojunAutoPrompt] = React.useState(null);
   const [tieqiAutoPrompt, setTieqiAutoPrompt] = React.useState(null);
+  const [liegongAutoPrompt, setLiegongAutoPrompt] = React.useState(null);
   const [showZhuangShiModal, setShowZhuangShiModal] = React.useState(false);
   const [showKuangbaoSelector, setShowKuangbaoSelector] = React.useState(false);
   const [shanJiaState, setShanJiaState] = React.useState(3);
@@ -5570,6 +5668,13 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         // Also show recorded suits
         if (player.chengLueSuits && player.chengLueSuits.length > 0) {
             displaySkills.push(`Recorded: ${player.chengLueSuits.join(',')}`);
+        }
+      }
+
+      if (general.name === '谋黄忠') {
+        const recorded = Array.isArray(player.liegongSuits) ? player.liegongSuits : [];
+        if (recorded.length > 0) {
+          displaySkills = [...displaySkills, `烈弓已记:${recorded.join('')}`];
         }
       }
 
@@ -6629,6 +6734,76 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         </div>
       )}
 
+      {liegongAutoPrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          zIndex: 5000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '20px',
+            borderRadius: '10px',
+            width: '380px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            color: 'white'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}>
+              是否发动烈弓？
+            </div>
+            <div style={{ fontSize: '12px', color: '#bdc3c7', textAlign: 'center' }}>
+              你使用了【{liegongAutoPrompt.cardName}】指定 {G.players[liegongAutoPrompt.targetIds?.[0]]?.general?.name || `Player ${liegongAutoPrompt.targetIds?.[0]}`} 为目标
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button
+                onClick={() => resolveLiegongAutoPrompt(true)}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#2ecc71',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                确定
+              </button>
+              <button
+                onClick={() => resolveLiegongAutoPrompt(false)}
+                style={{
+                  padding: '8px 18px',
+                  backgroundColor: '#7f8c8d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {G.liegongPending && G.liegongPending.active && (
+        <LiegongModal
+          revealedCards={Array.isArray(G.liegongPending.revealedCards) ? G.liegongPending.revealedCards : []}
+          forbidSuits={Array.isArray(G.liegongPending.forbidSuits) ? G.liegongPending.forbidSuits : []}
+          extraDamage={typeof G.liegongPending.extraDamage === 'number' ? G.liegongPending.extraDamage : 0}
+          imageMode={cardImageMode}
+          onClose={() => moves.mouhuangzhongClearLiegongPending()}
+        />
+      )}
+
       {G.mouyi && G.mouyi.active && (G.mouyi.sourcePlayerID === playerID || G.mouyi.targetPlayerID === playerID) && (
         <div style={{
           position: 'fixed',
@@ -7350,7 +7525,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
         />
       )}
 
-      {G.huishi && G.huishi.active && G.huishi.sourceID === playerID && (
+      {G.huishi && G.huishi.active && (
         <HuishiModal
           huishi={G.huishi}
           onJudge={() => moves.shenguojiaHuishiJudge()}
@@ -7363,6 +7538,7 @@ export function CardBoard({ ctx, G, moves, playerID }) {
             if (huishiRecipientId === null || huishiRecipientId === undefined) return;
             moves.shenguojiaHuishiChooseRecipient(huishiRecipientId);
           }}
+          readOnly={G.huishi.sourceID !== playerID}
         />
       )}
 

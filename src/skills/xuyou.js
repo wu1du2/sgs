@@ -36,6 +36,16 @@ const addToDiscardPile = (G, cards) => {
   }
 };
 
+const recordLiegongSuit = (G, playerID, card) => {
+  const player = G.players[playerID];
+  if (!player || !player.general || player.general.name !== '谋黄忠') return;
+  if (!card || !card.suit) return;
+  if (!Array.isArray(player.liegongSuits)) player.liegongSuits = [];
+  if (!player.liegongSuits.includes(card.suit)) {
+    player.liegongSuits.push(card.suit);
+  }
+};
+
 export const xuyouSkill = {
     moves: {
         xuyouDrawCard: ({ G, ctx, playerID }, actionId) => {
@@ -186,6 +196,12 @@ export const xuyouSkill = {
              // This replicates playCards but redirects to Shi Cai Area
              const hand = G.hands[playerID];
              const cardsPlayed = cardIndices.map(i => hand[i]);
+             cardsPlayed.forEach(card => recordLiegongSuit(G, playerID, card));
+             if (targetIds && targetIds.length > 0) {
+               targetIds.forEach(targetID => {
+                 cardsPlayed.forEach(card => recordLiegongSuit(G, targetID, card));
+               });
+             }
              
              // Remove from hand
              [...cardIndices].sort((a, b) => b - a).forEach(index => {

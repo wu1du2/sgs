@@ -28,7 +28,7 @@ import { lijueSkill } from './skills/lijue.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['神郭嘉'];
+const TESTING_GENERAL_LIST = ['神郭嘉', '谋黄忠'];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
@@ -87,6 +87,7 @@ const createPlayerState = () => ({
   duyuWuku: 0,
   duyuSanchenAwakened: false,
   shenguojiaTianyiAwakened: false,
+  liegongSuits: [],
   grantedSkills: [],
   ...createEmptyZones()
 });
@@ -239,6 +240,230 @@ const drawTopCard = (G, rng) => {
     }
   }
   return G.deck.shift();
+};
+
+const recordLiegongSuit = (G, playerID, card) => {
+  const player = G.players[playerID];
+  if (!player || !player.general || player.general.name !== '谋黄忠') return;
+  if (!card || !card.suit) return;
+  if (!Array.isArray(player.liegongSuits)) player.liegongSuits = [];
+  if (!player.liegongSuits.includes(card.suit)) {
+    player.liegongSuits.push(card.suit);
+  }
+};
+
+const activateLiegongInternal = (G, ctx, playerID, targetID) => {
+  const player = G.players[playerID];
+  if (!player || !player.general || player.general.name !== '谋黄忠') return;
+  const recorded = Array.isArray(player.liegongSuits) ? player.liegongSuits : [];
+  const revealCount = Math.max(0, recorded.length - 1);
+  const revealedCards = [];
+  for (let i = 0; i < revealCount; i++) {
+    const card = drawTopCard(G, ctx.random);
+    if (card) revealedCards.push(card);
+  }
+  if (revealedCards.length > 0) {
+    addToDiscardPile(G, revealedCards);
+  }
+  const matchedCount = revealedCards.filter(card => recorded.includes(card.suit)).length;
+  G.liegongPending = {
+    active: true,
+    sourcePlayerID: playerID,
+    targetPlayerID: targetID,
+    extraDamage: matchedCount,
+    forbidSuits: [...recorded],
+    revealedCards: revealedCards.map(card => ({ ...card }))
+  };
+  const suitText = recorded.length > 0 ? recorded.join('、') : '无';
+  G.actionLog.push(`加${matchedCount}伤害，不能出${suitText}花色响应。`);
+  player.liegongSuits = [];
+};
+
+const playCardsInternal = ({ G, ctx, playerID }, cardIndices, targetIds) => {
+  const hand = G.hands[playerID];
+  const cardsPlayed = cardIndices.map(i => hand[i]);
+
+  cardsPlayed.forEach(card => duyuGainWukuIfPossible(G, playerID, card));
+  cardsPlayed.forEach(card => recordLiegongSuit(G, playerID, card));
+  if (targetIds && targetIds.length > 0) {
+    targetIds.forEach(targetID => {
+      cardsPlayed.forEach(card => recordLiegongSuit(G, targetID, card));
+    });
+  }
+  
+  if (G.players[playerID].general && G.players[playerID].general.name === '界沮授' && cardsPlayed.length > 0) {
+      const lastCard = cardsPlayed[0];
+      G.players[playerID].jianying = {
+          suit: lastCard.suit,
+          rank: lastCard.rank
+      };
+  }
+
+  [...cardIndices].sort((a, b) => b - a).forEach(index => {
+    hand.splice(index, 1);
+  });
+  
+  const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+  const cardNames = cardsPlayed.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
+  
+  let logEntry = `${playerName} 使用了 ${cardNames}`;
+  if (targetIds && targetIds.length > 0) {
+    const targetNames = targetIds.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
+    logEntry += ` 目标为 ${targetNames}`;
+  }
+  G.actionLog.push(logEntry);
+
+  cardsPlayed.forEach(card => youxushuQiHuiAutoLight(G, playerID, card));
+
+  if (cardsPlayed.some(c => c && c.name === '酒')) {
+    const player = G.players[playerID];
+    player.jiuAnimKey = (typeof player.jiuAnimKey === 'number' ? player.jiuAnimKey : 0) + 1;
+  }
+
+  const isSlashCardName = (name) => ['杀', '火杀', '雷杀'].includes(name);
+  const playedSlash = cardsPlayed.find(c => c && isSlashCardName(c.name));
+  if (playedSlash && targetIds && targetIds.length > 0) {
+    const caoangPlayerID = Object.keys(G.players).find(pid => G.players[pid].general && G.players[pid].general.name === '曹昂');
+    if (caoangPlayerID) {
+      G.caoangAutoPrompt = {
+        active: true,
+        playerID: caoangPlayerID,
+        slashSourceID: playerID,
+        slashTargetID: targetIds[0],
+        cardName: playedSlash.name,
+      };
+    }
+  }
+
+  if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
+      G.players[playerID].qz_cnt += 1;
+      const logs = luotongSkill.qinzheng.trigger(G, playerID, ctx.random);
+      if (logs && logs.length > 0) {
+          G.actionLog.push(...logs);
+      }
+  }
+  
+  cardsPlayed.forEach(card => {
+    if (['武器', '防具', '加一', '减一'].includes(card.type)) {
+        const player = G.players[playerID];
+        let slot = '';
+        if (card.type === '武器') slot = 'weapon';
+        else if (card.type === '防具') slot = 'armor';
+        else if (card.type === '加一') slot = 'plusOne';
+        else if (card.type === '减一') slot = 'minusOne';
+        
+        const oldCard = player.equipments[slot];
+        if (oldCard) {
+            addToDiscardPile(G, oldCard);
+        }
+        player.equipments[slot] = card;
+        G.actionLog.push(`${playerName} equipped ${card.name}`);
+    } 
+    else if (['乐', '兵', '电'].includes(card.type)) {
+        let targetID = null;
+        let judgeSlot = '';
+        
+        if (card.type === '电') {
+            targetID = playerID;
+            judgeSlot = 'dian';
+        } else if (card.type === '乐') {
+            targetID = targetIds && targetIds.length > 0 ? targetIds[0] : null;
+            judgeSlot = 'le';
+        } else if (card.type === '兵') {
+            targetID = targetIds && targetIds.length > 0 ? targetIds[0] : null;
+            judgeSlot = 'bing';
+        }
+        
+        if (targetID !== null) {
+            const targetPlayer = G.players[targetID];
+            if (targetPlayer.judges[judgeSlot]) {
+                if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
+                   G.maliang.cheeringPile.push(card);
+                   G.actionLog.push(`无法使用 ${card.name}，判定区已被占用。卡牌移动到助威区。`);
+                } else {
+                   addToDiscardPile(G, card);
+                   G.actionLog.push(`无法使用 ${card.name}，判定区已被占用。卡牌被弃置。`);
+                }
+            } else {
+                targetPlayer.judges[judgeSlot] = card;
+                const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetID}`;
+                G.actionLog.push(`${playerName} placed ${card.name} on ${targetName}'s judgment area`);
+            }
+        } else {
+            if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
+               G.maliang.cheeringPile.push(card);
+               G.actionLog.push(`${card.name} 无目标，移动到助威区。`);
+            } else {
+               addToDiscardPile(G, card);
+               G.actionLog.push(`${card.name} 无目标，被弃置。`);
+            }
+        }
+    }
+    else {
+        if (card.name === '铁索连环' && (!targetIds || targetIds.length === 0)) {
+           addToDiscardPile(G, card);
+           drawCards(G, playerID, 1, ctx.random);
+           G.actionLog.push(`${playerName} 使用铁索连环未选择目标，摸一张牌`);
+           return;
+        }
+
+        if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
+           G.maliang.cheeringPile.push(card);
+           G.actionLog.push(`${playerName} put ${card.name} into Cheering Area`);
+        } else {
+           addToDiscardPile(G, card);
+        }
+
+        const sourcePlayer = G.players[playerID];
+        if (sourcePlayer && sourcePlayer.general && sourcePlayer.general.name === '李傕' && card.type === '锦囊') {
+          sourcePlayer.yiSuanLastTrickCardId = card.id;
+        }
+        
+        if (card.name === '桃') {
+           const player = G.players[playerID];
+           if (player.hp < player.hpMax) {
+             player.hp = Math.min(player.hp + 1, player.hpMax);
+             G.actionLog.push(`${playerName} used Peach, HP +1`);
+           } else {
+             G.actionLog.push(`${playerName} used Peach, HP unchanged`);
+           }
+        } else if (card.name === '铁索连环') {
+           if (targetIds && targetIds.length > 0) {
+             targetIds.forEach(targetId => {
+               const target = G.players[targetId];
+               if (target) {
+                 target.is_linked = !target.is_linked;
+               }
+             });
+             const targetNames = targetIds.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
+             G.actionLog.push(`${playerName} used 铁索连环 on ${targetNames}`);
+           }
+        } else if (card.name === '五谷丰登') {
+           G.harvestCountSelect = {
+             active: true,
+             playerID: playerID
+           };
+           G.actionLog.push(`${playerName} played Harvest (五谷丰登), waiting for count selection`);
+        } else if (['顺手牵羊', '过河拆桥', '火攻', '借刀杀人'].includes(card.name)) {
+           if (targetIds && targetIds.length === 1) {
+              let actionType = '';
+              if (card.name === '顺手牵羊') actionType = 'steal';
+              else if (card.name === '过河拆桥') actionType = 'discard';
+              else if (card.name === '火攻') actionType = 'fire_attack';
+              else if (card.name === '借刀杀人') actionType = 'collateral';
+
+              G.pendingEffect = {
+                 active: true,
+                 sourcePlayerID: playerID,
+                 targetPlayerID: targetIds[0],
+                 actionType: actionType,
+                 pendingCard: card
+              };
+              G.actionLog.push(`${playerName} played ${card.name}, waiting for effect confirmation`);
+           }
+        }
+    }
+  });
 };
 
 const youxushuQiHuiAutoLight = (G, playerID, card) => {
@@ -526,6 +751,14 @@ export const CardGame = {
       targetPlayerID: null,
       sourceChoice: null,
       targetChoice: null,
+    },
+    liegongPending: {
+      active: false,
+      sourcePlayerID: null,
+      targetPlayerID: null,
+      extraDamage: 0,
+      forbidSuits: [],
+      revealedCards: []
     },
     debugInfo: [], // Store clickid and sessionid for debugging
   }),
@@ -1425,6 +1658,8 @@ export const CardGame = {
       }
 
       youxushuQiHuiAutoLight(G, playerID, card);
+      recordLiegongSuit(G, playerID, card);
+      recordLiegongSuit(G, targetPlayerID, card);
 
       // Luo Tong Skill: Qin Zheng
       if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
@@ -1487,198 +1722,7 @@ export const CardGame = {
       }
     },
     playCards: ({ G, ctx, playerID }, cardIndices, targetIds) => {
-      const hand = G.hands[playerID];
-      const cardsPlayed = cardIndices.map(i => hand[i]);
-
-      cardsPlayed.forEach(card => duyuGainWukuIfPossible(G, playerID, card));
-      
-      // Record for Jie Jushou (Jianying)
-      if (G.players[playerID].general && G.players[playerID].general.name === '界沮授' && cardsPlayed.length > 0) {
-          // Record the last played card (taking the first one if multiple, though usually 1)
-          // Note: If Jianying modifies the card name/type, the suit/rank usually stays same.
-          // We record AFTER modification if it was modified by Jianying, but Jianying modifies name not suit/rank.
-          // So it's fine.
-          const lastCard = cardsPlayed[0];
-          G.players[playerID].jianying = {
-              suit: lastCard.suit,
-              rank: lastCard.rank
-          };
-      }
-
-      // Remove cards from hand
-      // Sort indices descending to remove correctly
-      [...cardIndices].sort((a, b) => b - a).forEach(index => {
-        hand.splice(index, 1);
-      });
-      
-      const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
-      const cardNames = cardsPlayed.map(c => `${c.suit}${c.rank} ${c.name}`).join(' ');
-      
-      let logEntry = `${playerName} 使用了 ${cardNames}`;
-      if (targetIds && targetIds.length > 0) {
-        const targetNames = targetIds.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
-        logEntry += ` 目标为 ${targetNames}`;
-      }
-      G.actionLog.push(logEntry);
-
-      cardsPlayed.forEach(card => youxushuQiHuiAutoLight(G, playerID, card));
-
-      if (cardsPlayed.some(c => c && c.name === '酒')) {
-        const player = G.players[playerID];
-        player.jiuAnimKey = (typeof player.jiuAnimKey === 'number' ? player.jiuAnimKey : 0) + 1;
-      }
-
-      const isSlashCardName = (name) => ['杀', '火杀', '雷杀'].includes(name);
-      const playedSlash = cardsPlayed.find(c => c && isSlashCardName(c.name));
-      if (playedSlash && targetIds && targetIds.length > 0) {
-        const caoangPlayerID = Object.keys(G.players).find(pid => G.players[pid].general && G.players[pid].general.name === '曹昂');
-        if (caoangPlayerID) {
-          G.caoangAutoPrompt = {
-            active: true,
-            playerID: caoangPlayerID,
-            slashSourceID: playerID,
-            slashTargetID: targetIds[0],
-            cardName: playedSlash.name,
-          };
-        }
-      }
-
-      // Luo Tong Skill: Qin Zheng
-      if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
-          G.players[playerID].qz_cnt += 1;
-          const logs = luotongSkill.qinzheng.trigger(G, playerID, ctx.random);
-          if (logs && logs.length > 0) {
-              G.actionLog.push(...logs);
-          }
-      }
-      
-      // Iterate through played cards to handle destination (Discard vs Equip vs Judge)
-      cardsPlayed.forEach(card => {
-        // 1. Equipment
-        if (['武器', '防具', '加一', '减一'].includes(card.type)) {
-            const player = G.players[playerID];
-            let slot = '';
-            if (card.type === '武器') slot = 'weapon';
-            else if (card.type === '防具') slot = 'armor';
-            else if (card.type === '加一') slot = 'plusOne';
-            else if (card.type === '减一') slot = 'minusOne';
-            
-            const oldCard = player.equipments[slot];
-            if (oldCard) {
-                addToDiscardPile(G, oldCard);
-            }
-            player.equipments[slot] = card;
-            G.actionLog.push(`${playerName} equipped ${card.name}`);
-        } 
-        // 2. Delayed Scrolls (Judgments)
-        else if (['乐', '兵', '电'].includes(card.type)) {
-            let targetID = null;
-            let judgeSlot = '';
-            
-            if (card.type === '电') { // Lightning
-                targetID = playerID; // Lightning is put on self
-                judgeSlot = 'dian';
-            } else if (card.type === '乐') { // Indulgence
-                targetID = targetIds && targetIds.length > 0 ? targetIds[0] : null;
-                judgeSlot = 'le';
-            } else if (card.type === '兵') { // Supply Shortage
-                targetID = targetIds && targetIds.length > 0 ? targetIds[0] : null;
-                judgeSlot = 'bing';
-            }
-            
-            if (targetID !== null) {
-                const targetPlayer = G.players[targetID];
-                // Check if slot is empty
-                if (targetPlayer.judges[judgeSlot]) {
-                    if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
-                       G.maliang.cheeringPile.push(card);
-                       G.actionLog.push(`无法使用 ${card.name}，判定区已被占用。卡牌移动到助威区。`);
-                    } else {
-                       addToDiscardPile(G, card);
-                       G.actionLog.push(`无法使用 ${card.name}，判定区已被占用。卡牌被弃置。`);
-                    }
-                } else {
-                    targetPlayer.judges[judgeSlot] = card;
-                    const targetName = targetPlayer.general ? targetPlayer.general.name : `Player ${targetID}`;
-                    G.actionLog.push(`${playerName} placed ${card.name} on ${targetName}'s judgment area`);
-                }
-            } else {
-                if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
-                   G.maliang.cheeringPile.push(card);
-                   G.actionLog.push(`${card.name} 无目标，移动到助威区。`);
-                } else {
-                   addToDiscardPile(G, card);
-                   G.actionLog.push(`${card.name} 无目标，被弃置。`);
-                }
-            }
-        }
-        // 3. Regular Cards (Basic, Scroll)
-        else {
-            if (card.name === '铁索连环' && (!targetIds || targetIds.length === 0)) {
-               addToDiscardPile(G, card);
-               drawCards(G, playerID, 1, ctx.random);
-               G.actionLog.push(`${playerName} 使用铁索连环未选择目标，摸一张牌`);
-               return;
-            }
-
-            if (G.players[playerID].general && G.players[playerID].general.name === '马良') {
-               G.maliang.cheeringPile.push(card);
-               G.actionLog.push(`${playerName} put ${card.name} into Cheering Area`);
-            } else {
-               addToDiscardPile(G, card);
-            }
-
-            const sourcePlayer = G.players[playerID];
-            if (sourcePlayer && sourcePlayer.general && sourcePlayer.general.name === '李傕' && card.type === '锦囊') {
-              sourcePlayer.yiSuanLastTrickCardId = card.id;
-            }
-            
-            // Handle Card Effects for Regular Cards
-            if (card.name === '桃') {
-               const player = G.players[playerID];
-               if (player.hp < player.hpMax) {
-                 player.hp = Math.min(player.hp + 1, player.hpMax);
-                 G.actionLog.push(`${playerName} used Peach, HP +1`);
-               } else {
-                 G.actionLog.push(`${playerName} used Peach, HP unchanged`);
-               }
-            } else if (card.name === '铁索连环') {
-               if (targetIds && targetIds.length > 0) {
-                 targetIds.forEach(targetId => {
-                   const target = G.players[targetId];
-                   if (target) {
-                     target.is_linked = !target.is_linked;
-                   }
-                 });
-                 const targetNames = targetIds.map(tid => G.players[tid].general ? G.players[tid].general.name : `Player ${tid}`).join(', ');
-                 G.actionLog.push(`${playerName} used 铁索连环 on ${targetNames}`);
-               }
-            } else if (card.name === '五谷丰登') {
-               G.harvestCountSelect = {
-                 active: true,
-                 playerID: playerID
-               };
-               G.actionLog.push(`${playerName} played Harvest (五谷丰登), waiting for count selection`);
-            } else if (['顺手牵羊', '过河拆桥', '火攻', '借刀杀人'].includes(card.name)) {
-               if (targetIds && targetIds.length === 1) {
-                  let actionType = '';
-                  if (card.name === '顺手牵羊') actionType = 'steal';
-                  else if (card.name === '过河拆桥') actionType = 'discard';
-                  else if (card.name === '火攻') actionType = 'fire_attack';
-                  else if (card.name === '借刀杀人') actionType = 'collateral';
-
-                  G.pendingEffect = {
-                     active: true,
-                     sourcePlayerID: playerID,
-                     targetPlayerID: targetIds[0],
-                     actionType: actionType,
-                     pendingCard: card
-                  };
-                  G.actionLog.push(`${playerName} played ${card.name}, waiting for effect confirmation`);
-               }
-            }
-        }
-      });
+      playCardsInternal({ G, ctx, playerID }, cardIndices, targetIds);
     },
 
     discardCards: ({ G, playerID }, cardIndices) => {
@@ -1983,6 +2027,7 @@ export const CardGame = {
       hand.splice(cardIndex, 1);
 
       youxushuQiHuiAutoLight(G, playerID, card);
+      recordLiegongSuit(G, playerID, card);
 
       // Record for Jie Jushou (Jianying) - Equipments also trigger
       if (G.players[playerID].general && G.players[playerID].general.name === '界沮授') {
@@ -2248,6 +2293,26 @@ export const CardGame = {
     },
     useChongJian: ({ G, playerID }, targetID) => {
         wenyangSkill.useChongJian({ G, playerID }, targetID);
+    },
+
+    mouhuangzhongPlayCardsWithLiegong: ({ G, ctx, playerID }, { cardIndices, targetIds, useLiegong }) => {
+        playCardsInternal({ G, ctx, playerID }, cardIndices, targetIds);
+        if (useLiegong && targetIds && targetIds.length > 0) {
+            activateLiegongInternal(G, ctx, playerID, targetIds[0]);
+        }
+    },
+    mouhuangzhongActivateLiegong: ({ G, ctx, playerID }, targetID) => {
+        activateLiegongInternal(G, ctx, playerID, targetID);
+    },
+    mouhuangzhongClearLiegongPending: ({ G }) => {
+        G.liegongPending = {
+            active: false,
+            sourcePlayerID: null,
+            targetPlayerID: null,
+            extraDamage: 0,
+            forbidSuits: [],
+            revealedCards: []
+        };
     },
 
     // Shi Weiyan Skills
