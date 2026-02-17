@@ -463,6 +463,19 @@ const playCardsInternal = ({ G, ctx, playerID }, cardIndices, targetIds) => {
            }
         }
     }
+
+    if (card && card.name === '闪' && targetIds && targetIds.length === 1) {
+      const player = G.players[playerID];
+      if (player && player.general && player.general.name === 'SP赵云' && !(G.selectCard && G.selectCard.active)) {
+        G.selectCard = {
+          active: true,
+          sourcePlayerID: playerID,
+          targetPlayerID: targetIds[0],
+          actionType: 'steal',
+          pendingCard: { name: '冲阵' }
+        };
+      }
+    }
   });
 };
 
@@ -658,6 +671,12 @@ export const CardGame = {
         sourcePlayerID: null,
         targetPlayerID: null,
         selectedCard: null // { type: 'hand'|'equip', index: number, slot: string }
+    },
+    chongzhenSelect: {
+        active: false,
+        stage: null,
+        sourcePlayerID: null,
+        targetPlayerID: null
     },
     chouceSelect: {
         active: false,
@@ -2919,6 +2938,52 @@ export const CardGame = {
         G.longhunSelect.selectedCard = null;
     },
 
+    clickChongzhen: ({ G, playerID }) => {
+        if (!G.chongzhenSelect) {
+            G.chongzhenSelect = {
+                active: false,
+                stage: null,
+                sourcePlayerID: null,
+                targetPlayerID: null
+            };
+        }
+        G.chongzhenSelect.active = true;
+        G.chongzhenSelect.stage = 'target_selection';
+        G.chongzhenSelect.sourcePlayerID = playerID;
+        G.chongzhenSelect.targetPlayerID = null;
+    },
+    selectChongzhenTarget: ({ G, playerID }, targetID) => {
+        if (!G.chongzhenSelect) return;
+        if (G.chongzhenSelect.active && G.chongzhenSelect.stage === 'target_selection' && G.chongzhenSelect.sourcePlayerID === playerID) {
+            G.chongzhenSelect.targetPlayerID = targetID;
+        }
+    },
+    confirmChongzhenTarget: ({ G, playerID }) => {
+        if (!G.chongzhenSelect) return;
+        if (G.chongzhenSelect.active && G.chongzhenSelect.stage === 'target_selection' && G.chongzhenSelect.targetPlayerID && G.chongzhenSelect.sourcePlayerID === playerID) {
+            G.selectCard = {
+                active: true,
+                sourcePlayerID: playerID,
+                targetPlayerID: G.chongzhenSelect.targetPlayerID,
+                actionType: 'steal',
+                pendingCard: { name: '冲阵' }
+            };
+            G.chongzhenSelect.active = false;
+            G.chongzhenSelect.stage = null;
+            G.chongzhenSelect.sourcePlayerID = null;
+            G.chongzhenSelect.targetPlayerID = null;
+        }
+    },
+    cancelChongzhen: ({ G, playerID }) => {
+        if (!G.chongzhenSelect) return;
+        if (G.chongzhenSelect.active && G.chongzhenSelect.sourcePlayerID === playerID) {
+            G.chongzhenSelect.active = false;
+            G.chongzhenSelect.stage = null;
+            G.chongzhenSelect.sourcePlayerID = null;
+            G.chongzhenSelect.targetPlayerID = null;
+        }
+    },
+
     // Shen Lubu - Kuangbao
     updateKuangbaoCount: ({ G, playerID }, count) => {
         const player = G.players[playerID];
@@ -2926,6 +2991,15 @@ export const CardGame = {
             player.kuangbaoCount = count;
             G.actionLog.push(`${player.general.name} set Kuangbao to ${count}`);
         }
+    },
+
+    useKurou: ({ G, ctx, playerID }) => {
+        const player = G.players[playerID];
+        if (!player) return;
+        player.hp = Math.max((player.hp || 0) - 1, 0);
+        drawCards(G, playerID, 2, ctx.random);
+        const playerName = player.general ? player.general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 发动了苦肉，失去1点体力并摸两张牌`);
     },
 
     // Xi Zhi Cai - Chou Ce

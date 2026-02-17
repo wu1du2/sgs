@@ -4866,6 +4866,16 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    // Chongzhen Target Selection
+    if (G.chongzhenSelect && G.chongzhenSelect.active && G.chongzhenSelect.stage === 'target_selection') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.selectChongzhenTarget(targetId);
+      return;
+    }
+
     // Liyu Target Selection
     if (G.liyuTargeting && G.liyuTargeting.active && G.liyuTargeting.sourceID === playerID) {
       if (targetId === playerID) {
@@ -5441,6 +5451,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       return;
     }
 
+    if (skillName === '苦肉') {
+      moves.useKurou();
+      return;
+    }
+
     if (skillName === '密诏') {
       if ((G.hands[playerID] || []).length === 0) {
         alert("你必须有手牌才能发动");
@@ -5584,6 +5599,11 @@ export function CardBoard({ ctx, G, moves, playerID }) {
 
     if (skillName === '筹策') {
         moves.clickChouce();
+        return;
+    }
+
+    if (skillName === '冲阵') {
+        moves.clickChongzhen();
         return;
     }
 
@@ -5782,7 +5802,8 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     const mizhaoSelecting = mizhaoStage === 'selectA' || mizhaoStage === 'selectB';
     const yimouSelecting = G.yimouSelect && G.yimouSelect.active && G.yimouSelect.stage === 'select_recipient' && G.yimouSelect.targetPlayerID === playerID;
     const huishiSelecting = G.huishi && G.huishi.active && G.huishi.stage === 'choose_recipient' && G.huishi.sourceID === playerID;
-    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting || !!activeSkill || yimouSelecting || huishiSelecting;
+    const chongzhenSelecting = G.chongzhenSelect && G.chongzhenSelect.active && G.chongzhenSelect.stage === 'target_selection' && G.chongzhenSelect.sourcePlayerID === playerID;
+    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting || !!activeSkill || yimouSelecting || huishiSelecting || chongzhenSelecting;
     const isSelected = selectedTargetIds.includes(id)
       || (mizhaoStage === 'selectA' && mizhaoTargetA === id)
       || (mizhaoStage === 'selectB' && (mizhaoTargetA === id || mizhaoTargetB === id))
@@ -7278,6 +7299,63 @@ export function CardBoard({ ctx, G, moves, playerID }) {
                       }}
                       onCancel={() => moves.cancelChouce()}
                   />
+              )}
+          </>
+      )}
+
+      {/* Chongzhen Modals */}
+      {G.chongzhenSelect && G.chongzhenSelect.active && G.chongzhenSelect.sourcePlayerID === playerID && (
+          <>
+              {G.chongzhenSelect.stage === 'target_selection' && G.chongzhenSelect.targetPlayerID && (
+                  <div style={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 3000
+                  }}>
+                      <div style={{
+                          backgroundColor: '#333',
+                          padding: '20px',
+                          borderRadius: '10px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '20px',
+                          color: 'white'
+                      }}>
+                          <h3>确认选择该目标？</h3>
+                          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                              <button
+                                  onClick={() => moves.confirmChongzhenTarget()}
+                                  style={{
+                                      padding: '10px 20px',
+                                      backgroundColor: '#2ecc71',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '5px',
+                                      cursor: 'pointer'
+                                  }}
+                              >
+                                  确定
+                              </button>
+                              <button
+                                  onClick={() => moves.cancelChongzhen()}
+                                  style={{
+                                      padding: '10px 20px',
+                                      backgroundColor: '#e74c3c',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '5px',
+                                      cursor: 'pointer'
+                                  }}
+                              >
+                                  取消
+                              </button>
+                          </div>
+                      </div>
+                  </div>
               )}
           </>
       )}
