@@ -28,7 +28,7 @@ import { lijueSkill } from './skills/lijue.js';
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = ['神郭嘉', '谋黄忠'];
+const TESTING_GENERAL_LIST = [];
 export const SHOW_DEBUG_INFO = false;
 
 // Fisher-Yates shuffle with optional RNG
