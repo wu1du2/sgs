@@ -1027,7 +1027,7 @@ const TianduModal = ({ card, onConfirm, onCancel, imageMode = 'url' }) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0 }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0, seatBadge = null }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
@@ -1280,9 +1280,20 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
           backgroundPosition: 'top center',
           backgroundImage: portrait ? `url(${portrait})` : 'none',
           flexShrink: 0,
-          cursor: onAvatarClick ? 'pointer' : 'default'
+          cursor: onAvatarClick ? 'pointer' : 'default',
+          position: 'relative'
         }}>
           {!portrait && '👤'}
+          {seatBadge && (
+            <div style={{
+              position: 'absolute',
+              top: '-6px',
+              left: '-6px',
+              fontSize: '16px'
+            }}>
+              {seatBadge}
+            </div>
+          )}
         </div>
         
         {/* Name & HP */}
@@ -1531,10 +1542,12 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
   );
 };
 
-const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord, debugInfo, imageMode = 'url' }) => {
+const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, landlord, debugInfo, imageMode = 'url', currentBidder, myPlayerID, minBid, canPass, allowSelection, seatBadgeMap }) => {
   const isCompact = typeof window !== 'undefined' && window.innerWidth <= 700;
   const [renderLogs, setRenderLogs] = React.useState([]);
   const [generalIntro, setGeneralIntro] = React.useState(null);
+  const isMyTurn = myPlayerID && currentBidder === myPlayerID;
+  const mySeatBadge = myPlayerID && seatBadgeMap ? seatBadgeMap[myPlayerID] : '';
 
   React.useEffect(() => {
       const timestamp = new Date().toISOString();
@@ -1584,30 +1597,58 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
       </div>
       )}
 
-      {/* Bidding Buttons */}
       <div style={{ marginBottom: isCompact ? '12px' : '20px', display: 'flex', gap: isCompact ? '10px' : '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
         <span style={{ fontSize: isCompact ? '14px' : '18px', fontWeight: 'bold' }}>叫分:</span>
-        {[100, 200, 300].map(amount => (
-          <button
-            key={amount}
-            onClick={() => onBid(amount)}
-            disabled={landlord !== null}
-            style={{
-              padding: isCompact ? '6px 12px' : '10px 20px',
-              fontSize: isCompact ? '14px' : '16px',
-              fontWeight: 'bold',
-              backgroundColor: landlord !== null ? '#555' : '#ffd700',
-              color: landlord !== null ? '#aaa' : '#8b4513',
-              border: '2px solid #8b4513',
-              borderRadius: '8px',
-              cursor: landlord !== null ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
-            }}
-          >
-            {amount}
-          </button>
-        ))}
-        {landlord !== null && <span style={{ color: '#ff4444', fontWeight: 'bold', fontSize: isCompact ? '12px' : '14px' }}>已有人叫地主!</span>}
+        {[100, 200, 300].map(amount => {
+          const disabled = landlord !== null || !isMyTurn || amount <= (minBid || 0);
+          return (
+            <button
+              key={amount}
+              onClick={() => onBid(amount)}
+              disabled={disabled}
+              style={{
+                padding: isCompact ? '6px 12px' : '10px 20px',
+                fontSize: isCompact ? '14px' : '16px',
+                fontWeight: 'bold',
+                backgroundColor: disabled ? '#555' : '#ffd700',
+                color: disabled ? '#aaa' : '#8b4513',
+                border: '2px solid #8b4513',
+                borderRadius: '8px',
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
+              }}
+            >
+              {amount}
+            </button>
+          );
+        })}
+        <button
+          onClick={() => onBid(0)}
+          disabled={landlord !== null || !isMyTurn || !canPass}
+          style={{
+            padding: isCompact ? '6px 12px' : '10px 20px',
+            fontSize: isCompact ? '14px' : '16px',
+            fontWeight: 'bold',
+            backgroundColor: landlord !== null || !isMyTurn || !canPass ? '#555' : '#7f8c8d',
+            color: landlord !== null || !isMyTurn || !canPass ? '#aaa' : '#ecf0f1',
+            border: '2px solid #5f6b73',
+            borderRadius: '8px',
+            cursor: landlord !== null || !isMyTurn || !canPass ? 'not-allowed' : 'pointer',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
+          }}
+        >
+          不叫
+        </button>
+        {landlord !== null && (
+          <span style={{ color: '#ff4444', fontWeight: 'bold', fontSize: isCompact ? '12px' : '14px' }}>
+            玩家 {landlord} 已经叫地主，你的位次是 {mySeatBadge}
+          </span>
+        )}
+        {landlord === null && (
+          <span style={{ color: '#ffd166', fontSize: isCompact ? '12px' : '14px' }}>
+            {currentBidder ? `当前轮到 座位 ${currentBidder}` : '等待叫地主'}
+          </span>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: isCompact ? '16px' : '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -1624,40 +1665,44 @@ const GeneralSelection = ({ options, onSelect, onChange, changeUsed, onBid, land
                 onAvatarClick={() => setGeneralIntro(general)}
               />
             </div>
-            <button 
-              onClick={() => onSelect(general.id)}
-              style={{
-                marginTop: isCompact ? '6px' : '10px',
-                padding: isCompact ? '6px 14px' : '10px 24px',
-                backgroundColor: '#ffd700',
-                color: '#8b4513',
-                border: '2px solid #8b4513',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontSize: isCompact ? '14px' : '16px',
-                boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
-              }}
-            >
-              SELECT
-            </button>
-            {!changeUsed[index] && (
-              <button 
-                onClick={() => onChange(general.id)}
-                style={{
-                  marginTop: isCompact ? '6px' : '10px',
-                  padding: isCompact ? '4px 10px' : '5px 12px',
-                  backgroundColor: '#e74c3c',
-                  color: 'white',
-                  border: '1px solid #c0392b',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: isCompact ? '11px' : '12px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                }}
-              >
-                CHANGE
-              </button>
+            {allowSelection && (
+              <>
+                <button 
+                  onClick={() => onSelect(general.id)}
+                  style={{
+                    marginTop: isCompact ? '6px' : '10px',
+                    padding: isCompact ? '6px 14px' : '10px 24px',
+                    backgroundColor: '#ffd700',
+                    color: '#8b4513',
+                    border: '2px solid #8b4513',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: isCompact ? '14px' : '16px',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.5)'
+                  }}
+                >
+                  SELECT
+                </button>
+                {!changeUsed[index] && (
+                  <button 
+                    onClick={() => onChange(general.id)}
+                    style={{
+                      marginTop: isCompact ? '6px' : '10px',
+                      padding: isCompact ? '4px 10px' : '5px 12px',
+                      backgroundColor: '#e74c3c',
+                      color: 'white',
+                      border: '1px solid #c0392b',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: isCompact ? '11px' : '12px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    }}
+                  >
+                    CHANGE
+                  </button>
+                )}
+              </>
             )}
           </div>
         ))}
@@ -4492,6 +4537,24 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
   const lobbySeats = ['0', '1', '2'];
   const readySet = new Set(G.readyPlayers || []);
   const isReady = playerID ? readySet.has(playerID) : false;
+  const seatOrder = ['0', '2', '1'];
+  const showSeatBadge = G.landlord !== null;
+  const seatBadgeMap = (() => {
+    if (!showSeatBadge) return {};
+    const landlordId = G.landlord;
+    const startIndex = seatOrder.indexOf(landlordId);
+    if (startIndex === -1) return {};
+    const order = [
+      seatOrder[startIndex],
+      seatOrder[(startIndex + 1) % seatOrder.length],
+      seatOrder[(startIndex + 2) % seatOrder.length]
+    ];
+    return {
+      [order[0]]: '1️⃣',
+      [order[1]]: '2️⃣',
+      [order[2]]: '3️⃣'
+    };
+  })();
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
@@ -5229,6 +5292,10 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
   const onBid = (amount) => {
     moves.claimLandlord(amount);
   };
+  const currentBidder = G.bidTurn;
+  const minBid = G.highestBid || 0;
+  const canPass = !(G.passCount >= 2 && !G.highestBidder);
+  const allowSelection = G.landlord !== null;
 
   const onResolveGame = (winnerRole) => {
     moves.resolveGame(winnerRole);
@@ -6521,6 +6588,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               onQiHuiClick={(btn) => moves.youxushuQiHuiClick(btn)}
               onAvatarClick={() => openGeneralIntro(general)}
               jiuAnimKey={player.jiuAnimKey}
+              seatBadge={showSeatBadge ? seatBadgeMap[id] : null}
             />
               );
             })()}
@@ -6559,6 +6627,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               onQiHuiClick={(btn) => moves.youxushuQiHuiClick(btn)}
               onAvatarClick={() => openGeneralIntro(general)}
               jiuAnimKey={player.jiuAnimKey}
+              seatBadge={showSeatBadge ? seatBadgeMap[id] : null}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </>
@@ -7561,6 +7630,12 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
           landlord={G.landlord}
           debugInfo={G.debugInfo}
           imageMode={cardImageMode}
+          currentBidder={currentBidder}
+          myPlayerID={playerID}
+          minBid={minBid}
+          canPass={canPass}
+          allowSelection={allowSelection}
+          seatBadgeMap={seatBadgeMap}
         />
       )}
 

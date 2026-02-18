@@ -93,6 +93,34 @@ const createPlayerState = () => ({
   ...createEmptyZones()
 });
 
+const BID_ORDER = ['0', '2', '1'];
+
+const getNextBidder = (current) => {
+  const index = BID_ORDER.indexOf(current);
+  if (index === -1) return BID_ORDER[0];
+  return BID_ORDER[(index + 1) % BID_ORDER.length];
+};
+
+const assignLandlord = (G, playerID, amount) => {
+  G.landlord = playerID;
+  G.bidAmount = amount;
+  G.highestBid = amount;
+  G.highestBidder = playerID;
+  G.passCount = 0;
+  G.bidTurn = null;
+  ['0', '1', '2'].forEach(pid => {
+    if (pid === playerID) {
+      G.players[pid].role = 'landlord';
+      if (G.players[pid].general) {
+        G.players[pid].hpMax += 1;
+        G.players[pid].hp += 1;
+      }
+    } else {
+      G.players[pid].role = 'peasant';
+    }
+  });
+};
+
 const distributeGenerals = (rng) => {
   const shuffledGenerals = shuffle(ENABLED_GENERALS, rng);
   const generalOptions = {};
@@ -605,6 +633,11 @@ export const CardGame = {
     readyPlayers: [],
     landlord: null,
     bidAmount: 0,
+    bidStarter: '0',
+    bidTurn: '0',
+    highestBid: 0,
+    highestBidder: null,
+    passCount: 0,
     phase: 'lobby', // lobby -> selection -> playing
     gameResult: null, // { winnerRole: string, scoreChanges: object }
     rematchVotes: [],
@@ -1635,24 +1668,35 @@ export const CardGame = {
       }
     },
     claimLandlord: ({ G, playerID }, amount) => {
-      if (G.landlord !== null) return; // Already claimed
+      if (G.landlord !== null) return;
+      if (!playerID || playerID !== G.bidTurn) return;
+      if (![0, 100, 200, 300].includes(amount)) return;
 
-      G.landlord = playerID;
-      G.bidAmount = amount;
-      
-      // Set roles
-      ['0', '1', '2'].forEach(pid => {
-        if (pid === playerID) {
-          G.players[pid].role = 'landlord';
-          // Landlord gets +1 HP and +1 Max HP
-          if (G.players[pid].general) {
-            G.players[pid].hpMax += 1;
-            G.players[pid].hp += 1;
-          }
-        } else {
-          G.players[pid].role = 'peasant';
+      const highestBid = G.highestBid || 0;
+
+      if (amount === 0) {
+        if (!G.highestBidder && G.passCount >= 2) return;
+        G.passCount += 1;
+        if (G.highestBidder && G.passCount >= 2) {
+          assignLandlord(G, G.highestBidder, highestBid);
+          return;
         }
-      });
+        G.bidTurn = getNextBidder(G.bidTurn);
+        return;
+      }
+
+      if (amount <= highestBid) return;
+
+      if (amount === 300) {
+        assignLandlord(G, playerID, 300);
+        return;
+      }
+
+      G.highestBid = amount;
+      G.highestBidder = playerID;
+      G.bidAmount = amount;
+      G.passCount = 0;
+      G.bidTurn = getNextBidder(G.bidTurn);
     },
     modifyHP: ({ G }, targetPlayerID, amount) => {
       const player = G.players[targetPlayerID];
@@ -2692,6 +2736,7 @@ export const CardGame = {
       G.rematchVotes.push(playerID);
       
       if (G.rematchVotes.length === 3) {
+        const nextBidStarter = getNextBidder(G.bidStarter || '0');
         // Reset game but keep scores
         const currentScores = {
           '0': G.players['0'].score,
@@ -2701,6 +2746,8 @@ export const CardGame = {
         
         // Reset G
         const newG = CardGame.setup({ ctx });
+        newG.bidStarter = nextBidStarter;
+        newG.bidTurn = nextBidStarter;
         
         // Restore scores
         newG.players['0'].score = currentScores['0'];
