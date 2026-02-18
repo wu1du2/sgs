@@ -89,6 +89,7 @@ const createPlayerState = () => ({
   shenguojiaTianyiAwakened: false,
   liegongSuits: [],
   grantedSkills: [],
+  userId: null,
   ...createEmptyZones()
 });
 
@@ -1573,6 +1574,12 @@ export const CardGame = {
     toggleLinked: ({ G }, playerID) => {
       const player = G.players[playerID];
       player.is_linked = !player.is_linked;
+    },
+    setUserId: ({ G, playerID }, userId) => {
+      if (!playerID) return;
+      if (!G.players[playerID]) return;
+      if (!userId) return;
+      G.players[playerID].userId = userId;
     },
     playerReady: ({ G, ctx, playerID }) => {
       if (!G.readyPlayers.includes(playerID)) {

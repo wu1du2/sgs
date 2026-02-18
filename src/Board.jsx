@@ -4452,7 +4452,7 @@ const MieJiLiRuTakeModal = ({ targetHand, targetEquipments, onConfirm, imageMode
     );
 };
 
-export function CardBoard({ ctx, G, moves, playerID }) {
+export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby }) {
   const myPlayerID = playerID;
   const numPlayers = 3;
   const getUiScale = (width) => {
@@ -4489,6 +4489,9 @@ export function CardBoard({ ctx, G, moves, playerID }) {
   const [quanjiAutoPrompt, setQuanjiAutoPrompt] = React.useState(false);
   const [cardImageMode, setCardImageMode] = React.useState('url');
   const showCardImageToggle = false;
+  const lobbySeats = ['0', '1', '2'];
+  const readySet = new Set(G.readyPlayers || []);
+  const isReady = playerID ? readySet.has(playerID) : false;
 
   // Prevent double clicks
   const processingAction = React.useRef(false);
@@ -4547,12 +4550,22 @@ export function CardBoard({ ctx, G, moves, playerID }) {
     setSelectedTargetIds([]);
   }, [ctx.turn, G.phase]);
 
+  React.useEffect(() => {
+    if (!enableLobby) return;
+    if (!playerID) return;
+    if (!userId) return;
+    const currentUserId = G.players?.[playerID]?.userId;
+    if (currentUserId === userId) return;
+    moves.setUserId(userId);
+  }, [enableLobby, playerID, userId, G.players, moves]);
+
   // Auto-ready when joining
   React.useEffect(() => {
+    if (enableLobby) return;
     if (playerID && !G.readyPlayers.includes(playerID)) {
       moves.playerReady();
     }
-  }, [playerID, G.readyPlayers, moves]);
+  }, [enableLobby, playerID, G.readyPlayers, moves]);
 
   React.useEffect(() => {
     if (!enable_voice) return;
@@ -7739,20 +7752,84 @@ export function CardBoard({ ctx, G, moves, playerID }) {
       />
 
       {/* Game Status Overlay */}
-      {G.phase === 'lobby' && (
+      {enableLobby && G.phase === 'lobby' ? (
         <div style={{
           position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
           color: 'white',
-          fontSize: '24px',
+          fontSize: '18px',
           fontWeight: 'bold',
           textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-          zIndex: 100
+          zIndex: 100,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          padding: '20px 24px',
+          borderRadius: '12px',
+          minWidth: '320px'
         }}>
-          Waiting for players ({G.readyPlayers.length}/3)...
+          <div style={{ fontSize: '20px' }}>
+            {roomId ? `房间 ${roomId}` : '房间'}
+          </div>
+          <div style={{ fontSize: '14px', fontWeight: 'normal' }}>
+            {userId ? `用户 ${userId}` : '未设置用户'}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {lobbySeats.map((id) => {
+              const seatPlayer = G.players?.[id];
+              const seatName = seatPlayer?.userId || '空位';
+              const seatReady = readySet.has(id);
+              return (
+                <div key={id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                  <span>座位 {id}</span>
+                  <span>{seatName}</span>
+                  <span style={{ color: seatReady ? '#00ff9d' : '#ffd166' }}>
+                    {seatReady ? '已准备' : '未准备'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <button
+              onClick={() => playerID && moves.playerReady()}
+              disabled={!playerID || isReady}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: isReady ? '#7f8c8d' : '#2ecc71',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: !playerID || isReady ? 'not-allowed' : 'pointer',
+                color: 'white',
+                fontWeight: 'bold'
+              }}
+            >
+              {isReady ? '已准备' : '准备'}
+            </button>
+          </div>
+          <div style={{ fontSize: '12px', fontWeight: 'normal', textAlign: 'center', color: '#dfe6e9' }}>
+            准备人数 {G.readyPlayers.length}/3
+          </div>
         </div>
+      ) : (
+        G.phase === 'lobby' && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            color: 'white',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+            zIndex: 100
+          }}>
+            Waiting for players ({G.readyPlayers.length}/3)...
+          </div>
+        )
       )}
 
       {mizhaoStage && (
