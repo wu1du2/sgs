@@ -21,8 +21,18 @@ server.app.use(async (ctx, next) => {
   if (ctx.path === '/api/reset' && ctx.method === 'POST') {
     try {
       if (server.db) {
-        await server.db.wipe('default');
-        console.log('Match "default" wiped.');
+        let matchIDs = [];
+        if (typeof server.db.listMatches === 'function') {
+          matchIDs = await server.db.listMatches();
+        } else if (typeof server.db.listGames === 'function') {
+          matchIDs = await server.db.listGames();
+        }
+        if (matchIDs.length === 0) {
+          console.log('No matches to wipe.');
+        } else {
+          await Promise.all(matchIDs.map((matchID) => server.db.wipe(matchID)));
+          console.log(`Wiped ${matchIDs.length} matches.`);
+        }
       }
       ctx.status = 200;
       ctx.body = { success: true };
