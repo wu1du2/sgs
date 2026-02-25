@@ -1065,6 +1065,15 @@ export const CardGame = {
     taoluanCancel: ({ G, playerID }) => {
       const t = G.taoluan;
       if (!t || !t.active || t.sourceID !== playerID) return;
+      
+      const allowedStages = ['select_card', 'select_virtual', 'select_targets'];
+      const isAllowedStage = allowedStages.includes(t.stage);
+      
+      if (!isAllowedStage || (t.stage === 'select_targets' && t.played) || t.played) {
+        G.actionLog.push('当前阶段不可取消滔乱');
+        return;
+      }
+      
       if (!t.played && t.reservedName && Array.isArray(G.taoluanGlobalUsedNames)) {
         G.taoluanGlobalUsedNames = G.taoluanGlobalUsedNames.filter(n => n !== t.reservedName);
       }
@@ -1927,6 +1936,12 @@ export const CardGame = {
 
     cancelMizhao: ({ G, playerID }) => {
       if (!G.mizhao.active || G.mizhao.sourcePlayerID !== playerID) return;
+      
+      if (G.mizhao.stage !== 'selectA') {
+        G.actionLog.push('已交出手牌，无法取消密诏');
+        return;
+      }
+      
       G.mizhao = {
         active: false,
         stage: null,

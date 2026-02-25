@@ -35,6 +35,7 @@ export const jielubuSkill = {
     // 3. Cancel the targeting
     cancelLiyuTarget: ({ G }) => {
         G.liyuTargeting = null;
+        G.liyuCardSelecting = null;
     },
 
     // 4. Action: Obtain the selected card

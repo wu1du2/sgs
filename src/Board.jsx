@@ -129,8 +129,8 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
                 onClick={() => toggleSelection({ type: 'hand', index })}
                 imageMode={imageMode}
                 wrapperStyle={{
-                  boxShadow: isSelected('hand', index) ? '0 0 15px #00ffff' : 'none',
-                  animation: isSelected('hand', index) ? 'pulse-selected 1.5s infinite' : 'none'
+                  boxShadow: isSelected('hand', index) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
+                  animation: 'none'
                 }}
               />
             ))}
@@ -148,12 +148,12 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
                   onClick={() => toggleSelection({ type: 'equip', slot })}
                   style={{
                     padding: '10px',
-                    backgroundColor: isSelected('equip', slot) ? 'rgba(0, 255, 255, 0.3)' : '#444',
+                    backgroundColor: isSelected('equip', slot) ? 'rgba(0, 255, 255, 0.2)' : '#444',
                     border: isSelected('equip', slot) ? '3px solid #00ffff' : '1px solid #aaa',
                     borderRadius: '5px',
                     cursor: 'pointer',
-                    boxShadow: isSelected('equip', slot) ? '0 0 15px #00ffff' : 'none',
-                    animation: isSelected('equip', slot) ? 'pulse-selected 1.5s infinite' : 'none'
+                    boxShadow: isSelected('equip', slot) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
+                    animation: 'none'
                   }}
                 >
                   {card.name} ({slot})
@@ -174,12 +174,12 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
                   onClick={() => toggleSelection({ type: 'judge', slot })}
                   style={{
                     padding: '10px',
-                    backgroundColor: isSelected('judge', slot) ? 'rgba(0, 255, 255, 0.3)' : '#444',
+                    backgroundColor: isSelected('judge', slot) ? 'rgba(0, 255, 255, 0.2)' : '#444',
                     border: isSelected('judge', slot) ? '3px solid #00ffff' : '1px solid #aaa',
                     borderRadius: '5px',
                     cursor: 'pointer',
-                    boxShadow: isSelected('judge', slot) ? '0 0 15px #00ffff' : 'none',
-                    animation: isSelected('judge', slot) ? 'pulse-selected 1.5s infinite' : 'none'
+                    boxShadow: isSelected('judge', slot) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
+                    animation: 'none'
                   }}
                 >
                   {card.name} ({slot})
@@ -1069,11 +1069,11 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
   }, [isMinimized, name, hp, hpMax, skills, equipments, judges, isLinked, handCount, portrait, role, isSelectable, isSelected, qiHui]);
 
   const getBorderColor = () => {
-    if (isSelected) return '#1b4f9c';
-    if (isSelectable) return '#ffff00'; // Yellow for selectable
-    if (role === 'landlord') return '#ff0000'; // Red for Landlord
-    if (role === 'peasant') return '#00ff00'; // Green for Peasant
-    return '#8b4513'; // Default Bronze/Wood
+    if (isSelected) return '#4a90d9';
+    if (isSelectable) return '#7cb342';
+    if (role === 'landlord') return '#ff0000';
+    if (role === 'peasant') return '#00ff00';
+    return '#8b4513';
   };
 
   const getBackgroundColor = () => {
@@ -1101,11 +1101,11 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
           justifyContent: 'space-between',
           color: '#e0e0e0',
           pointerEvents: 'auto',
-          border: `${isSelected ? 3 : 2}px solid ${getBorderColor()}`,
-          boxShadow: isSelected ? '0 0 0 4px #1b4f9c, 0 0 16px rgba(27, 79, 156, 0.6)' : (isSelectable ? '0 0 10px #ffff00' : '0 4px 8px rgba(0,0,0,0.5)'),
+          border: `${isSelected ? 4 : 2}px solid ${getBorderColor()}`,
+          boxShadow: isSelected ? '0 2px 8px rgba(74, 144, 217, 0.4)' : (isSelectable ? '0 2px 6px rgba(124, 179, 66, 0.3)' : '0 2px 6px rgba(0,0,0,0.3)'),
           flexShrink: 0,
           cursor: isSelectable ? 'pointer' : 'default',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.2s ease',
           padding: '0 8px',
           overflow: 'hidden',
           marginBottom: `${marginBottom}px`
@@ -1150,13 +1150,13 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
         alignItems: 'center',
         color: '#e0e0e0',
         pointerEvents: 'auto',
-        border: `${isSelected ? 3 : 2}px solid ${getBorderColor()}`,
-        boxShadow: isSelected ? '0 0 0 4px #1b4f9c, 0 0 16px rgba(27, 79, 156, 0.6)' : (isSelectable ? '0 0 10px #ffff00' : '0 4px 8px rgba(0,0,0,0.5)'),
-        flexShrink: 0, // Prevent shrinking
+        border: `${isSelected ? 4 : 2}px solid ${getBorderColor()}`,
+        boxShadow: isSelected ? '0 4px 12px rgba(74, 144, 217, 0.5)' : (isSelectable ? '0 3px 8px rgba(124, 179, 66, 0.4)' : '0 2px 6px rgba(0,0,0,0.3)'),
+        flexShrink: 0,
         cursor: isSelectable ? 'pointer' : 'default',
-        animation: isSelectable ? 'pulse 1.5s infinite' : 'none',
-        transition: 'all 0.3s ease',
-        position: 'relative' // Ensure overlay is positioned correctly
+        animation: 'none',
+        transition: 'all 0.2s ease',
+        position: 'relative' 
       }}
     >
       <button
@@ -4546,8 +4546,8 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     if (startIndex === -1) return {};
     const order = [
       seatOrder[startIndex],
-      seatOrder[(startIndex + 1) % seatOrder.length],
-      seatOrder[(startIndex + 2) % seatOrder.length]
+      seatOrder[(startIndex - 1 + seatOrder.length) % seatOrder.length],
+      seatOrder[(startIndex - 2 + seatOrder.length) % seatOrder.length]
     ];
     return {
       [order[0]]: '1️⃣',
@@ -4559,10 +4559,15 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
   // Prevent double clicks
   const processingAction = React.useRef(false);
   const speechVoiceRef = React.useRef(null);
-  const handleSafeAction = (action, delay = 200) => {
-    // Removed throttling as per request to remove timeouts and increase fluency
-    // This allows rapid clicking (e.g., drawing cards quickly)
+  const handleSafeAction = (action, delay = 100) => {
+    if (processingAction.current) return;
+    
+    processingAction.current = true;
     action();
+    
+    setTimeout(() => {
+      processingAction.current = false;
+    }, delay);
   };
 
   const openGeneralIntro = (general) => {
