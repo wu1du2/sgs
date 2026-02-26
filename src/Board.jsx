@@ -64,7 +64,7 @@ const HandCardItem = React.memo(({ card, index, marginLeft, isMe, isSelected, is
   </div>
 ));
 
-const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title, singleSelection, revealHand, imageMode = 'url' }) => {
+const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, title, singleSelection, revealHand, showHand = true, showEquip = true, showJudges = true, imageMode = 'url' }) => {
   const [selected, setSelected] = React.useState([]);
   const safeHand = Array.isArray(targetHand) ? targetHand : [];
   const safeEquipments = targetPlayer?.equipments || {};
@@ -113,81 +113,84 @@ const CardSelectionModal = ({ targetPlayer, targetHand, onConfirm, onCancel, tit
       }}>
         <h3 style={{ margin: 0, textAlign: 'center' }}>{title || '请选择牌'}</h3>
         
-        {/* Hand Cards */}
-        <div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {safeHand.map((card, index) => (
-              <CardPictureButton
-                key={index}
-                card={card}
-                width={60}
-                height={90}
-                isHidden={!revealHand}
-                selected={isSelected('hand', index)}
-                outline="3px solid #00ffff"
-                outlineIdle="1px solid #aaa"
-                onClick={() => toggleSelection({ type: 'hand', index })}
-                imageMode={imageMode}
-                wrapperStyle={{
-                  boxShadow: isSelected('hand', index) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
-                  animation: 'none'
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Equipment */}
-        <div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {Object.entries(safeEquipments).map(([slot, card]) => {
-              if (!card) return null;
-              return (
-                <div
-                  key={slot}
-                  onClick={() => toggleSelection({ type: 'equip', slot })}
-                  style={{
-                    padding: '10px',
-                    backgroundColor: isSelected('equip', slot) ? 'rgba(0, 255, 255, 0.2)' : '#444',
-                    border: isSelected('equip', slot) ? '3px solid #00ffff' : '1px solid #aaa',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    boxShadow: isSelected('equip', slot) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
+        {showHand && (
+          <div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {safeHand.map((card, index) => (
+                <CardPictureButton
+                  key={index}
+                  card={card}
+                  width={60}
+                  height={90}
+                  isHidden={!revealHand}
+                  selected={isSelected('hand', index)}
+                  outline="3px solid #00ffff"
+                  outlineIdle="1px solid #aaa"
+                  onClick={() => toggleSelection({ type: 'hand', index })}
+                  imageMode={imageMode}
+                  wrapperStyle={{
+                    boxShadow: isSelected('hand', index) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
                     animation: 'none'
                   }}
-                >
-                  {card.name} ({slot})
-                </div>
-              );
-            })}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Judgments */}
-        <div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {Object.entries(safeJudges).map(([slot, card]) => {
-              if (!card) return null;
-              return (
-                <div
-                  key={slot}
-                  onClick={() => toggleSelection({ type: 'judge', slot })}
-                  style={{
-                    padding: '10px',
-                    backgroundColor: isSelected('judge', slot) ? 'rgba(0, 255, 255, 0.2)' : '#444',
-                    border: isSelected('judge', slot) ? '3px solid #00ffff' : '1px solid #aaa',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    boxShadow: isSelected('judge', slot) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
-                    animation: 'none'
-                  }}
-                >
-                  {card.name} ({slot})
-                </div>
-              );
-            })}
+        {showEquip && (
+          <div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {Object.entries(safeEquipments).map(([slot, card]) => {
+                if (!card) return null;
+                return (
+                  <div
+                    key={slot}
+                    onClick={() => toggleSelection({ type: 'equip', slot })}
+                    style={{
+                      padding: '10px',
+                      backgroundColor: isSelected('equip', slot) ? 'rgba(0, 255, 255, 0.2)' : '#444',
+                      border: isSelected('equip', slot) ? '3px solid #00ffff' : '1px solid #aaa',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      boxShadow: isSelected('equip', slot) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
+                      animation: 'none'
+                    }}
+                  >
+                    {card.name} ({slot})
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {showJudges && (
+          <div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {Object.entries(safeJudges).map(([slot, card]) => {
+                if (!card) return null;
+                return (
+                  <div
+                    key={slot}
+                    onClick={() => toggleSelection({ type: 'judge', slot })}
+                    style={{
+                      padding: '10px',
+                      backgroundColor: isSelected('judge', slot) ? 'rgba(0, 255, 255, 0.2)' : '#444',
+                      border: isSelected('judge', slot) ? '3px solid #00ffff' : '1px solid #aaa',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      boxShadow: isSelected('judge', slot) ? '0 0 8px rgba(0, 255, 255, 0.6)' : 'none',
+                      animation: 'none'
+                    }}
+                  >
+                    {card.name} ({slot})
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button 
@@ -603,6 +606,95 @@ const HarvestBox = ({ cards, onPick, onClose, imageMode = 'url' }) => {
             }}
           >
             结束
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ChengxiangBox = ({ data, isOwner, onToggle, onConfirm, onCancel, imageMode = 'url' }) => {
+  if (!data || !data.active) return null;
+  const cards = Array.isArray(data.revealedCards) ? data.revealedCards : [];
+  const selectedIds = Array.isArray(data.selectedIds) ? data.selectedIds : [];
+  const sum = typeof data.sum === 'number' ? data.sum : 0;
+  const canConfirm = isOwner && selectedIds.length > 0 && sum <= 13;
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        border: '2px solid #27ae60',
+        width: '80%',
+        maxWidth: '700px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '15px',
+        boxShadow: '0 0 20px rgba(39, 174, 96, 0.5)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#27ae60' }}>
+          <h3 style={{ margin: 0 }}>称象</h3>
+          <div style={{ fontWeight: 'bold', color: sum > 13 ? '#e74c3c' : '#ecf0f1' }}>点数和 {sum}</div>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {cards.map((card, index) => {
+            const id = card && card.id !== undefined ? String(card.id) : `${card?.name || 'card'}-${index}`;
+            const selected = selectedIds.includes(id);
+            return (
+              <CardPictureButton
+                key={id}
+                card={card}
+                width={80}
+                height={120}
+                selected={selected}
+                outline="3px solid #2ecc71"
+                outlineIdle="1px solid #bdc3c7"
+                onClick={() => isOwner && onToggle(id)}
+                disabled={!isOwner}
+                imageMode={imageMode}
+              />
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button
+            onClick={onCancel}
+            disabled={!isOwner}
+            style={{
+              padding: '8px 20px',
+              backgroundColor: isOwner ? '#95a5a6' : '#555',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isOwner ? 'pointer' : 'not-allowed',
+              fontWeight: 'bold'
+            }}
+          >
+            取消
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={!canConfirm}
+            style={{
+              padding: '8px 20px',
+              backgroundColor: canConfirm ? '#2ecc71' : '#555',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: canConfirm ? 'pointer' : 'not-allowed',
+              fontWeight: 'bold'
+            }}
+          >
+            获得
           </button>
         </div>
       </div>
@@ -1027,7 +1119,7 @@ const TianduModal = ({ card, onConfirm, onCancel, imageMode = 'url' }) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0, seatBadge = null }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0, seatBadge = null, isTurnedOver = false, daoxinValue = null, onDaoXinAdd5, onDaoXinAdd15 }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
@@ -1178,6 +1270,101 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
         ➖
       </button>
 
+      {typeof daoxinValue === 'number' && (
+        <div style={{
+          position: 'absolute',
+          left: '-26px',
+          top: '34px',
+          width: '22px',
+          height: '138px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          zIndex: 30,
+          pointerEvents: 'auto'
+        }}>
+          {(onDaoXinAdd5 || onDaoXinAdd15) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px' }}>
+              {onDaoXinAdd5 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDaoXinAdd5(); }}
+                  style={{
+                    width: '22px',
+                    height: '16px',
+                    padding: 0,
+                    borderRadius: '3px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: '#3498db',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 'bold'
+                  }}
+                  title="+5"
+                >
+                  +5
+                </button>
+              )}
+              {onDaoXinAdd15 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDaoXinAdd15(); }}
+                  style={{
+                    width: '22px',
+                    height: '16px',
+                    padding: 0,
+                    borderRadius: '3px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: '#e67e22',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 'bold'
+                  }}
+                  title="+15"
+                >
+                  +15
+                </button>
+              )}
+            </div>
+          )}
+          <div style={{
+            position: 'relative',
+            width: '14px',
+            flex: 1,
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            border: '1px solid rgba(255,255,255,0.35)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: `${Math.max(0, Math.min(100, Math.round((daoxinValue / 99) * 100)))}%`,
+              background: 'linear-gradient(180deg, rgba(46, 204, 113, 0.95) 0%, rgba(46, 204, 113, 0.65) 100%)'
+            }} />
+            {[25, 50, 75, 100].map(mark => (
+              <div key={mark} style={{
+                position: 'absolute',
+                left: '14px',
+                bottom: `${mark}%`,
+                transform: 'translateY(50%)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <div style={{ width: '8px', height: '1px', backgroundColor: 'rgba(255,255,255,0.65)' }} />
+                <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.85)', lineHeight: '9px' }}>{mark}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: '6px', fontSize: '10px', color: 'rgba(255,255,255,0.9)', fontWeight: 'bold' }}>
+            {daoxinValue}
+          </div>
+        </div>
+      )}
+
       {/* Animation Overlays */}
       {animationState === 'hurt' && (
         <div className="overlay-anim hero-laser-hit" style={{
@@ -1293,6 +1480,14 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
             }}>
               {seatBadge}
             </div>
+          )}
+          {isTurnedOver && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.65) 100%)',
+              boxShadow: 'inset 0 0 12px rgba(0,0,0,0.9)'
+            }} />
           )}
         </div>
         
@@ -3465,6 +3660,159 @@ const SimplePromptModal = ({ title, onCancel, isBlocking = true }) => {
   );
 };
 
+const SuitPickModal = ({ title, items, onPick, onCancel, imageMode = 'url' }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3200
+    }}>
+      <div style={{
+        backgroundColor: '#222',
+        padding: '18px',
+        borderRadius: '10px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        color: 'white',
+        minWidth: '320px',
+        maxWidth: '920px',
+        maxHeight: '78vh',
+        overflowY: 'auto'
+      }}>
+        <div style={{ fontWeight: 'bold', textAlign: 'center' }}>{title}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {(items || []).length === 0 && (
+            <div style={{ textAlign: 'center', color: '#bdc3c7' }}>暂无可选花色</div>
+          )}
+          {(items || []).map(it => (
+            <div key={it.suit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <button
+                  onClick={() => onPick && onPick(it.suit)}
+                  style={{
+                    padding: '8px 14px',
+                    backgroundColor: '#34495e',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    minWidth: '52px'
+                  }}
+                >
+                  {it.suit}{typeof it.count === 'number' ? `(${it.count})` : ''}
+                </button>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                {(it.cards || []).map((card, idx) => (
+                  <CardPictureButton
+                    key={card && card.id ? card.id : `${it.suit}-${idx}`}
+                    card={card}
+                    width={60}
+                    height={90}
+                    onClick={() => onPick && onPick(it.suit)}
+                    imageMode={imageMode}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 18px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const OptionPickModal = ({ title, options, onPick, onCancel }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3200
+    }}>
+      <div style={{
+        backgroundColor: '#222',
+        padding: '18px',
+        borderRadius: '10px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        color: 'white',
+        minWidth: '320px'
+      }}>
+        <div style={{ fontWeight: 'bold', textAlign: 'center' }}>{title}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {(options || []).map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => onPick && onPick(opt.value)}
+              style={{
+                padding: '10px 12px',
+                backgroundColor: '#34495e',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                textAlign: 'left'
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 18px',
+              backgroundColor: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TaoluanOtherChoiceModal = ({ onGive, onPunish }) => {
   return (
     <div style={{
@@ -4311,9 +4659,6 @@ const MieJiTargetRespondModal = ({ hand, equipments, onGive, onDiscard, imageMod
     return selected.some(s => s.type === type && (s.index === val || s.slot === val));
   };
 
-  const totalCards = hand.length + Object.values(equipments).filter(Boolean).length;
-  // const discardCount = Math.min(2, totalCards); // User requested to remove this restriction
-
   return (
     <div style={{
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -4499,7 +4844,6 @@ const MieJiLiRuTakeModal = ({ targetHand, targetEquipments, onConfirm, imageMode
 
 export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby }) {
   const myPlayerID = playerID;
-  const numPlayers = 3;
   const getUiScale = (width) => {
     if (width <= 700) return 0.66;
     if (width <= 900) return 0.8;
@@ -4679,7 +5023,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
         utterance.volume = 1;
         synth.speak(utterance);
       });
-    } catch (e) {
+    } catch {
       return;
     }
   }, []);
@@ -4736,6 +5080,24 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
   const onHeroClick = (targetId) => {
     if (G.huishi && G.huishi.active && G.huishi.stage === 'choose_recipient' && G.huishi.sourceID === playerID) {
       setHuishiRecipientId(targetId);
+      return;
+    }
+
+    if (G.caomaoQingzheng && G.caomaoQingzheng.active && G.caomaoQingzheng.stage === 'select_target' && G.caomaoQingzheng.sourceID === playerID) {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.caomaoQingzhengSelectTarget(targetId);
+      return;
+    }
+
+    if (G.caomaoFangzhu && G.caomaoFangzhu.active && G.caomaoFangzhu.stage === 'select_target' && G.caomaoFangzhu.sourceID === playerID) {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      moves.caomaoFangzhuSelectTarget(targetId);
       return;
     }
 
@@ -4832,6 +5194,15 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     }
 
     if (activeSkill === '毅谋') {
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds([]);
+      } else {
+        setSelectedTargetIds([targetId]);
+      }
+      return;
+    }
+
+    if (activeSkill === '饮战') {
       if (selectedTargetIds.includes(targetId)) {
         setSelectedTargetIds([]);
       } else {
@@ -5397,6 +5768,26 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     moves.performJudgment();
   };
 
+  const getSuitItems = (cards) => {
+    const suits = ['♥', '♦', '♠', '♣'];
+    const buckets = suits.map(suit => ({ suit, cards: [] }));
+    (cards || []).forEach(c => {
+      const bucket = buckets.find(b => b.suit === c?.suit);
+      if (bucket) bucket.cards.push(c);
+    });
+    return buckets
+      .filter(b => b.cards.length > 0)
+      .map(b => ({ suit: b.suit, count: b.cards.length, cards: b.cards }));
+  };
+
+  const qingzheng = G.caomaoQingzheng;
+  const qingzhengSelfItems = qingzheng && qingzheng.active && qingzheng.stage === 'select_suit_self'
+    ? getSuitItems(G.hands[playerID] || [])
+    : [];
+  const qingzhengTargetItems = qingzheng && qingzheng.active && qingzheng.stage === 'select_suit_target' && qingzheng.targetID
+    ? getSuitItems(G.hands[qingzheng.targetID] || [])
+    : [];
+
   const onSkillClick = (rawSkillName) => {
     // IMPORTANT: Always trim the skill name to avoid issues with invisible characters or spaces
     // This caused a bug where '却敌' and '仇决' were not matching due to trailing spaces/invisible chars
@@ -5409,6 +5800,13 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     }
 
     if (skillName.startsWith('武库')) {
+      return;
+    }
+
+    if (skillName === '称象') {
+      setSelectedCardIndices([]);
+      setSelectedTargetIds([]);
+      moves.caocongChengxiangStart();
       return;
     }
 
@@ -5458,6 +5856,26 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
 
     if (skillName.startsWith('昭汉')) {
       moves.useZhaohan();
+      return;
+    }
+
+    if (skillName === '清正') {
+      moves.caomaoQingzhengStart();
+      return;
+    }
+
+    if (skillName === '酒诗') {
+      moves.caomaoJiuPoemActivate();
+      return;
+    }
+
+    if (skillName === '放逐') {
+      moves.caomaoFangzhuStart();
+      return;
+    }
+
+    if (skillName === '决进') {
+      moves.caomaoJuejinStart();
       return;
     }
 
@@ -5740,6 +6158,17 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
       return;
     }
 
+    if (skillName === '饮战') {
+      if (activeSkill === '饮战') {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+      } else {
+        setActiveSkill('饮战');
+        setSelectedTargetIds([]);
+      }
+      return;
+    }
+
     moves.useSkill(skillName);
   };
 
@@ -5748,7 +6177,6 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     const position = getPosition(id);
     const isMe = position === 'bottom';
     const hand = G.hands[id] || [];
-    const isCurrentTurn = id === ctx.currentPlayer;
     const player = G.players[id];
     const general = player?.general;
     const role = player?.role || 'neutral';
@@ -5756,6 +6184,26 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     const judges = player?.judges || {};
 
     let displaySkills = general ? general.skills : ["Strike", "Dodge"];
+    if (general && general.name === '曹髦') {
+      const daoxin = typeof player.daoxin === 'number' ? player.daoxin : 0;
+      displaySkills = ['潜龙'];
+      if (daoxin >= 25) displaySkills.push('清正');
+      if (daoxin >= 50) displaySkills.push('酒诗');
+      if (daoxin >= 75) displaySkills.push('放逐');
+      if (daoxin >= 99) displaySkills.push('决进');
+    }
+    if (general && general.name === '谋黄忠') {
+      const recorded = Array.isArray(player.liegongSuits) ? player.liegongSuits : [];
+      if (recorded.length > 0) {
+        displaySkills = [...displaySkills, `烈弓已记:${recorded.join('')}`];
+      }
+    }
+    if (general && general.name === '留赞') {
+      const fenyinLabel = player.fenyinSuit ? `奋音(${player.fenyinSuit})` : null;
+      if (fenyinLabel) {
+        displaySkills = displaySkills.map(s => (s === '奋音' ? fenyinLabel : s));
+      }
+    }
     if (isMe && general) {
       if (general.name === '许攸') {
         const state = player.xuyouState || 'yang';
@@ -5773,13 +6221,6 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
         // Also show recorded suits
         if (player.chengLueSuits && player.chengLueSuits.length > 0) {
             displaySkills.push(`Recorded: ${player.chengLueSuits.join(',')}`);
-        }
-      }
-
-      if (general.name === '谋黄忠') {
-        const recorded = Array.isArray(player.liegongSuits) ? player.liegongSuits : [];
-        if (recorded.length > 0) {
-          displaySkills = [...displaySkills, `烈弓已记:${recorded.join('')}`];
         }
       }
 
@@ -5854,15 +6295,6 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
         });
       }
 
-      if (general.name === '留赞' && fenYinMessage && fenYinMessage.startsWith('奋音')) {
-        displaySkills = general.skills.map(s => {
-          if (s === '奋音') {
-            return fenYinMessage;
-          }
-          return s;
-        });
-      }
-
       if (general.name === '界钟会') {
         const quanCount = Array.isArray(player.quan) ? player.quan.length : 0;
         displaySkills = general.skills.map(s => {
@@ -5888,11 +6320,18 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     const yimouSelecting = G.yimouSelect && G.yimouSelect.active && G.yimouSelect.stage === 'select_recipient' && G.yimouSelect.targetPlayerID === playerID;
     const huishiSelecting = G.huishi && G.huishi.active && G.huishi.stage === 'choose_recipient' && G.huishi.sourceID === playerID;
     const chongzhenSelecting = G.chongzhenSelect && G.chongzhenSelect.active && G.chongzhenSelect.stage === 'target_selection' && G.chongzhenSelect.sourcePlayerID === playerID;
-    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting || !!activeSkill || yimouSelecting || huishiSelecting || chongzhenSelecting;
+    const qingzhengSelecting = G.caomaoQingzheng && G.caomaoQingzheng.active && G.caomaoQingzheng.stage === 'select_target' && G.caomaoQingzheng.sourceID === playerID;
+    const fangzhuSelecting = G.caomaoFangzhu && G.caomaoFangzhu.active && G.caomaoFangzhu.stage === 'select_target' && G.caomaoFangzhu.sourceID === playerID;
+    const isSelectable = selectedCardIndices.length > 0 || mizhaoSelecting || !!activeSkill || yimouSelecting || huishiSelecting || chongzhenSelecting || qingzhengSelecting || fangzhuSelecting;
     const isSelected = selectedTargetIds.includes(id)
       || (mizhaoStage === 'selectA' && mizhaoTargetA === id)
       || (mizhaoStage === 'selectB' && (mizhaoTargetA === id || mizhaoTargetB === id))
       || (huishiSelecting && huishiRecipientId === id);
+
+    const isCaomao = general && general.name === '曹髦';
+    const daoxinValue = isCaomao ? (typeof player.daoxin === 'number' ? player.daoxin : 0) : null;
+    const onDaoXinAdd5 = isMe && isCaomao ? () => moves.caomaoAddDaoxin(5) : null;
+    const onDaoXinAdd15 = isMe && isCaomao ? () => moves.caomaoAddDaoxin(15) : null;
 
     // Dynamic overlap calculation
     const CARD_WIDTH = 60;
@@ -6594,6 +7033,10 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               onAvatarClick={() => openGeneralIntro(general)}
               jiuAnimKey={player.jiuAnimKey}
               seatBadge={showSeatBadge ? seatBadgeMap[id] : null}
+              isTurnedOver={player.is_turned_over}
+              daoxinValue={daoxinValue}
+              onDaoXinAdd5={onDaoXinAdd5}
+              onDaoXinAdd15={onDaoXinAdd15}
             />
               );
             })()}
@@ -6633,6 +7076,8 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               onAvatarClick={() => openGeneralIntro(general)}
               jiuAnimKey={player.jiuAnimKey}
               seatBadge={showSeatBadge ? seatBadgeMap[id] : null}
+              isTurnedOver={player.is_turned_over}
+              daoxinValue={daoxinValue}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </>
@@ -7091,6 +7536,54 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
       )}
 
       {/* Mie Ji Target Respond (Target) */}
+      {qingzheng && qingzheng.active && qingzheng.stage === 'select_suit_self' && qingzheng.sourceID === playerID && (
+        <SuitPickModal
+          title="清正：选择弃置花色"
+          items={qingzhengSelfItems}
+          onPick={(s) => moves.caomaoQingzhengSelectSuitSelf(s)}
+          onCancel={() => moves.caomaoQingzhengCancel()}
+          imageMode={cardImageMode}
+        />
+      )}
+
+      {qingzheng && qingzheng.active && qingzheng.stage === 'select_target' && qingzheng.sourceID === playerID && (
+        <SimplePromptModal
+          title="清正：请选择目标"
+          onCancel={() => moves.caomaoQingzhengCancel()}
+          isBlocking={false}
+        />
+      )}
+
+      {qingzheng && qingzheng.active && qingzheng.stage === 'select_suit_target' && qingzheng.sourceID === playerID && (
+        <SuitPickModal
+          title="清正：选择目标弃置花色"
+          items={qingzhengTargetItems}
+          onPick={(s) => moves.caomaoQingzhengSelectSuitTarget(s)}
+          onCancel={() => moves.caomaoQingzhengCancel()}
+          imageMode={cardImageMode}
+        />
+      )}
+
+      {G.caomaoFangzhu && G.caomaoFangzhu.active && G.caomaoFangzhu.stage === 'select_target' && G.caomaoFangzhu.sourceID === playerID && (
+        <SimplePromptModal
+          title="放逐：请选择目标"
+          onCancel={() => moves.caomaoFangzhuCancel()}
+          isBlocking={false}
+        />
+      )}
+
+      {G.caomaoFangzhu && G.caomaoFangzhu.active && G.caomaoFangzhu.stage === 'select_option' && G.caomaoFangzhu.sourceID === playerID && (
+        <OptionPickModal
+          title="放逐：选择效果"
+          options={[
+            { value: 'disable_skills', label: '技能失效直到其下回合结束' },
+            { value: 'forbid_nontrick_hand', label: '不能使用除锦囊牌以外的手牌直到其下回合结束' }
+          ]}
+          onPick={(v) => moves.caomaoFangzhuSelectOption(v)}
+          onCancel={() => moves.caomaoFangzhuCancel()}
+        />
+      )}
+
       {G.miejiStage === 'targetRespond' && playerID === G.miejiTargetId && (
         <MieJiTargetRespondModal
           hand={G.hands[playerID]}
@@ -8131,6 +8624,29 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               </button>
             </>
           )}
+          {activeSkill === '饮战' && selectedTargetIds.length > 0 && (
+            <button
+              onClick={() => {
+                if (selectedTargetIds.length !== 1) {
+                  alert("请选择一名目标");
+                  return;
+                }
+                moves.startYinZhan(selectedTargetIds[0]);
+                setActiveSkill(null);
+                setSelectedTargetIds([]);
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          )}
           {activeSkill === '慷忾' && selectedTargetIds.length > 0 && (
             <button 
               onClick={() => {
@@ -8354,11 +8870,13 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
       {G.selectCard && G.selectCard.active && G.selectCard.sourcePlayerID === playerID && (
         <CardSelectionModal
           targetPlayer={G.players[G.selectCard.targetPlayerID]}
-          targetHand={G.hands[G.selectCard.targetPlayerID]}
+          targetHand={G.selectCard.onlyEquip ? [] : G.hands[G.selectCard.targetPlayerID]}
           onConfirm={(selected) => moves.confirm_select_card(selected)}
           onCancel={() => moves.cancel_select_card()}
           title={G.selectCard.pendingCard ? `Select cards for ${G.selectCard.pendingCard.name}` : 'Select Cards'}
           singleSelection={['steal', 'discard', 'collateral'].includes(G.selectCard.actionType)}
+          showHand={!G.selectCard.onlyEquip}
+          showJudges={!G.selectCard.onlyEquip}
           imageMode={cardImageMode}
         />
       )}
@@ -8456,6 +8974,17 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
           cards={G.harvestCards}
           onPick={(index) => moves.pickHarvestCard(index)}
           onClose={() => moves.endHarvest()}
+          imageMode={cardImageMode}
+        />
+      )}
+
+      {G.caocongChengxiang && G.caocongChengxiang.active && (
+        <ChengxiangBox
+          data={G.caocongChengxiang}
+          isOwner={G.caocongChengxiang.sourcePlayerID === playerID}
+          onToggle={(cardId) => moves.caocongChengxiangToggle(cardId)}
+          onConfirm={() => moves.caocongChengxiangConfirm()}
+          onCancel={() => moves.caocongChengxiangCancel()}
           imageMode={cardImageMode}
         />
       )}

@@ -1,28 +1,14 @@
-
-// Helper to add to discard pile
-const addToDiscardPile = (G, cards) => {
-  if (!cards) return;
-  const toAdd = Array.isArray(cards) ? cards : [cards];
-  const validCards = toAdd.filter(Boolean);
-  
-  // Restore original names/types/suits if needed
-  validCards.forEach(c => {
-      if (c._originalName) { c.name = c._originalName; delete c._originalName; }
-      if (c._originalType) { c.type = c._originalType; delete c._originalType; }
-      if (c._originalSuit) { c.suit = c._originalSuit; delete c._originalSuit; }
-  });
-
-  if (validCards.length > 0) {
-    G.discardPile.push(...validCards);
-  }
-};
+import { addCardsToDiscard, addCardsToHand } from './cardUtils.js';
 
 const shuffle = (array, rng) => {
+  if (!rng || typeof rng.Number !== 'function') {
+    throw new Error('random is required');
+  }
   let currentIndex = array.length;
   let randomIndex;
   const newArray = [...array];
   while (currentIndex !== 0) {
-    randomIndex = Math.floor((rng ? rng.Number() : Math.random()) * currentIndex);
+    randomIndex = Math.floor(rng.Number() * currentIndex);
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
   }
@@ -57,7 +43,7 @@ export const youxushuSkill = {
             // Put into weapon slot
             const oldWeapon = player.equipments.weapon;
             if (oldWeapon) {
-                addToDiscardPile(G, [oldWeapon]);
+                addCardsToDiscard(G, [oldWeapon]);
             }
             player.equipments.weapon = xuanJianCard;
             
@@ -65,7 +51,7 @@ export const youxushuSkill = {
             G.actionLog.push(`${playerName} 触发侠行，装备了玄剑`);
         },
 
-        youxushuQiHuiClick: ({ G, ctx, playerID }, button) => {
+        youxushuQiHuiClick: ({ G, playerID }, button) => {
             const player = G.players[playerID];
             
             // Initialize state if not exists
@@ -115,7 +101,7 @@ export const youxushuSkill = {
             player.qiHui.selectedOption = option;
         },
 
-        youxushuQiHuiConfirm: ({ G, ctx, playerID }) => {
+        youxushuQiHuiConfirm: ({ G, playerID, random }) => {
           const player = G.players[playerID];
           if (!player || !player.qiHui || player.qiHui.stage !== 'selecting_option') return;
           const qiHui = player.qiHui;
@@ -137,14 +123,14 @@ export const youxushuSkill = {
             for (let i = 0; i < 2; i++) {
               if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
-                  G.deck = shuffle(G.discardPile, ctx.random);
+                  G.deck = shuffle(G.discardPile, random);
                   G.discardPile = [];
                 } else {
                   break;
                 }
               }
               const card = G.deck.shift();
-              if (card) G.hands[playerID].push(card);
+              if (card) addCardsToHand(G, playerID, card);
             }
             G.actionLog.push(`${playerName} 通过启诲摸了两张牌`);
           } else if (option === 3) {

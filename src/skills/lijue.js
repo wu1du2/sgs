@@ -14,9 +14,11 @@ const applyDamage = (target, damage) => {
   }
 };
 
+import { addCardsToHand, clampArmor } from './cardUtils.js';
+
 export const lijueSkill = {
   moves: {
-    lijueLangXi: ({ G, ctx, playerID }, targetID) => {
+    lijueLangXi: ({ G, playerID, random }, targetID) => {
       const source = G.players[playerID];
       const target = G.players[targetID];
       if (!source || !target) return;
@@ -25,13 +27,15 @@ export const lijueSkill = {
       if (typeof source.hp !== 'number' || typeof target.hp !== 'number') return;
       if (target.hp > source.hp) return;
 
-      const damage = Math.floor((ctx.random ? ctx.random.Number() : Math.random()) * 3);
+      if (!random || typeof random.Number !== 'function') return;
+      const damage = Math.floor(random.Number() * 3);
       const sourceName = source.general ? source.general.name : `Player ${playerID}`;
       const targetName = target.general ? target.general.name : `Player ${targetID}`;
 
       if (damage > 0) {
         applyDamage(target, damage);
       }
+      clampArmor(target);
       G.actionLog.push(`${sourceName} 发动狼袭，对 ${targetName} 造成 ${damage} 点伤害`);
     },
 
@@ -53,7 +57,7 @@ export const lijueSkill = {
       }
 
       G.discardPile.splice(idx, 1);
-      G.hands[playerID].push(card);
+      addCardsToHand(G, playerID, card);
 
       player.hpMax -= 1;
       if (player.hp > player.hpMax) {
@@ -67,4 +71,3 @@ export const lijueSkill = {
     }
   }
 };
-

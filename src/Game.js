@@ -13,35 +13,30 @@ import { shenluxunSkill } from './skills/shenluxun.js';
 import { zhangxiuSkill } from './skills/zhangxiu.js';
 import { maliangSkill } from './skills/maliang.js';
 import { jielubuSkill } from './skills/jielubu.js';
-import { shitaishiciSkill } from './skills/shitaishici.js';
-import { jiejushouSkill } from './skills/jiejushou.js';
 import { xuyouSkill } from './skills/xuyou.js';
-import { liuyanSkill } from './skills/liuyan.js';
-import { shenzhaoyunSkill } from './skills/shenzhaoyun.js';
-import { xizhicaiSkill } from './skills/xizhicai.js';
-import { shenlubuSkill } from './skills/shenlubu.js';
 import { jieliruSkill } from './skills/jieliru.js';
 import { youxushuSkill } from './skills/youxushu.js';
 import { baoxinSkill } from './skills/baoxin.js';
 import { lijueSkill } from './skills/lijue.js';
+import { caomaoSkill, caomaoInternal } from './skills/caomao.js';
+import { caocongSkill } from './skills/caocong.js';
+import { addCardsToHand, clampArmor as clampArmorUtil, isJuejinForbiddenCard, pushToExiled } from './skills/cardUtils.js';
 
 // Filter enabled generals
 const ENABLED_GENERALS = generalsData.filter(g => g.enable);
 
-const TESTING_GENERAL_LIST = [];
+const TESTING_GENERAL_LIST = ["曹髦"];
 export const SHOW_DEBUG_INFO = false;
 
-// Fisher-Yates shuffle with optional RNG
 function shuffle(array, rng) {
+  if (!rng || typeof rng.Number !== 'function') {
+    throw new Error('random is required');
+  }
   let currentIndex = array.length,  randomIndex;
   const newArray = [...array];
 
   while (currentIndex != 0) {
-    if (rng) {
-      randomIndex = Math.floor(rng.Number() * currentIndex);
-    } else {
-      randomIndex = Math.floor(Math.random() * currentIndex);
-    }
+    randomIndex = Math.floor(rng.Number() * currentIndex);
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [
       newArray[randomIndex], newArray[currentIndex]];
@@ -58,6 +53,33 @@ const getCardValue = (rank) => {
   return parseInt(rank);
 };
 
+const applyDamageInternal = (G, random, targetPlayerID, damage) => {
+  const player = G.players[targetPlayerID];
+  if (!player || player.hp === undefined) return;
+  let remaining = damage;
+  if (player.armor > 0 && remaining > 0) {
+    if (player.armor >= remaining) {
+      player.armor -= remaining;
+      remaining = 0;
+    } else {
+      remaining -= player.armor;
+      player.armor = 0;
+    }
+  }
+  if (remaining > 0) {
+    player.hp = Math.max(player.hp - remaining, 0);
+    if (player.general && player.general.name === '曹髦') {
+      caomaoInternal.addDaoXin(G, targetPlayerID, remaining * 10, '受伤');
+      if (player.is_turned_over) {
+        player.is_turned_over = false;
+        caomaoInternal.gainTrickLikeRangjie(G, random, targetPlayerID);
+        G.actionLog.push(`曹髦 受到伤害后翻回正面`);
+      }
+    }
+  }
+  clampArmorUtil(player);
+};
+
 const createEmptyZones = () => ({
   equipments: { weapon: null, armor: null, plusOne: null, minusOne: null },
   judges: { bing: null, le: null, dian: null }
@@ -70,6 +92,7 @@ const createPlayerState = () => ({
   luckCardCount: 10,
   luckCardConfirmed: false,
   is_linked: false,
+  daoxin: 0,
   qz_cnt: 0, // Qin Zheng counter for Luo Tong
   junlueCount: 0,
   kuangbaoCount: 0, // Shen Lubu Kuangbao
@@ -89,6 +112,9 @@ const createPlayerState = () => ({
   shenguojiaTianyiAwakened: false,
   liegongSuits: [],
   grantedSkills: [],
+  caomaoFangzhuUsed: false,
+  caomaoFangzhuLastTarget: null,
+  caomaoJuejinUsed: false,
   userId: null,
   ...createEmptyZones()
 });
@@ -238,7 +264,21 @@ const addToDiscardPile = (G, cards) => {
   });
 
   if (validCards.length > 0) {
-    G.discardPile.push(...validCards);
+    const allowed = [];
+    const exiled = [];
+    validCards.forEach(card => {
+      if (G.caomaoJuejinAuraActive && isJuejinForbiddenCard(card)) {
+        exiled.push(card);
+      } else {
+        allowed.push(card);
+      }
+    });
+    if (allowed.length > 0) {
+      G.discardPile.push(...allowed);
+    }
+    if (exiled.length > 0) {
+      pushToExiled(G, exiled);
+    }
   }
 };
 
@@ -253,9 +293,15 @@ const drawCards = (G, playerID, count, rng) => {
         break; // No more cards
       }
     }
-    cardsToDraw.push(G.deck.shift());
+    const card = G.deck.shift();
+    if (G.caomaoJuejinAuraActive && isJuejinForbiddenCard(card)) {
+      pushToExiled(G, card);
+      i -= 1;
+      continue;
+    }
+    cardsToDraw.push(card);
   }
-  G.hands[playerID].push(...cardsToDraw);
+  addCardsToHand(G, playerID, cardsToDraw);
   return cardsToDraw;
 };
 
@@ -281,14 +327,14 @@ const recordLiegongSuit = (G, playerID, card) => {
   }
 };
 
-const activateLiegongInternal = (G, ctx, playerID, targetID) => {
+const activateLiegongInternal = (G, random, playerID, targetID) => {
   const player = G.players[playerID];
   if (!player || !player.general || player.general.name !== '谋黄忠') return;
   const recorded = Array.isArray(player.liegongSuits) ? player.liegongSuits : [];
   const revealCount = Math.max(0, recorded.length - 1);
   const revealedCards = [];
   for (let i = 0; i < revealCount; i++) {
-    const card = drawTopCard(G, ctx.random);
+    const card = drawTopCard(G, random);
     if (card) revealedCards.push(card);
   }
   if (revealedCards.length > 0) {
@@ -308,7 +354,7 @@ const activateLiegongInternal = (G, ctx, playerID, targetID) => {
   player.liegongSuits = [];
 };
 
-const playCardsInternal = ({ G, ctx, playerID }, cardIndices, targetIds) => {
+const playCardsInternal = ({ G, playerID, random }, cardIndices, targetIds) => {
   const hand = G.hands[playerID];
   const cardsPlayed = cardIndices.map(i => hand[i]);
 
@@ -326,6 +372,17 @@ const playCardsInternal = ({ G, ctx, playerID }, cardIndices, targetIds) => {
           suit: lastCard.suit,
           rank: lastCard.rank
       };
+  }
+
+  if (G.players[playerID].general && G.players[playerID].general.name === '留赞' && cardsPlayed.length > 0) {
+      const firstCard = cardsPlayed[0];
+      if (firstCard && ['♥', '♦'].includes(firstCard.suit)) {
+          G.players[playerID].fenyinSuit = '红';
+      } else if (firstCard && ['♠', '♣'].includes(firstCard.suit)) {
+          G.players[playerID].fenyinSuit = '黑';
+      } else {
+          G.players[playerID].fenyinSuit = null;
+      }
   }
 
   [...cardIndices].sort((a, b) => b - a).forEach(index => {
@@ -366,7 +423,7 @@ const playCardsInternal = ({ G, ctx, playerID }, cardIndices, targetIds) => {
 
   if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
       G.players[playerID].qz_cnt += 1;
-      const logs = luotongSkill.qinzheng.trigger(G, playerID, ctx.random);
+      const logs = luotongSkill.qinzheng.trigger(G, playerID, random);
       if (logs && logs.length > 0) {
           G.actionLog.push(...logs);
       }
@@ -431,7 +488,7 @@ const playCardsInternal = ({ G, ctx, playerID }, cardIndices, targetIds) => {
     else {
         if (card.name === '铁索连环' && (!targetIds || targetIds.length === 0)) {
            addToDiscardPile(G, card);
-           drawCards(G, playerID, 1, ctx.random);
+           drawCards(G, playerID, 1, random);
            G.actionLog.push(`${playerName} 使用铁索连环未选择目标，摸一张牌`);
            return;
         }
@@ -607,8 +664,8 @@ const duyuGainWukuIfPossible = (G, sourcePlayerID, card) => {
 
 
 export const CardGame = {
-  setup: ({ ctx }) => ({
-    deck: shuffle(SGS_CARDS.map((c, i) => ({ ...c, id: `card-${i}` })), ctx.random),
+  setup: ({ random }) => ({
+    deck: shuffle(SGS_CARDS.map((c, i) => ({ ...c, id: `card-${i}` })), random),
     discardPile: [],
     hands: {
       '0': [],
@@ -813,6 +870,10 @@ export const CardGame = {
       forbidSuits: [],
       revealedCards: []
     },
+    caomaoQingzheng: null,
+    caomaoFangzhu: null,
+    caomaoJuejinAuraActive: false,
+    exiledCards: [],
     debugInfo: [], // Store clickid and sessionid for debugging
   }),
 
@@ -827,11 +888,13 @@ export const CardGame = {
     ...youxushuSkill.moves,
     ...xuyouSkill.moves,
     ...lijueSkill.moves,
-    baoxinMutao: ({ G, ctx, playerID }, targetID) => {
-      baoxinSkill.mutao.action({ G, ctx, playerID }, targetID);
+    ...caomaoSkill.moves,
+    ...caocongSkill.moves,
+    baoxinMutao: ({ G, ctx, playerID, random }, targetID) => {
+      baoxinSkill.mutao.action({ G, ctx, playerID, random }, targetID);
     },
-    baoxinYimouOptionOne: ({ G, ctx, playerID }, targetID) => {
-      baoxinSkill.yimou.optionOne({ G, ctx, playerID }, targetID);
+    baoxinYimouOptionOne: ({ G, ctx, playerID, random }, targetID) => {
+      baoxinSkill.yimou.optionOne({ G, ctx, playerID, random }, targetID);
     },
     baoxinYimouOptionTwo: ({ G, playerID }, targetID) => {
       baoxinSkill.yimou.optionTwo({ G, playerID }, targetID);
@@ -839,17 +902,17 @@ export const CardGame = {
     baoxinYimouSelectRecipient: ({ G, playerID }, recipientID) => {
       baoxinSkill.yimou.selectRecipient({ G, playerID }, recipientID);
     },
-    baoxinYimouConfirmCard: ({ G, ctx, playerID }, selected) => {
-      baoxinSkill.yimou.confirmCard({ G, ctx, playerID }, selected);
+    baoxinYimouConfirmCard: ({ G, ctx, playerID, random }, selected) => {
+      baoxinSkill.yimou.confirmCard({ G, ctx, playerID, random }, selected);
     },
     baoxinYimouCancel: ({ G, playerID }) => {
       baoxinSkill.yimou.cancel({ G, playerID });
     },
-    performJudgment: ({ G, ctx, playerID }) => {
+    performJudgment: ({ G, playerID, random }) => {
       // Draw judgment card
       if (G.deck.length === 0) {
         if (G.discardPile.length > 0) {
-            G.deck = shuffle(G.discardPile, ctx.random);
+            G.deck = shuffle(G.discardPile, random);
             G.discardPile = [];
         } else {
              G.actionLog.push("牌堆和弃牌堆为空，无法判定。");
@@ -863,7 +926,7 @@ export const CardGame = {
       G.actionLog.push(`${playerName} 进行判定：摸到 ${drawnCard.suit}${drawnCard.rank} ${drawnCard.name}`);
     },
 
-    drawCard: ({ G, ctx, playerID }, actionId) => {
+    drawCard: ({ G, playerID, random }, actionId) => {
       const player = G.players[playerID];
 
       // Idempotency check
@@ -880,20 +943,24 @@ export const CardGame = {
         G.actionLog.push(`${playerName} 跳过摸牌阶段`);
         return;
       }
-      const cards = drawCards(G, playerID, 1, ctx.random);
+      const cards = drawCards(G, playerID, 1, random);
       if (cards.length > 0) {
         const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         G.actionLog.push(`${playerName} 摸牌`);
       }
+
+      if (player.general && player.general.name === '曹髦') {
+        player.caomaoFangzhuUsed = false;
+      }
     },
-    liuzanFenyinDraw: ({ G, ctx, playerID }) => {
-      const cards = drawCards(G, playerID, 1, ctx.random);
+    liuzanFenyinDraw: ({ G, playerID, random }) => {
+      const cards = drawCards(G, playerID, 1, random);
       if (cards.length > 0) {
         const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         G.actionLog.push(`${playerName} 通过奋音摸一张牌`);
       }
     },
-    taoluanStart: ({ G, ctx, playerID }) => {
+    taoluanStart: ({ G, playerID }) => {
       const player = G.players[playerID];
       if (!player || !player.general || player.general.name !== '张让') return;
 
@@ -942,7 +1009,7 @@ export const CardGame = {
       t.declaredType = declaredType;
       t.stage = 'select_targets';
     },
-    taoluanConfirmPlay: ({ G, ctx, playerID }, targetIDs) => {
+    taoluanConfirmPlay: ({ G, playerID, random }, targetIDs) => {
       const t = G.taoluan;
       if (!t || !t.active || t.sourceID !== playerID || t.stage !== 'select_targets') return;
       const hand = G.hands[playerID] || [];
@@ -958,7 +1025,7 @@ export const CardGame = {
         const fromEquip = player.equipments[t.material.slot];
         if (!fromEquip) return;
         player.equipments[t.material.slot] = null;
-        hand.push(fromEquip);
+        addCardsToHand(G, playerID, fromEquip);
         cardIndex = hand.length - 1;
         card = fromEquip;
       }
@@ -978,7 +1045,7 @@ export const CardGame = {
       const playCardsDef = CardGame.moves.playCards;
       const playCardsMove = typeof playCardsDef === 'function' ? playCardsDef : playCardsDef && typeof playCardsDef.move === 'function' ? playCardsDef.move : null;
       if (playCardsMove) {
-        playCardsMove({ G, ctx, playerID }, [cardIndex], resolvedTargets);
+        playCardsMove({ G, playerID, random }, [cardIndex], resolvedTargets);
       }
 
       t.played = true;
@@ -1007,7 +1074,7 @@ export const CardGame = {
       t.otherID = otherID;
       t.stage = 'other_choose_option';
     },
-    taoluanOtherChoose: ({ G, ctx, playerID }, option) => {
+    taoluanOtherChoose: ({ G, playerID }, option) => {
       const t = G.taoluan;
       if (!t || !t.active || t.stage !== 'other_choose_option') return;
       if (t.otherID !== playerID) return;
@@ -1053,7 +1120,7 @@ export const CardGame = {
       if (!card) return;
 
       if (!G.hands[t.sourceID]) G.hands[t.sourceID] = [];
-      G.hands[t.sourceID].push(card);
+      addCardsToHand(G, t.sourceID, card);
 
       const sourceName = G.players[t.sourceID] && G.players[t.sourceID].general ? G.players[t.sourceID].general.name : `Player ${t.sourceID}`;
       const otherName = G.players[playerID] && G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
@@ -1141,7 +1208,7 @@ export const CardGame = {
       m.declaredType = declaredType;
       m.stage = 'select_targets';
     },
-    duyuMiewuConfirmPlay: ({ G, ctx, playerID }, targetIDs) => {
+    duyuMiewuConfirmPlay: ({ G, playerID, random }, targetIDs) => {
       const m = G.miewu;
       if (!m || !m.active || m.sourceID !== playerID || m.stage !== 'select_targets') return;
       const player = G.players[playerID];
@@ -1161,7 +1228,7 @@ export const CardGame = {
         const fromEquip = player.equipments[m.material.slot];
         if (!fromEquip) return;
         player.equipments[m.material.slot] = null;
-        hand.push(fromEquip);
+        addCardsToHand(G, playerID, fromEquip);
         cardIndex = hand.length - 1;
         card = fromEquip;
       }
@@ -1186,10 +1253,10 @@ export const CardGame = {
       const playCardsDef = CardGame.moves.playCards;
       const playCardsMove = typeof playCardsDef === 'function' ? playCardsDef : playCardsDef && typeof playCardsDef.move === 'function' ? playCardsDef.move : null;
       if (playCardsMove) {
-        playCardsMove({ G, ctx, playerID }, [cardIndex], resolvedTargets);
+        playCardsMove({ G, playerID, random }, [cardIndex], resolvedTargets);
       }
 
-      const drawn = drawCards(G, playerID, 1, ctx.random);
+      const drawn = drawCards(G, playerID, 1, random);
       if (drawn.length > 0) {
         G.actionLog.push(`${playerName} 因【灭吴】摸一张牌`);
       }
@@ -1224,12 +1291,12 @@ export const CardGame = {
         suits: [],
       };
     },
-    shenguojiaHuishiJudge: ({ G, ctx, playerID }) => {
+    shenguojiaHuishiJudge: ({ G, playerID, random }) => {
       const h = G.huishi;
       if (!h || !h.active || h.sourceID !== playerID || h.stage !== 'judging') return;
       const player = G.players[playerID];
       if (!player || !player.general || player.general.name !== '神郭嘉') return;
-      const card = drawTopCard(G, ctx.random);
+      const card = drawTopCard(G, random);
       if (!card) return;
       h.judges.push(card);
       const suit = card.suit;
@@ -1261,7 +1328,7 @@ export const CardGame = {
       if (!G.players[targetID]) return;
       const cards = Array.isArray(h.judges) ? h.judges : [];
       if (!G.hands[targetID]) G.hands[targetID] = [];
-      G.hands[targetID].push(...cards);
+      addCardsToHand(G, targetID, cards);
       const player = G.players[playerID];
       const playerName = player && player.general ? player.general.name : `Player ${playerID}`;
       const targetName = G.players[targetID] && G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
@@ -1307,7 +1374,7 @@ export const CardGame = {
       h.targetID = targetID;
       h.stage = 'choose_mode';
     },
-    shenguojiaHuishi2Choose: ({ G, ctx, playerID }, option) => {
+    shenguojiaHuishi2Choose: ({ G, playerID, random }, option) => {
       const h = G.huishi2;
       if (!h || !h.active || h.sourceID !== playerID || h.stage !== 'choose_mode') return;
       if (option !== 1 && option !== 2) return;
@@ -1324,7 +1391,7 @@ export const CardGame = {
         target.awakenOverride = true;
         G.actionLog.push(`${sourceName} 对 ${targetName} 发动【辉逝】，令其视为满足觉醒条件；${sourceName} 体力上限-2（${source.hpMax}）`);
       } else {
-        drawCards(G, targetID, 4, ctx.random);
+        drawCards(G, targetID, 4, random);
         G.actionLog.push(`${sourceName} 对 ${targetName} 发动【辉逝】，令其摸四张牌；${sourceName} 体力上限-2（${source.hpMax}）`);
       }
       G.huishi2 = null;
@@ -1390,7 +1457,7 @@ export const CardGame = {
       z.declaredType = declaredType;
       z.stage = 'select_targets';
     },
-    shenguojiaZuoxingConfirmPlay: ({ G, ctx, playerID }, targetIDs) => {
+    shenguojiaZuoxingConfirmPlay: ({ G, playerID, random }, targetIDs) => {
       const z = G.zuoxing;
       if (!z || !z.active || z.sourceID !== playerID || z.stage !== 'select_targets') return;
       const player = G.players[playerID];
@@ -1411,13 +1478,13 @@ export const CardGame = {
 
       const card = { suit: '', rank: '', name: z.declaredName, type: z.declaredType };
       if (!G.hands[playerID]) G.hands[playerID] = [];
-      G.hands[playerID].push(card);
+      addCardsToHand(G, playerID, card);
       const cardIndex = G.hands[playerID].length - 1;
 
       const playCardsDef = CardGame.moves.playCards;
       const playCardsMove = typeof playCardsDef === 'function' ? playCardsDef : playCardsDef && typeof playCardsDef.move === 'function' ? playCardsDef.move : null;
       if (playCardsMove) {
-        playCardsMove({ G, ctx, playerID }, [cardIndex], resolvedTargets);
+        playCardsMove({ G, playerID, random }, [cardIndex], resolvedTargets);
       }
 
       z.targetIDs = resolvedTargets;
@@ -1438,14 +1505,14 @@ export const CardGame = {
       if (!z || !z.active || z.sourceID !== playerID) return;
       G.zuoxing = null;
     },
-    rangjieChooseOption: ({ G, ctx, playerID }, option) => {
+    rangjieChooseOption: ({ G, playerID, random }, option) => {
       if (option === 'cancel') {
         G.rangjieSelect.active = false;
         G.rangjieSelect.stage = null;
         return;
       }
 
-      const cards = drawCards(G, playerID, 1, ctx.random);
+      const cards = drawCards(G, playerID, 1, random);
       if (cards.length > 0) {
         const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         G.actionLog.push(`${playerName} 发动让节，摸一张牌`);
@@ -1465,7 +1532,7 @@ export const CardGame = {
       if (option === 'basic') emptyMessage = '牌堆没有基本牌';
       if (option === 'equip') emptyMessage = '牌堆没有装备牌';
 
-      G.deck = shuffle(G.deck, ctx.random);
+      G.deck = shuffle(G.deck, random);
 
       const delayedScrolls = ['乐不思蜀', '兵粮寸断', '闪电'];
       const cardIndex = G.deck.findIndex(c => {
@@ -1476,7 +1543,7 @@ export const CardGame = {
       
       if (cardIndex !== -1) {
         const card = G.deck.splice(cardIndex, 1)[0];
-        G.hands[playerID].push(card);
+        addCardsToHand(G, playerID, card);
         const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         const typeName = option === 'basic' ? '基本' : option === 'equip' ? '装备' : '锦囊';
         G.actionLog.push(`${playerName} 获得了一张${typeName}牌`);
@@ -1580,7 +1647,7 @@ export const CardGame = {
         G.congjianSelect.selectedCard = null;
     },
     
-    useLuckCard: ({ G, ctx, playerID }, actionId) => {
+    useLuckCard: ({ G, playerID, random }, actionId) => {
       const player = G.players[playerID];
 
       // Idempotency check
@@ -1598,10 +1665,10 @@ export const CardGame = {
         G.hands[playerID] = [];
 
         // Shuffle deck
-        G.deck = shuffle(G.deck, ctx.random);
+        G.deck = shuffle(G.deck, random);
 
         // Draw 4 new cards
-        drawCards(G, playerID, 4, ctx.random);
+        drawCards(G, playerID, 4, random);
 
         // Decrement count
         player.luckCardCount--;
@@ -1623,7 +1690,7 @@ export const CardGame = {
       if (!userId) return;
       G.players[playerID].userId = userId;
     },
-    playerReady: ({ G, ctx, playerID }) => {
+    playerReady: ({ G, playerID, random }) => {
       if (!G.readyPlayers.includes(playerID)) {
         G.readyPlayers.push(playerID);
       }
@@ -1631,12 +1698,12 @@ export const CardGame = {
         // Start selection phase
         G.phase = 'selection';
         // Distribute 3 random generals to each player
-        const { generalOptions, generalChangeUsed } = distributeGenerals(ctx.random);
+        const { generalOptions, generalChangeUsed } = distributeGenerals(random);
         G.generalOptions = generalOptions;
         G.generalChangeUsed = generalChangeUsed;
       }
     },
-    selectGeneral: ({ G, ctx, playerID }, generalId) => {
+    selectGeneral: ({ G, playerID, random }, generalId) => {
       const options = G.generalOptions[playerID];
       const selected = options.find(g => g.id === generalId);
       if (selected) {
@@ -1645,6 +1712,7 @@ export const CardGame = {
         G.players[playerID].hp = selected.hp;
         G.players[playerID].hpMax = selected.hpMax;
         G.players[playerID].armor = selected.initial_armor || 0;
+        clampArmorUtil(G.players[playerID]);
         
         // Apply Landlord bonus if this player is the landlord
         if (G.players[playerID].role === 'landlord') {
@@ -1664,6 +1732,18 @@ export const CardGame = {
         if (selected.name === '李傕') {
           G.players[playerID].yiSuanLastTrickCardId = null;
         }
+
+        if (selected.name === '曹髦') {
+          const p = G.players[playerID];
+          p.daoxin = 20;
+          p.is_turned_over = false;
+          p.caomaoFangzhuUsed = false;
+          p.caomaoFangzhuLastTarget = null;
+          p.caomaoJuejinUsed = false;
+          p.grantedSkills = [];
+          caomaoInternal.checkUnlocks(p);
+          G.actionLog.push(`曹髦 获得20点道心，当前${p.daoxin}/99`);
+        }
       }
       
       // Check if all players have selected
@@ -1672,7 +1752,7 @@ export const CardGame = {
         G.phase = 'playing';
         // Deal 4 cards to each player
         ['0', '1', '2'].forEach(pid => {
-          drawCards(G, pid, 4, ctx.random);
+          drawCards(G, pid, 4, random);
         });
       }
     },
@@ -1707,29 +1787,50 @@ export const CardGame = {
       G.passCount = 0;
       G.bidTurn = getNextBidder(G.bidTurn);
     },
-    modifyHP: ({ G }, targetPlayerID, amount) => {
+    modifyHP: ({ G, random }, targetPlayerID, amount) => {
       const player = G.players[targetPlayerID];
       if (player && player.hp !== undefined) {
         if (amount > 0) {
            player.hp = Math.min(player.hp + amount, player.hpMax);
         } else {
-           let damage = -amount;
-           if (player.armor > 0) {
-               if (player.armor >= damage) {
-                   player.armor -= damage;
-                   damage = 0;
-               } else {
-                   damage -= player.armor;
-                   player.armor = 0;
+           const damage = -amount;
+           if (damage > 0 && !(G.pendingEffect && G.pendingEffect.active) && !(G.selectCard && G.selectCard.active)) {
+             const target = G.players[targetPlayerID];
+             if (target && target.hp === 1) {
+               let remainingAfterArmor = damage;
+               const armor = typeof target.armor === 'number' ? target.armor : 0;
+               if (armor > 0) {
+                 remainingAfterArmor = Math.max(0, remainingAfterArmor - armor);
                }
+               if (remainingAfterArmor <= 0) {
+                 applyDamageInternal(G, random, targetPlayerID, damage);
+                 return;
+               }
+               const caocongID = Object.keys(G.players || {}).find(pid => {
+                 if (pid === targetPlayerID) return false;
+                 const p = G.players[pid];
+                 if (!p || !p.general || p.general.name !== '曹冲') return false;
+                 if (!p.equipments) return false;
+                 return Object.values(p.equipments).some(Boolean);
+               });
+               if (caocongID) {
+                 G.pendingEffect = {
+                   active: true,
+                   sourcePlayerID: caocongID,
+                   targetPlayerID: targetPlayerID,
+                   actionType: 'caocong_renxin',
+                   pendingCard: { name: '仁心' },
+                   damage: damage
+                 };
+                 return;
+               }
+             }
            }
-           if (damage > 0) {
-               player.hp = Math.max(player.hp - damage, 0);
-           }
+           applyDamageInternal(G, random, targetPlayerID, damage);
         }
       }
     },
-    playCardToJudgment: ({ G, ctx, playerID }, { card, targetPlayerID, type }) => {
+    playCardToJudgment: ({ G, playerID, random }, { card, targetPlayerID, type }) => {
       // Remove card from hand
       const hand = G.hands[playerID];
       const cardIndex = hand.findIndex(c => c.id === card.id);
@@ -1744,7 +1845,7 @@ export const CardGame = {
       // Luo Tong Skill: Qin Zheng
       if (G.players[playerID].general && G.players[playerID].general.name === '骆统') {
           G.players[playerID].qz_cnt += 1;
-          const logs = luotongSkill.qinzheng.trigger(G, playerID, ctx.random);
+          const logs = luotongSkill.qinzheng.trigger(G, playerID, random);
           if (logs && logs.length > 0) {
               G.actionLog.push(...logs);
           }
@@ -1801,8 +1902,8 @@ export const CardGame = {
         G.actionLog.push(`闪电移动到玩家 ${nextPlayerID}`);
       }
     },
-    playCards: ({ G, ctx, playerID }, cardIndices, targetIds) => {
-      playCardsInternal({ G, ctx, playerID }, cardIndices, targetIds);
+    playCards: ({ G, playerID, random }, cardIndices, targetIds) => {
+      playCardsInternal({ G, playerID, random }, cardIndices, targetIds);
     },
 
     discardCards: ({ G, playerID }, cardIndices) => {
@@ -1824,9 +1925,9 @@ export const CardGame = {
       G.actionLog.push(`${playerName} discarded ${cardNames}`);
     },
 
-    shuffleDeck: ({ G, ctx }) => {
+    shuffleDeck: ({ G, random }) => {
       const combined = [...G.deck, ...G.discardPile];
-      G.deck = shuffle(combined, ctx.random);
+      G.deck = shuffle(combined, random);
       G.discardPile = [];
       G.actionLog.push(`牌堆已洗牌（与弃牌堆合并）。总牌数：${G.deck.length}`);
     },
@@ -1958,7 +2059,7 @@ export const CardGame = {
       if (!G.hands[targetAID]) return;
 
       const movedCards = sourceHand.splice(0, sourceHand.length);
-      G.hands[targetAID].push(...movedCards);
+      addCardsToHand(G, targetAID, movedCards);
 
       G.mizhao = {
         active: true,
@@ -2050,11 +2151,11 @@ export const CardGame = {
       }
     },
 
-    selectHarvestCount: ({ G, ctx, playerID }, count) => {
+    selectHarvestCount: ({ G, playerID, random }, count) => {
       if (!G.harvestCountSelect.active || G.harvestCountSelect.playerID !== playerID) return;
       
       const numCards = count;
-      const cards = drawCards(G, playerID, numCards, ctx.random);
+      const cards = drawCards(G, playerID, numCards, random);
       
       // Revert the draw to hand (pop from hand)
       if (cards.length > 0) {
@@ -2074,7 +2175,7 @@ export const CardGame = {
       const card = G.harvestCards[index];
       
       // Add to player's hand
-      G.hands[playerID].push(card);
+      addCardsToHand(G, playerID, card);
       
       // Remove from harvest pool
       G.harvestCards.splice(index, 1);
@@ -2159,10 +2260,10 @@ export const CardGame = {
       G.actionLog.push(`${playerName} equipped ${card.name}`);
     },
 
-    triggerHarvest: ({ G, ctx, playerID }) => {
+    triggerHarvest: ({ G, playerID, random }) => {
       // Draw X cards where X is number of players (3)
       const numPlayers = 3;
-      const cards = drawCards(G, playerID, numPlayers, ctx.random); // Temporarily draw to player to get cards, but we need to move them to harvestCards
+      const cards = drawCards(G, playerID, numPlayers, random);
       
       // Revert the draw to hand (pop from hand)
       if (cards.length > 0) {
@@ -2184,8 +2285,8 @@ export const CardGame = {
             playerID: playerID
         };
     },
-    jiezhonghuiQuanJiAutoStart: ({ G, ctx, playerID }) => {
-        drawCards(G, playerID, 1, ctx.random);
+    jiezhonghuiQuanJiAutoStart: ({ G, playerID, random }) => {
+        drawCards(G, playerID, 1, random);
         G.jiezhonghuiQuanJiSelect = {
             active: true,
             playerID: playerID
@@ -2237,8 +2338,8 @@ export const CardGame = {
     activateKangkai: ({ G, playerID }) => {
         caoangSkill.kangkai.activate({ G, playerID });
     },
-    activateKangkaiWithDraw: ({ G, ctx, playerID }) => {
-        drawCards(G, playerID, 1, ctx.random);
+    activateKangkaiWithDraw: ({ G, playerID, random }) => {
+        drawCards(G, playerID, 1, random);
         caoangSkill.kangkai.activate({ G, playerID });
         const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         G.actionLog.push(`${playerName} 发动慷忾，摸一张牌`);
@@ -2252,10 +2353,10 @@ export const CardGame = {
     cancelKangkai: ({ G, playerID }) => {
         caoangSkill.kangkai.cancel({ G, playerID });
     },
-    caoangAutoPromptAccept: ({ G, ctx, playerID }) => {
+    caoangAutoPromptAccept: ({ G, playerID, random }) => {
         if (!G.caoangAutoPrompt || !G.caoangAutoPrompt.active) return;
         if (G.caoangAutoPrompt.playerID !== playerID) return;
-        drawCards(G, playerID, 1, ctx.random);
+        drawCards(G, playerID, 1, random);
         caoangSkill.kangkai.activate({ G, playerID });
         G.caoangAutoPrompt = { active: false, playerID: null, slashSourceID: null, slashTargetID: null, cardName: null };
     },
@@ -2285,7 +2386,7 @@ export const CardGame = {
         G.actionLog.push(`${sourceName} 发动铁骑，与你进行谋弈（${targetName}）`);
     },
 
-    moumachaoChooseMouyi: ({ G, ctx, playerID }, choice) => {
+    moumachaoChooseMouyi: ({ G, playerID, random }, choice) => {
         if (!G.mouyi || !G.mouyi.active) return;
         const { sourcePlayerID, targetPlayerID } = G.mouyi;
         if (playerID !== sourcePlayerID && playerID !== targetPlayerID) return;
@@ -2316,7 +2417,7 @@ export const CardGame = {
         }
 
         if (sourceChoice === 'draw') {
-          drawCards(G, sourcePlayerID, 2, ctx.random);
+          drawCards(G, sourcePlayerID, 2, random);
           G.actionLog.push(`${sourceName} 谋弈胜出：扰阵疲敌，摸两张牌`);
           return;
         }
@@ -2332,9 +2433,9 @@ export const CardGame = {
     },
 
     // Cao Chun Skills
-    confirmShanjia: ({ G, ctx, playerID }, discardCount) => {
+    confirmShanjia: ({ G, playerID, random }, discardCount) => {
         // Draw 3 cards
-        drawCards(G, playerID, 3, ctx.random);
+        drawCards(G, playerID, 3, random);
         
         // Discard X cards (discardCount)
         // Since we don't have a UI for selecting specific cards to discard for Shanjia yet,
@@ -2371,8 +2472,8 @@ export const CardGame = {
     useQueDi: ({ G, playerID }) => {
         wenyangSkill.useQueDi({ G, playerID });
     },
-    useChouJue: ({ G, ctx, playerID }) => {
-        wenyangSkill.useChouJue({ G, playerID }, (G, pid, count) => drawCards(G, pid, count, ctx.random));
+    useChouJue: ({ G, playerID, random }) => {
+        wenyangSkill.useChouJue({ G, playerID }, (G, pid, count) => drawCards(G, pid, count, random));
     },
     useZhuiFeng: ({ G, playerID }, targetID) => {
         wenyangSkill.useZhuiFeng({ G, playerID }, targetID);
@@ -2381,14 +2482,14 @@ export const CardGame = {
         wenyangSkill.useChongJian({ G, playerID }, targetID);
     },
 
-    mouhuangzhongPlayCardsWithLiegong: ({ G, ctx, playerID }, { cardIndices, targetIds, useLiegong }) => {
-        playCardsInternal({ G, ctx, playerID }, cardIndices, targetIds);
+    mouhuangzhongPlayCardsWithLiegong: ({ G, playerID, random }, { cardIndices, targetIds, useLiegong }) => {
+        playCardsInternal({ G, playerID, random }, cardIndices, targetIds);
         if (useLiegong && targetIds && targetIds.length > 0) {
-            activateLiegongInternal(G, ctx, playerID, targetIds[0]);
+            activateLiegongInternal(G, random, playerID, targetIds[0]);
         }
     },
-    mouhuangzhongActivateLiegong: ({ G, ctx, playerID }, targetID) => {
-        activateLiegongInternal(G, ctx, playerID, targetID);
+    mouhuangzhongActivateLiegong: ({ G, playerID, random }, targetID) => {
+        activateLiegongInternal(G, random, playerID, targetID);
     },
     mouhuangzhongClearLiegongPending: ({ G }) => {
         G.liegongPending = {
@@ -2404,6 +2505,9 @@ export const CardGame = {
     // Shi Weiyan Skills
     confirmZhuangShi: ({ G, playerID }, x, y) => {
         shiweiyanSkill.confirmZhuangShi({ G, playerID }, x, y);
+    },
+    startYinZhan: ({ G, playerID }, targetID) => {
+        shiweiyanSkill.startYinZhan({ G, playerID }, targetID);
     },
 
     // Shen Ganning Skills
@@ -2507,7 +2611,7 @@ export const CardGame = {
                 }
 
                 if (card) {
-                    G.hands[playerID].push(card);
+                    addCardsToHand(G, playerID, card);
                     G.actionLog.push(`Player ${playerID} 从 Player ${targetID} 处偷了一张牌`);
                 }
             }
@@ -2515,6 +2619,7 @@ export const CardGame = {
             // Handle discard action (like Guo He Chai Qiao)
             if (selected.length > 0) {
                 const item = selected[0];
+                if (G.selectCard.onlyEquip && item.type !== 'equip') return;
                 const targetPlayer = G.players[targetID];
                 const targetHand = G.hands[targetID];
                 let card = null;
@@ -2540,7 +2645,17 @@ export const CardGame = {
 
                 if (card) {
                     addToDiscardPile(G, card);
-                    G.actionLog.push(`Player ${playerID} 对 Player ${targetID} 使用了过河拆桥，弃置了 ${card.suit}${card.rank} ${card.name}`);
+                    const effectName = G.selectCard && G.selectCard.pendingCard && G.selectCard.pendingCard.name ? G.selectCard.pendingCard.name : '过河拆桥';
+                    G.actionLog.push(`Player ${playerID} 对 Player ${targetID} 使用了${effectName}，弃置了 ${card.suit}${card.rank} ${card.name}`);
+                    if (G.selectCard.renxinTargetID) {
+                      const caocong = G.players[playerID];
+                      if (caocong) {
+                        caocong.is_turned_over = !caocong.is_turned_over;
+                      }
+                      const targetName = G.players[G.selectCard.renxinTargetID]?.general?.name || `Player ${G.selectCard.renxinTargetID}`;
+                      const sourceName = caocong && caocong.general ? caocong.general.name : `Player ${playerID}`;
+                      G.actionLog.push(`${sourceName} 发动仁心，防止对 ${targetName} 的伤害`);
+                    }
                 }
             }
         } else if (actionType === 'collateral') {
@@ -2566,7 +2681,7 @@ export const CardGame = {
 
                 if (card) {
                     // Add to current player's hand
-                    G.hands[playerID].push(card);
+                    addCardsToHand(G, playerID, card);
                     G.actionLog.push(`Player ${playerID} 通过借刀杀人从 Player ${targetID} 处获得了 ${card.name}`);
                 }
             }
@@ -2579,8 +2694,11 @@ export const CardGame = {
         advanceZuoxingAfterResolution(G);
     },
 
-    cancel_select_card: ({ G, playerID }) => {
+    cancel_select_card: ({ G, playerID, random }) => {
         if (!G.selectCard || !G.selectCard.active || G.selectCard.sourcePlayerID !== playerID) return;
+        if (G.selectCard.renxinTargetID && typeof G.selectCard.renxinDamage === 'number') {
+          applyDamageInternal(G, random, G.selectCard.renxinTargetID, G.selectCard.renxinDamage);
+        }
         G.selectCard = { active: false, sourcePlayerID: null, targetPlayerID: null, actionType: null };
         advanceTaoluanAfterResolution(G);
         advanceMiewuAfterResolution(G);
@@ -2590,7 +2708,7 @@ export const CardGame = {
     confirmEffect: ({ G, playerID }) => {
         if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
 
-        const { actionType, targetPlayerID, pendingCard } = G.pendingEffect;
+        const { actionType, targetPlayerID, pendingCard, damage } = G.pendingEffect;
         
         if (actionType === 'steal' || actionType === 'discard' || actionType === 'collateral') {
              G.selectCard = {
@@ -2600,6 +2718,81 @@ export const CardGame = {
                  actionType: actionType,
                  pendingCard: pendingCard
              };
+        } else if (actionType === 'caocong_renxin') {
+             G.selectCard = {
+               active: true,
+               sourcePlayerID: playerID,
+               targetPlayerID: playerID,
+               actionType: 'discard',
+               pendingCard: pendingCard,
+               onlyEquip: true,
+               renxinTargetID: targetPlayerID,
+               renxinDamage: damage
+             };
+        } else if (actionType === 'caomao_juejin') {
+             const source = G.players[playerID];
+             if (source) source.caomaoJuejinUsed = true;
+
+             Object.keys(G.players || {}).forEach(pid => {
+               const p = G.players[pid];
+               if (!p) return;
+               const oldHp = typeof p.hp === 'number' ? p.hp : 0;
+               const reduced = Math.max(0, oldHp - 1);
+               p.hp = 1;
+               const baseArmor = typeof p.armor === 'number' ? p.armor : 0;
+               const extra = pid === playerID ? 2 : 0;
+               p.armor = baseArmor + reduced + extra;
+               clampArmorUtil(p);
+             });
+
+             G.caomaoJuejinAuraActive = true;
+
+             const exiled = [];
+             const sweepArray = (arr) => {
+               if (!Array.isArray(arr) || arr.length === 0) return;
+               for (let i = arr.length - 1; i >= 0; i--) {
+                 const c = arr[i];
+                 if (isJuejinForbiddenCard(c)) {
+                   exiled.push(arr.splice(i, 1)[0]);
+                 }
+               }
+             };
+
+             sweepArray(G.deck);
+             sweepArray(G.discardPile);
+             Object.keys(G.hands || {}).forEach(pid => sweepArray(G.hands[pid]));
+             Object.keys(G.players || {}).forEach(pid => {
+               const p = G.players[pid];
+               if (!p) return;
+               ['weapon', 'armor', 'plusOne', 'minusOne'].forEach(slot => {
+                 const c = p.equipments && p.equipments[slot];
+                 if (isJuejinForbiddenCard(c)) {
+                   exiled.push(c);
+                   p.equipments[slot] = null;
+                 }
+               });
+               ['bing', 'le', 'dian'].forEach(slot => {
+                 const c = p.judges && p.judges[slot];
+                 if (isJuejinForbiddenCard(c)) {
+                   exiled.push(c);
+                   p.judges[slot] = null;
+                 }
+               });
+               if (Array.isArray(p.quan)) sweepArray(p.quan);
+               if (p.pojun && typeof p.pojun === 'object') {
+                 Object.keys(p.pojun).forEach(k => sweepArray(p.pojun[k]));
+               }
+             });
+             if (Array.isArray(G.harvestCards)) sweepArray(G.harvestCards);
+             if (G.rangjieTempCard && isJuejinForbiddenCard(G.rangjieTempCard)) {
+               exiled.push(G.rangjieTempCard);
+               G.rangjieTempCard = null;
+             }
+             if (exiled.length > 0) {
+               pushToExiled(G, exiled);
+             }
+
+             G.actionLog.push(`曹髦 发动决进：全场体力调整为1并移除【闪】【桃】【酒】`);
         } else if (actionType === 'fire_attack') {
              G.fireAttackShowCard = {
                  active: true,
@@ -2642,9 +2835,12 @@ export const CardGame = {
          advanceZuoxingAfterResolution(G);
     },
 
-    cancelEffect: ({ G, playerID }) => {
+    cancelEffect: ({ G, playerID, random }) => {
         if (!G.pendingEffect || !G.pendingEffect.active || G.pendingEffect.sourcePlayerID !== playerID) return;
-        
+        if (G.pendingEffect.actionType === 'caocong_renxin' && typeof G.pendingEffect.damage === 'number') {
+          applyDamageInternal(G, random, G.pendingEffect.targetPlayerID, G.pendingEffect.damage);
+        }
+
         G.actionLog.push(`Player ${playerID} 取消了 ${G.pendingEffect.pendingCard.name} 的效果`);
         G.pendingEffect = null;
         advanceTaoluanAfterResolution(G);
@@ -2652,7 +2848,7 @@ export const CardGame = {
         advanceZuoxingAfterResolution(G);
     },
 
-    changeGeneral: ({ G, ctx, playerID }, generalId, actionId, clickid, sessionid) => {
+    changeGeneral: ({ G, playerID, random }, generalId, actionId, clickid, sessionid) => {
       // Idempotency check
       if (actionId && G.players[playerID].lastActionId === actionId) {
           return;
@@ -2693,17 +2889,9 @@ export const CardGame = {
       const available = ENABLED_GENERALS.filter(g => !usedGeneralIds.has(g.id));
       
       if (available.length > 0) {
-        // Pick random using deterministic RNG
-        // Note: ctx.random is available in boardgame.io
-        let newGeneral;
-        if (ctx && ctx.random) {
-            // Use boardgame.io RNG
-            const randIndex = Math.floor(ctx.random.Number() * available.length);
-            newGeneral = available[randIndex];
-        } else {
-            // Fallback (should not happen in boardgame.io environment)
-            newGeneral = available[Math.floor(Math.random() * available.length)];
-        }
+        if (!random || typeof random.Number !== 'function') return;
+        const randIndex = Math.floor(random.Number() * available.length);
+        const newGeneral = available[randIndex];
         
         // Replace
         G.generalOptions[playerID][index] = newGeneral;
@@ -2745,7 +2933,7 @@ export const CardGame = {
       G.gameResult = { winnerRole, scoreChanges };
     },
 
-    voteRematch: ({ G, ctx, playerID }) => {
+    voteRematch: ({ G, playerID, random }) => {
       if (G.rematchVotes.includes(playerID)) return;
       
       G.rematchVotes.push(playerID);
@@ -2760,7 +2948,7 @@ export const CardGame = {
         };
         
         // Reset G
-        const newG = CardGame.setup({ ctx });
+        const newG = CardGame.setup({ random });
         newG.bidStarter = nextBidStarter;
         newG.bidTurn = nextBidStarter;
         
@@ -2812,7 +3000,7 @@ export const CardGame = {
         G.jianyingSelect.selectedCard = cardData;
         G.jianyingSelect.stage = 'name_selection';
     },
-    selectJianyingName: ({ G, ctx, playerID }, newName) => {
+    selectJianyingName: ({ G, ctx, playerID, random }, newName) => {
         if (!G.jianyingSelect.active || G.jianyingSelect.playerID !== playerID) return;
         const selectedCard = G.jianyingSelect.selectedCard;
         const hand = G.hands[playerID];
@@ -2830,7 +3018,7 @@ export const CardGame = {
                 card = player.equipments[selectedCard.slot];
                 // Move equipment to hand to play it
                 player.equipments[selectedCard.slot] = null;
-                hand.push(card);
+                addCardsToHand(G, playerID, card);
                 cardIndex = hand.length - 1;
             }
         }
@@ -2856,7 +3044,7 @@ export const CardGame = {
             // Since we modified the card IN PLACE in the hand, playCards will see the modified version.
             // We pass empty targets array. If '杀' needs target, it will likely be discarded or just played without target.
             // The requirement "execute the logic of playing this card" is satisfied by invoking the standard play function.
-            CardGame.moves.playCards({ G, ctx, playerID }, [cardIndex], []);
+            CardGame.moves.playCards({ G, ctx, playerID, random }, [cardIndex], []);
             
             const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
             G.actionLog.push(`${playerName} activated Jianying: played ${card._originalName} as ${newName}`);
@@ -2870,7 +3058,7 @@ export const CardGame = {
             playerID: null
         };
     },
-    cancelJianying: ({ G, playerID }) => {
+    cancelJianying: ({ G }) => {
         G.jianyingSelect = {
             active: false,
             stage: null,
@@ -2935,7 +3123,7 @@ export const CardGame = {
             playerID: null
         };
     },
-    liMuCancel: ({ G, playerID }) => {
+    liMuCancel: ({ G }) => {
         G.liMuSelect = {
             active: false,
             playerID: null
@@ -2950,29 +3138,29 @@ export const CardGame = {
         G.longhunSelect.targetPlayerID = null;
         G.longhunSelect.selectedCard = null;
     },
-    selectLongHunTarget: ({ G, playerID }, targetID) => {
+    selectLongHunTarget: ({ G }, targetID) => {
         if (G.longhunSelect.active && G.longhunSelect.stage === 'target_selection') {
             G.longhunSelect.targetPlayerID = targetID;
         }
     },
-    confirmLongHunTarget: ({ G, playerID }) => {
+    confirmLongHunTarget: ({ G }) => {
         if (G.longhunSelect.active && G.longhunSelect.stage === 'target_selection' && G.longhunSelect.targetPlayerID) {
             G.longhunSelect.stage = 'card_selection';
         }
     },
-    cancelLongHun: ({ G, playerID }) => {
+    cancelLongHun: ({ G }) => {
         G.longhunSelect.active = false;
         G.longhunSelect.stage = null;
         G.longhunSelect.sourcePlayerID = null;
         G.longhunSelect.targetPlayerID = null;
         G.longhunSelect.selectedCard = null;
     },
-    selectLongHunCard: ({ G, playerID }, cardData) => {
+    selectLongHunCard: ({ G }, cardData) => {
          if (G.longhunSelect.active && G.longhunSelect.stage === 'card_selection') {
              G.longhunSelect.selectedCard = cardData;
          }
     },
-    confirmLongHunCard: ({ G, playerID }) => {
+    confirmLongHunCard: ({ G }) => {
         const { sourcePlayerID, targetPlayerID, selectedCard } = G.longhunSelect;
         if (!selectedCard) return;
 
@@ -3063,11 +3251,11 @@ export const CardGame = {
         }
     },
 
-    useKurou: ({ G, ctx, playerID }) => {
+    useKurou: ({ G, playerID, random }) => {
         const player = G.players[playerID];
         if (!player) return;
         player.hp = Math.max((player.hp || 0) - 1, 0);
-        drawCards(G, playerID, 2, ctx.random);
+        drawCards(G, playerID, 2, random);
         const playerName = player.general ? player.general.name : `Player ${playerID}`;
         G.actionLog.push(`${playerName} 发动了苦肉，失去1点体力并摸两张牌`);
     },
@@ -3080,29 +3268,29 @@ export const CardGame = {
         G.chouceSelect.targetPlayerID = null;
         G.chouceSelect.selectedCard = null;
     },
-    selectChouceTarget: ({ G, playerID }, targetID) => {
+    selectChouceTarget: ({ G }, targetID) => {
         if (G.chouceSelect.active && G.chouceSelect.stage === 'target_selection') {
             G.chouceSelect.targetPlayerID = targetID;
         }
     },
-    confirmChouceTarget: ({ G, playerID }) => {
+    confirmChouceTarget: ({ G }) => {
         if (G.chouceSelect.active && G.chouceSelect.stage === 'target_selection' && G.chouceSelect.targetPlayerID) {
             G.chouceSelect.stage = 'card_selection';
         }
     },
-    cancelChouce: ({ G, playerID }) => {
+    cancelChouce: ({ G }) => {
         G.chouceSelect.active = false;
         G.chouceSelect.stage = null;
         G.chouceSelect.sourcePlayerID = null;
         G.chouceSelect.targetPlayerID = null;
         G.chouceSelect.selectedCard = null;
     },
-    selectChouceCard: ({ G, playerID }, cardData) => {
+    selectChouceCard: ({ G }, cardData) => {
          if (G.chouceSelect.active && G.chouceSelect.stage === 'card_selection') {
              G.chouceSelect.selectedCard = cardData;
          }
     },
-    confirmChouceCard: ({ G, playerID }) => {
+    confirmChouceCard: ({ G }) => {
         const { sourcePlayerID, targetPlayerID, selectedCard } = G.chouceSelect;
         if (!selectedCard) return;
 
@@ -3161,7 +3349,7 @@ export const CardGame = {
         const card = G.discardPile.pop();
         
         // Add to hand
-        G.hands[playerID].push(card);
+        addCardsToHand(G, playerID, card);
         
         const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         G.actionLog.push(`${playerName} used Tian Du to obtain ${card.suit}${card.rank} ${card.name} from discard pile`);

@@ -5,7 +5,7 @@ export const xizhicaiSkill = {
     tiandu: {
         name: "天妒",
         description: "天妒：点击天妒后，检测弃牌堆顶的牌。若存在，弹窗显示该牌信息（花色、点数、牌名），询问是否获得。确认后将该牌置入戏志才手牌。",
-        canActivate: (G, playerID) => {
+        canActivate: (G) => {
             return G.discardPile.length > 0;
         },
         getLastDiscardedCard: (G) => {

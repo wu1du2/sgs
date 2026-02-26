@@ -1,14 +1,15 @@
+import { addCardsToHand } from './cardUtils.js';
+
 // Fisher-Yates shuffle with optional RNG
 function shuffle(array, rng) {
+  if (!rng || typeof rng.Number !== 'function') {
+    throw new Error('random is required');
+  }
   let currentIndex = array.length,  randomIndex;
   const newArray = [...array];
 
   while (currentIndex != 0) {
-    if (rng) {
-      randomIndex = Math.floor(rng.Number() * currentIndex);
-    } else {
-      randomIndex = Math.floor(Math.random() * currentIndex);
-    }
+    randomIndex = Math.floor(rng.Number() * currentIndex);
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [
       newArray[randomIndex], newArray[currentIndex]];
@@ -37,7 +38,7 @@ export const luotongSkill = {
                 const cardIndex = G.deck.findIndex(c => targetNames.includes(c.name));
                 if (cardIndex !== -1) {
                     const card = G.deck.splice(cardIndex, 1)[0];
-                    G.hands[playerID].push(card);
+                    addCardsToHand(G, playerID, card);
                     return card.name;
                 }
                 return null;

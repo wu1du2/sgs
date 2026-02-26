@@ -1,3 +1,4 @@
+import { addCardsToDiscard, addCardsToHand } from './cardUtils.js';
 
 export const maliangSkill = {
   transfer: {
@@ -14,7 +15,7 @@ export const maliangSkill = {
 
       // Move to target hand
       if (!G.hands[targetID]) G.hands[targetID] = [];
-      G.hands[targetID].push(...cards);
+      addCardsToHand(G, targetID, cards);
       
       // Log
       const sourceName = G.players[G.maliang.sourcePlayerID] && G.players[G.maliang.sourcePlayerID].general ? G.players[G.maliang.sourcePlayerID].general.name : 'Ma Liang';
@@ -35,7 +36,7 @@ export const maliangSkill = {
     if (G.maliang.cheeringPile.length === 0) return;
     
     const cards = [...G.maliang.cheeringPile];
-    G.discardPile.push(...cards);
+    addCardsToDiscard(G, cards);
     
     const sourceName = G.players[playerID] && G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
     G.actionLog.push(`${sourceName} 从助威区弃置了 ${cards.length} 张牌`);

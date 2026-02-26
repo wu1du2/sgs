@@ -311,12 +311,7 @@
     "hpMax": 3,
     "hp": 3,
     "skills": [
-      "潜龙",
-      "卫统",
-      "清正",
-      "酒诗",
-      "放逐",
-      "决进"
+      "潜龙"
     ],
     "portrait": "https://patchwiki.biligame.com/images/msgs/e/e6/rtc56kqhijqtez5sd0jkyxle3yayvtf.png",
     "skills_description": [
@@ -327,7 +322,7 @@
       "放逐:持恒技，出牌阶段限一次，你可以选择一名其他角色并选择一项令其执行之（不能选择上次发动此技能时选择的目标角色）：1.所有技能失效直到其下回合结束；2.不能使用除锦囊牌以外的手牌直到其下回合结束。",
       "决进:持恒技，限定技，出牌阶段，你可以令所有角色依次将体力值调整为1点体力并获得X点护甲（X为其以此调整减少的体力值，护甲值上限为5；你以此法获得的护甲值+2），然后令场上获得“向死存魏”光环效果（将牌堆、弃牌堆、场上、所有角色的【闪】、【桃】、【酒】移出游戏）。"
     ],
-    "enable": false,
+    "enable": true,
     "localPortrait": "/images/generals/曹髦.jpg",
     "initial_armor": 0
   },
@@ -733,7 +728,7 @@
       "悲歌:当一名角色受到【杀】造成的伤害后，你可以弃置一张牌，令其进行一次判定，若结果为：♥️，其回复1点体力；♦️，其摸两张牌；♣️，伤害来源弃置两张牌；♠️，伤害来源翻面。",
       "断肠:当你死亡时，杀死你的角色失去所有武将技能。"
     ],
-    "enable": true,
+    "enable": false,
     "localPortrait": "/images/generals/蔡文姬.jpg",
     "initial_armor": 0
   },
@@ -809,8 +804,8 @@
       "归心:当你受到1点伤害后，你可以获得每名其他角色区域里的一张牌，然后你翻面。",
       "飞影:其他角色计算与你的距离+1。"
     ],
-    "enable": false,
-    "localPortrait": "/images/generals/神曹操.jpg",
+    "enable": true,
+    "localPortrait": "/images/generals/曹髦.png",
     "initial_armor": 0
   },
   {
@@ -1322,8 +1317,26 @@
       "昭凶:持恒技，限定技，准备阶段，若你已受伤，你可以将势力变更为群（晋），然后你获得技能“荡异”且你修改技能“挟征”军争。",
       "荡异:"
     ],
-    "enable": false,
+    "enable": true,
     "localPortrait": "/images/generals/司马昭.jpg",
+    "initial_armor": 0
+  },
+  {
+    "id": "曹冲",
+    "name": "曹冲",
+    "hpMax": 3,
+    "hp": 3,
+    "skills": [
+      "称象",
+      "仁心"
+    ],
+    "portrait": "https://patchwiki.biligame.com/images/msgs/7/76/eznbgrhmz7c5676idegcmlvamuu5b3e.jpg",
+    "skills_description": [
+      "称象:出牌阶段，你可以亮出牌堆顶的五张牌，获得其中任意张点数之和不大于13的牌。",
+      "仁心:当其他角色受到伤害时，若其体力值为1，你可以翻面并弃置一张装备牌，防止此伤害。"
+    ],
+    "enable": true,
+    "localPortrait": "/images/generals/曹冲.jpg",
     "initial_armor": 0
   }
 ]

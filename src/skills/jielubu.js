@@ -1,3 +1,5 @@
+import { addCardsToHand } from './cardUtils.js';
+
 export const jielubuSkill = {
     // 1. Start the skill: enable target selection
     useLiyu: ({ G, playerID }) => {
@@ -41,7 +43,6 @@ export const jielubuSkill = {
     // 4. Action: Obtain the selected card
     liyuObtainCard: ({ G, playerID }, targetID, selectedCards) => {
         const target = G.players[targetID];
-        const source = G.players[playerID];
         const targetHand = G.hands[targetID];
 
         // selectedCards is expected to be an array from CardSelectionModal
@@ -76,7 +77,7 @@ export const jielubuSkill = {
         }
 
         if (cardToMove) {
-            G.hands[playerID].push(cardToMove);
+            addCardsToHand(G, playerID, cardToMove);
             const targetName = target.general.name;
             G.actionLog.push(`界吕布 "利驭" 获得了 ${targetName} 的一张 ${cardType} 牌: ${cardToMove.suit} ${cardToMove.rank} ${cardToMove.name}`);
         }

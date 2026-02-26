@@ -1,3 +1,5 @@
+import { addCardsToDiscard, addCardsToHand } from './cardUtils.js';
+
 export const jiezhonghuiSkill = {
     quanji: {
         name: "权计",
@@ -7,11 +9,14 @@ export const jiezhonghuiSkill = {
         drawCard: (G, playerID, rng) => {
             if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
+                    if (!rng || typeof rng.Number !== 'function') {
+                        throw new Error('random is required');
+                    }
                     let currentIndex = G.discardPile.length;
                     let randomIndex;
                     const newArray = [...G.discardPile];
                     while (currentIndex !== 0) {
-                        randomIndex = Math.floor((rng ? rng.Number() : Math.random()) * currentIndex);
+                        randomIndex = Math.floor(rng.Number() * currentIndex);
                         currentIndex--;
                         [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
                     }
@@ -22,7 +27,7 @@ export const jiezhonghuiSkill = {
                 }
             }
             const card = G.deck.shift();
-            G.hands[playerID].push(card);
+            addCardsToHand(G, playerID, card);
             return card;
         },
 
@@ -74,7 +79,7 @@ export const jiezhonghuiSkill = {
             const player = G.players[playerID];
             if (player.quan && cardIndexInQuan >= 0 && cardIndexInQuan < player.quan.length) {
                 const card = player.quan.splice(cardIndexInQuan, 1)[0];
-                G.discardPile.push(card);
+                addCardsToDiscard(G, card);
                 return card;
             }
             return null;

@@ -1,5 +1,5 @@
 export const wenyangSkill = {
-  useQueDi: ({ G, playerID }, drawCards) => {
+  useQueDi: ({ G, playerID }) => {
     const player = G.players[playerID];
     if (player && player.hp !== undefined) {
       // 却敌：体力上限-1

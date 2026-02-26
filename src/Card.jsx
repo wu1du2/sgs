@@ -10,7 +10,7 @@ const SUIT_COLORS = {
 
 const getSuitColor = (suit) => SUIT_COLORS[suit] || '#1f2328';
 
-export const getCardInfo = (card) => {
+const getCardInfo = (card) => {
   if (typeof card === 'object' && card !== null) {
     const { suit, rank, name, type, card_picture, local_card_picture } = card;
     const color = getSuitColor(suit);
@@ -62,7 +62,7 @@ export const Card = React.memo(({ card, cardIndex, onClick, isHidden = false, is
     );
   }
 
-  const { suit, rank, color, name, card_picture, local_card_picture } = getCardInfo(card || cardIndex);
+  const { suit, rank, color, card_picture, local_card_picture } = getCardInfo(card || cardIndex);
   const resolvedCardPicture = imageMode === 'local'
     ? (local_card_picture || (typeof card_picture === 'string' && card_picture.startsWith('/') ? card_picture : ''))
     : card_picture;

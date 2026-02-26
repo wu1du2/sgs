@@ -1,9 +1,14 @@
+import { addCardsToHand, clampArmor } from './cardUtils.js';
+
 const shuffleArray = (array, rng) => {
+  if (!rng || typeof rng.Number !== 'function') {
+    throw new Error('random is required');
+  }
   let currentIndex = array.length;
   let randomIndex;
   const newArray = [...array];
   while (currentIndex !== 0) {
-    randomIndex = Math.floor((rng ? rng.Number() : Math.random()) * currentIndex);
+    randomIndex = Math.floor(rng.Number() * currentIndex);
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
   }
@@ -30,7 +35,7 @@ const drawOneCardInline = (G, playerID, rng) => {
   }
   const card = G.deck.shift();
   if (card) {
-    G.hands[playerID].push(card);
+    addCardsToHand(G, playerID, card);
   }
   return card;
 };
@@ -38,7 +43,7 @@ const drawOneCardInline = (G, playerID, rng) => {
 export const baoxinSkill = {
   mutao: {
     name: '募讨',
-    action: ({ G, ctx, playerID }, targetID) => {
+    action: ({ G, playerID, random }, targetID) => {
       const self = G.players[playerID];
       if (!self || !self.general || self.general.name !== '鲍信') return;
       if (!G.players[targetID]) return;
@@ -73,10 +78,10 @@ export const baoxinSkill = {
       const remaining = [...shaCards];
       while (remaining.length > 0) {
         const recipientID = order[giveIndex % order.length];
-        const rand = ctx.random ? ctx.random.Number() : Math.random();
-        const pickIndex = Math.floor(rand * remaining.length);
+        if (!random || typeof random.Number !== 'function') return;
+        const pickIndex = Math.floor(random.Number() * remaining.length);
         const card = remaining.splice(pickIndex, 1)[0];
-        G.hands[recipientID].push(card);
+        addCardsToHand(G, recipientID, card);
         lastRecipient = recipientID;
         giveIndex += 1;
       }
@@ -103,6 +108,7 @@ export const baoxinSkill = {
         if (dmg > 0) {
           lastPlayer.hp = Math.max(lastPlayer.hp - dmg, 0);
         }
+        clampArmor(lastPlayer);
       }
 
       G.actionLog.push(`${sourceName} 对 ${targetName} 使用了募讨，最终对 ${lastName} 造成 ${damage} 点伤害`);
@@ -110,13 +116,13 @@ export const baoxinSkill = {
   },
   yimou: {
     name: '毅谋',
-    optionOne: ({ G, ctx, playerID }, targetID) => {
+    optionOne: ({ G, playerID, random }, targetID) => {
       const self = G.players[playerID];
       if (!self || !self.general || self.general.name !== '鲍信') return;
       if (!G.players[targetID]) return;
 
       if (G.deck.length === 0 && G.discardPile.length > 0) {
-        G.deck = shuffleArray(G.discardPile, ctx.random);
+        G.deck = shuffleArray(G.discardPile, random);
         G.discardPile = [];
       }
 
@@ -130,7 +136,7 @@ export const baoxinSkill = {
       }
 
       const card = G.deck.splice(cardIndex, 1)[0];
-      G.hands[targetID].push(card);
+      addCardsToHand(G, targetID, card);
       G.actionLog.push(`${sourceName} 令 ${targetName} 获得一张【杀】`);
     },
     optionTwo: ({ G, playerID }, targetID) => {
@@ -157,7 +163,7 @@ export const baoxinSkill = {
       G.yimouSelect.recipientPlayerID = recipientID;
       G.yimouSelect.stage = 'card_selection';
     },
-    confirmCard: ({ G, ctx, playerID }, selected) => {
+    confirmCard: ({ G, playerID, random }, selected) => {
       if (!G.yimouSelect || !G.yimouSelect.active) return;
       if (G.yimouSelect.targetPlayerID !== playerID) return;
       if (G.yimouSelect.stage !== 'card_selection') return;
@@ -170,9 +176,9 @@ export const baoxinSkill = {
       const hand = G.hands[playerID] || [];
       const card = hand.splice(pick.index, 1)[0];
       if (!card) return;
-      G.hands[recipientID].push(card);
+      addCardsToHand(G, recipientID, card);
 
-      const drawn = drawOneCardInline(G, playerID, ctx.random);
+      const drawn = drawOneCardInline(G, playerID, random);
       const targetName = getPlayerName(G, playerID);
       const recipientName = getPlayerName(G, recipientID);
       if (drawn) {

@@ -1,18 +1,14 @@
-const addToDiscardPile = (G, cards) => {
-  if (!cards) return;
-  const toAdd = Array.isArray(cards) ? cards : [cards];
-  const validCards = toAdd.filter(Boolean);
-  if (validCards.length > 0) {
-    G.discardPile.push(...validCards);
-  }
-};
+import { addCardsToDiscard, addCardsToHand } from './cardUtils.js';
 
 const shuffle = (array, rng) => {
+  if (!rng || typeof rng.Number !== 'function') {
+    throw new Error('random is required');
+  }
   let currentIndex = array.length;
   let randomIndex;
   const newArray = [...array];
   while (currentIndex !== 0) {
-    randomIndex = Math.floor((rng ? rng.Number() : Math.random()) * currentIndex);
+    randomIndex = Math.floor(rng.Number() * currentIndex);
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [newArray[randomIndex], newArray[currentIndex]];
   }
@@ -43,7 +39,7 @@ export const shenganningSkill = {
             }
         },
 
-        confirm: ({ G, ctx, playerID }, myCardIndices, targetCardIndices) => {
+        confirm: ({ G, playerID, random }, myCardIndices, targetCardIndices) => {
             if (!G.poxiSelect.active || G.poxiSelect.sourcePlayerID !== playerID) return;
 
             const targetID = G.poxiSelect.targetPlayerID;
@@ -73,7 +69,7 @@ export const shenganningSkill = {
             });
 
             // Add to discard pile
-            addToDiscardPile(G, discardedCards);
+            addCardsToDiscard(G, discardedCards);
 
             const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
             const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
@@ -105,18 +101,17 @@ export const shenganningSkill = {
             } else if (selfDiscardedCount === 4) {
                 G.actionLog.push(`${playerName} 自身弃置了4张牌：摸4张牌`);
                 const deck = G.deck;
-                const hand = G.hands[playerID];
                 for (let i = 0; i < 4; i++) {
                     if (deck.length === 0) {
                         // Reshuffle discard pile if deck is empty
                         if (G.discardPile.length > 0) {
-                            G.deck = shuffle(G.discardPile, ctx.random);
+                            G.deck = shuffle(G.discardPile, random);
                             G.discardPile = [];
                         }
                     }
                     
                     if (deck.length > 0) {
-                        hand.push(deck.pop());
+                        addCardsToHand(G, playerID, deck.pop());
                     }
                 }
             }
@@ -165,7 +160,7 @@ export const shenganningSkill = {
                 const count = targetHand.length;
                 
                 // Move all cards from target hand to source hand
-                G.hands[playerID].push(...targetHand);
+                addCardsToHand(G, playerID, targetHand);
                 G.hands[targetID] = [];
                 
                 const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;

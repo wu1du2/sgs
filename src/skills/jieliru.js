@@ -1,22 +1,11 @@
 import { SGS_CARDS } from '../sgs_data.js';
-
-// Helper to add to discard pile
-const addToDiscardPile = (G, cards) => {
-  if (!cards) return;
-  const toAdd = Array.isArray(cards) ? cards : [cards];
-  const validCards = toAdd.filter(Boolean);
-  
-  if (validCards.length > 0) {
-    G.discardPile.push(...validCards);
-  }
-};
+import { addCardsToDiscard, addCardsToHand } from './cardUtils.js';
 
 export const jieliruSkill = {
   moves: {
     miejiTarget: ({ G, playerID }, targetId) => {
       // Validate target
       if (targetId === playerID) return;
-      const target = G.players[targetId];
       // Target must have cards (hand or equip? Description says "select a character with cards").
       // Description: "select a character with cards" (implied "hand cards"? or "cards on field"?).
       // JSON description says "one other character with cards".
@@ -57,7 +46,7 @@ export const jieliruSkill = {
         delete G.players[playerID].isMieJiTargeting;
     },
 
-    miejiGive: ({ G, playerID }, selectedCards) => {
+    miejiGive: ({ G }, selectedCards) => {
       // User requested: Target chooses any card to give to Li Ru.
       // selectedCards: Array of { type: 'hand'|'equip', index|slot }
       
@@ -79,7 +68,7 @@ export const jieliruSkill = {
       }
       
       // Give to Li Ru
-      G.hands[liRuId].push(card);
+      addCardsToHand(G, liRuId, card);
       
       G.actionLog.push(`${target.general.name} 将一张【${card.name}】交给了 ${liRu.general.name}`);
       
@@ -91,7 +80,7 @@ export const jieliruSkill = {
     
     // Removed miejiOption1 and miejiLiRuTake as requested by user to revert flow
 
-    miejiDiscard: ({ G, playerID }, selectedCards) => {
+    miejiDiscard: ({ G }, selectedCards) => {
         const targetId = G.miejiTargetId;
         const target = G.players[targetId];
         
@@ -119,7 +108,7 @@ export const jieliruSkill = {
         });
         
         // Add to discard pile
-        addToDiscardPile(G, cardsToDiscard);
+        addCardsToDiscard(G, cardsToDiscard);
         
         G.actionLog.push(`${target.general.name} 弃置了 ${cardsToDiscard.length} 张牌`);
         

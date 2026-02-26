@@ -3,6 +3,8 @@ import ServerModule from 'boardgame.io/dist/cjs/server.js';
 import serve from 'koa-static';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Buffer } from 'node:buffer';
+import process from 'node:process';
 
 const { Server, Origins } = ServerModule;
 const __filename = fileURLToPath(import.meta.url);
@@ -57,7 +59,7 @@ server.app.use(async (ctx, next) => {
     let parsed;
     try {
       parsed = new URL(url);
-    } catch (e) {
+    } catch {
       ctx.status = 400;
       ctx.body = 'Invalid url';
       return;
@@ -85,7 +87,7 @@ server.app.use(async (ctx, next) => {
       ctx.set('Cache-Control', IMAGE_CACHE_CONTROL);
       ctx.body = buffer;
       return;
-    } catch (e) {
+    } catch {
       ctx.status = 502;
       ctx.body = 'Proxy error';
       return;

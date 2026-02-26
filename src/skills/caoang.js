@@ -1,3 +1,5 @@
+import { addCardsToHand } from './cardUtils.js';
+
 export const caoangSkill = {
   kangkai: {
     name: "慷忾",
@@ -43,7 +45,7 @@ export const caoangSkill = {
       }
 
       if (movedCard) {
-        G.hands[targetID].push(movedCard);
+        addCardsToHand(G, targetID, movedCard);
         const sourceName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
         const targetName = G.players[targetID].general ? G.players[targetID].general.name : `Player ${targetID}`;
         G.actionLog.push(`${sourceName} 使用了慷忾，给了 ${targetName} 一张牌：${movedCard.suit}${movedCard.rank} ${movedCard.name}`);

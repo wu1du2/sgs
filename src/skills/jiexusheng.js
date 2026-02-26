@@ -23,7 +23,7 @@ export const jiexushengSkill = {
          * @param {string} targetID - ID of the target player
          * @param {object} selectedCards - Cards to move { hand: [indices], equipments: [slots] }
          */
-        action: ({ G, ctx }, playerID, targetID, selectedCards = { hand: [], equipments: [] }) => {
+        action: ({ G }, playerID, targetID, selectedCards = { hand: [], equipments: [] }) => {
             const target = G.players[targetID];
             const targetHand = G.hands[targetID];
             const source = G.players[playerID];
@@ -95,7 +95,7 @@ export const jiexushengSkill = {
             // Return all cards to hand
             cards.forEach(card => {
                 // Remove extra properties
-                const { originalType, originalSlot, ...cleanCard } = card;
+                const { originalType: _originalType, originalSlot: _originalSlot, ...cleanCard } = card;
                 targetHand.push(cleanCard);
             });
 

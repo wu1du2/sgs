@@ -1,15 +1,15 @@
+import { addCardsToDiscard, addCardsToHand } from './cardUtils.js';
 
 // Helper to shuffle array with optional RNG
 function shuffle(array, rng) {
+  if (!rng || typeof rng.Number !== 'function') {
+    throw new Error('random is required');
+  }
   let currentIndex = array.length,  randomIndex;
   const newArray = [...array];
 
   while (currentIndex != 0) {
-    if (rng) {
-      randomIndex = Math.floor(rng.Number() * currentIndex);
-    } else {
-      randomIndex = Math.floor(Math.random() * currentIndex);
-    }
+    randomIndex = Math.floor(rng.Number() * currentIndex);
     currentIndex--;
     [newArray[currentIndex], newArray[randomIndex]] = [
       newArray[randomIndex], newArray[currentIndex]];
@@ -17,24 +17,6 @@ function shuffle(array, rng) {
 
   return newArray;
 }
-
-// Helper to add to discard pile (re-implemented since not exported)
-const addToDiscardPile = (G, cards) => {
-  if (!cards) return;
-  const toAdd = Array.isArray(cards) ? cards : [cards];
-  const validCards = toAdd.filter(Boolean);
-  
-  // Restore original names/types/suits if needed (simplified from Game.js)
-  validCards.forEach(c => {
-      if (c._originalName) { c.name = c._originalName; delete c._originalName; }
-      if (c._originalType) { c.type = c._originalType; delete c._originalType; }
-      if (c._originalSuit) { c.suit = c._originalSuit; delete c._originalSuit; }
-  });
-
-  if (validCards.length > 0) {
-    G.discardPile.push(...validCards);
-  }
-};
 
 const recordLiegongSuit = (G, playerID, card) => {
   const player = G.players[playerID];
@@ -48,7 +30,7 @@ const recordLiegongSuit = (G, playerID, card) => {
 
 export const xuyouSkill = {
     moves: {
-        xuyouDrawCard: ({ G, ctx, playerID }, actionId) => {
+        xuyouDrawCard: ({ G, playerID, random }, actionId) => {
             const player = G.players[playerID];
 
             // Idempotency check
@@ -71,7 +53,7 @@ export const xuyouSkill = {
             
             if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
-                    G.deck = shuffle(G.discardPile, ctx.random);
+                    G.deck = shuffle(G.discardPile, random);
                     G.discardPile = [];
                 } else {
                     // No cards left
@@ -81,13 +63,13 @@ export const xuyouSkill = {
 
             const card = G.deck.pop(); // Draw from bottom
             if (card) {
-                G.hands[playerID].push(card);
+                addCardsToHand(G, playerID, card);
                 const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
                 G.actionLog.push(`${playerName} 从牌堆底摸了一张牌 (寸目)`);
             }
         },
 
-        xuyouChengLue: ({ G, ctx, playerID }) => {
+        xuyouChengLue: ({ G, playerID, random }) => {
             // Check if already used this turn? Prompt says "出牌阶段限一次" in json, but user description doesn't explicitly limit it.
             // But usually skills are limited. However, user said "Strictly follow my description". 
             // Description: "Cheng Lue (Yang): Click...". It doesn't say "Once per phase".
@@ -116,12 +98,12 @@ export const xuyouSkill = {
                 // Draw 1
                  if (G.deck.length === 0) {
                     if (G.discardPile.length > 0) {
-                        G.deck = shuffle(G.discardPile, ctx.random);
+                        G.deck = shuffle(G.discardPile, random);
                         G.discardPile = [];
                     }
                 }
                 const card = G.deck.pop();
-                if (card) G.hands[playerID].push(card);
+                if (card) addCardsToHand(G, playerID, card);
                 
                 // Open selection to discard 2
                 G.xuyouChengLueSelect = {
@@ -135,12 +117,12 @@ export const xuyouSkill = {
                 for (let i=0; i<2; i++) {
                      if (G.deck.length === 0) {
                         if (G.discardPile.length > 0) {
-                            G.deck = shuffle(G.discardPile, ctx.random);
+                            G.deck = shuffle(G.discardPile, random);
                             G.discardPile = [];
                         } else break;
                     }
                     const c = G.deck.pop();
-                    if (c) G.hands[playerID].push(c);
+                    if (c) addCardsToHand(G, playerID, c);
                 }
 
                 // Open selection to discard 1
@@ -162,7 +144,7 @@ export const xuyouSkill = {
                 hand.splice(index, 1);
             });
             
-            addToDiscardPile(G, discarded);
+            addCardsToDiscard(G, discarded);
             
             // Record suits
             const suits = discarded.map(c => c.suit).join(', ');
@@ -188,7 +170,7 @@ export const xuyouSkill = {
         xuyouPlayCards: ({ G, playerID }, cardIndices, targetIds) => {
              // New Effect: If Shi Cai area has cards, move them to discard pile first.
              if (G.players[playerID].shicai && G.players[playerID].shicai.length > 0) {
-                 addToDiscardPile(G, [...G.players[playerID].shicai]);
+                 addCardsToDiscard(G, [...G.players[playerID].shicai]);
                  G.players[playerID].shicai = [];
                  G.actionLog.push(`恃才区域在出牌前被清空。`);
              }
@@ -233,7 +215,7 @@ export const xuyouSkill = {
                     
                     const oldCard = G.players[playerID].equipments[slot];
                     if (oldCard) {
-                        addToDiscardPile(G, oldCard);
+                        addCardsToDiscard(G, oldCard);
                     }
                     G.players[playerID].equipments[slot] = card;
                     G.actionLog.push(`${playerName} 装备了 ${card.name}`);
@@ -331,7 +313,7 @@ export const xuyouSkill = {
              });
         },
         
-        xuyouShiCaiToTop: ({ G, ctx, playerID }, index) => {
+        xuyouShiCaiToTop: ({ G, playerID, random }, index) => {
             const shicai = G.players[playerID].shicai;
             if (!shicai || !shicai[index]) return;
             
@@ -344,13 +326,13 @@ export const xuyouSkill = {
             // Draw 1 card from BOTTOM (Cun Mu)
             if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
-                    G.deck = shuffle(G.discardPile, ctx.random);
+                    G.deck = shuffle(G.discardPile, random);
                     G.discardPile = [];
                 }
             }
             const drawnCard = G.deck.pop();
             if (drawnCard) {
-                G.hands[playerID].push(drawnCard);
+                addCardsToHand(G, playerID, drawnCard);
                 G.actionLog.push(`许攸从牌堆底摸了一张牌（恃才）`);
             }
         },
@@ -359,12 +341,12 @@ export const xuyouSkill = {
             const shicai = G.players[playerID].shicai;
             if (!shicai || shicai.length === 0) return;
             
-            addToDiscardPile(G, [...shicai]);
+            addCardsToDiscard(G, [...shicai]);
             G.players[playerID].shicai = [];
             G.actionLog.push(`恃才: 所有卡牌移入弃牌堆`);
         },
         
-        xuyouEquipToTop: ({ G, ctx, playerID }, slot) => {
+        xuyouEquipToTop: ({ G, playerID, random }, slot) => {
             const player = G.players[playerID];
             const card = player.equipments[slot];
             if (!card) return;
@@ -381,13 +363,13 @@ export const xuyouSkill = {
             // Draw 1 card from BOTTOM
             if (G.deck.length === 0) {
                 if (G.discardPile.length > 0) {
-                    G.deck = shuffle(G.discardPile, ctx.random);
+                    G.deck = shuffle(G.discardPile, random);
                     G.discardPile = [];
                 }
             }
             const drawnCard = G.deck.pop();
             if (drawnCard) {
-                G.hands[playerID].push(drawnCard);
+                addCardsToHand(G, playerID, drawnCard);
                 G.actionLog.push(`${playerName} 从牌堆底摸了一张牌（控顶）`);
             }
         }
