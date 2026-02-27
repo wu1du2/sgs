@@ -1119,11 +1119,12 @@ const TianduModal = ({ card, onConfirm, onCancel, imageMode = 'url' }) => {
 };
 
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0, seatBadge = null, isTurnedOver = false, daoxinValue = null, onDaoXinAdd5, onDaoXinAdd15 }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0, seatBadge = null, isTurnedOver = false, liegongSuits = [], daoxinValue = null, onDaoXinAdd5, onDaoXinAdd15 }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
   const [savedHeight, setSavedHeight] = React.useState(0);
+  const lastAvatarTapRef = React.useRef(0);
 
   const prevHpRef = React.useRef(hp);
   const [animationState, setAnimationState] = React.useState('idle');
@@ -1448,9 +1449,13 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
       <div style={{ display: 'flex', width: '100%', marginBottom: '4px', alignItems: 'flex-start' }}>
         {/* Avatar */}
         <div
-          onDoubleClick={(e) => {
+          onClick={(e) => {
             e.stopPropagation();
-            onAvatarClick && onAvatarClick();
+            const now = Date.now();
+            if (now - lastAvatarTapRef.current < 300) {
+              onAvatarClick && onAvatarClick();
+            }
+            lastAvatarTapRef.current = now;
           }}
           style={{ 
           width: '64px', 
@@ -1485,9 +1490,16 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
             <div style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.65) 100%)',
-              boxShadow: 'inset 0 0 12px rgba(0,0,0,0.9)'
-            }} />
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '28px',
+              fontWeight: 'bold',
+              color: 'rgba(255, 255, 255, 0.6)',
+              textShadow: '0 0 6px rgba(0, 0, 0, 0.7)'
+            }}>
+              翻
+            </div>
           )}
         </div>
         
@@ -1578,6 +1590,16 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
           </button>
         ))}
       </div>
+
+      {Array.isArray(liegongSuits) && liegongSuits.length > 0 && (
+        <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '4px', fontSize: '10px', fontWeight: 'bold' }}>
+          <span style={{ color: '#ecf0f1', opacity: 0.9 }}>烈弓</span>
+          <span style={{ color: '#95a5a6' }}>:</span>
+          {liegongSuits.map((suit, idx) => (
+            <span key={`${suit}-${idx}`} style={{ color: getSuitColor(suit), fontSize: '12px', lineHeight: '12px' }}>{suit}</span>
+          ))}
+        </div>
+      )}
 
       {/* Qi Hui Area */}
       {qiHui && (
@@ -2291,22 +2313,22 @@ const ActionLog = ({ logs }) => {
           flexDirection: 'column',
           boxShadow: '0 0 20px rgba(0,0,0,0.8)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '5px', borderBottom: '1px solid #555', paddingBottom: '5px' }}>
-            <button 
-              onClick={() => setViewMode('normal')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#ff4444',
-                fontSize: '20px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                lineHeight: 1
-              }}
-            >
-              ✕
-            </button>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '5px', borderBottom: '1px solid #555', paddingBottom: '5px' }}>
+          <button 
+            onClick={() => setViewMode('normal')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ff4444',
+              fontSize: '20px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              lineHeight: 1
+            }}
+          >
+            ✕
+          </button>
+        </div>
           <div style={{ flex: 1, overflowY: 'auto', fontSize: '14px', lineHeight: '1.6', fontFamily: 'monospace' }}>
             {logs.length === 0 ? (
               <div style={{ color: '#777', textAlign: 'center', marginTop: '20px' }}>No actions recorded yet.</div>
@@ -4089,7 +4111,7 @@ const QuanViewModal = ({ cards, onClose, imageMode = 'url' }) => {
   );
 };
 
-const PinDianModal = ({ hand, onConfirm, title, imageMode = 'url' }) => {
+const PinDianModal = ({ hand, onConfirm, title, allowedCardIds = null, imageMode = 'url' }) => {
   const [selectedIndex, setSelectedIndex] = React.useState(null);
 
   return (
@@ -4116,20 +4138,27 @@ const PinDianModal = ({ hand, onConfirm, title, imageMode = 'url' }) => {
       }}>
         <h3>{title || "请选择一张手牌进行拼点"}</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
-          {hand.map((card, index) => (
-            <CardPictureButton
-              key={index}
-              card={card}
-              width={80}
-              height={120}
-              selected={selectedIndex === index}
-              outline="3px solid #e74c3c"
-              outlineIdle="1px solid #bdc3c7"
-              scaleSelected={1.1}
-              onClick={() => setSelectedIndex(index)}
-              imageMode={imageMode}
-            />
-          ))}
+          {hand.map((card, index) => {
+            const allowed = !Array.isArray(allowedCardIds) || (card && allowedCardIds.includes(card.id));
+            return (
+              <div key={index} style={{ opacity: allowed ? 1 : 0.35 }}>
+                <CardPictureButton
+                  card={card}
+                  width={80}
+                  height={120}
+                  selected={selectedIndex === index}
+                  outline="3px solid #e74c3c"
+                  outlineIdle="1px solid #bdc3c7"
+                  scaleSelected={1.1}
+                  onClick={() => {
+                    if (!allowed) return;
+                    setSelectedIndex(index);
+                  }}
+                  imageMode={imageMode}
+                />
+              </div>
+            );
+          })}
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button 
@@ -4147,6 +4176,211 @@ const PinDianModal = ({ hand, onConfirm, title, imageMode = 'url' }) => {
             确定
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const SimazhaoRevealModal = ({ title, cards, onClose, canClose, imageMode = 'url' }) => {
+  const list = Array.isArray(cards) ? cards : [];
+  const isSlash = (card) => card && ['杀', '火杀', '雷杀'].includes(card.name);
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '820px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px'
+      }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>{title}</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {list.map((card, index) => (
+            <div key={index} style={{ borderRadius: '8px', boxShadow: isSlash(card) ? '0 0 12px rgba(231, 76, 60, 0.65)' : 'none' }}>
+              <CardPictureButton
+                card={card}
+                width={90}
+                height={130}
+                outline={isSlash(card) ? '3px solid #e74c3c' : '1px solid #bdc3c7'}
+                outlineIdle={isSlash(card) ? '3px solid #e74c3c' : '1px solid #bdc3c7'}
+                onClick={() => {}}
+                imageMode={imageMode}
+              />
+            </div>
+          ))}
+        </div>
+        {canClose && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#e74c3c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              结束
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const SimazhaoShowHandModal = ({ title, headerText, cards, onClose, canClose, imageMode = 'url' }) => {
+  const list = Array.isArray(cards) ? cards : [];
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white',
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '900px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px'
+      }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>{title}</h3>
+        {headerText && (
+          <div style={{ color: '#f1c40f', textAlign: 'center', lineHeight: 1.4 }}>
+            {headerText}
+          </div>
+        )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {list.length === 0 ? (
+            <div style={{ color: '#bdc3c7' }}>（无手牌）</div>
+          ) : (
+            list.map((card, index) => (
+              <CardPictureButton
+                key={index}
+                card={card}
+                width={80}
+                height={120}
+                outlineIdle="1px solid #bdc3c7"
+                onClick={() => {}}
+                imageMode={imageMode}
+              />
+            ))
+          )}
+        </div>
+        {canClose && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const QiantunRevealModal = ({ title, revealedCards, hiddenCount, onClose, canClose, imageMode = 'url' }) => {
+  const shown = Array.isArray(revealedCards) ? revealedCards : [];
+  const hidden = Math.max(0, hiddenCount || 0);
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      color: 'white'
+    }}>
+      <div style={{
+        backgroundColor: '#333',
+        padding: '20px',
+        borderRadius: '10px',
+        width: '80%',
+        maxWidth: '900px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px'
+      }}>
+        <h3 style={{ margin: 0, textAlign: 'center' }}>{title}</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {shown.map((card, index) => (
+            <CardPictureButton
+              key={`shown-${index}`}
+              card={card}
+              width={80}
+              height={120}
+              outlineIdle="1px solid #bdc3c7"
+              onClick={() => {}}
+              imageMode={imageMode}
+            />
+          ))}
+          {Array.from({ length: hidden }).map((_, index) => (
+            <CardPictureButton
+              key={`hidden-${index}`}
+              card={null}
+              width={80}
+              height={120}
+              isHidden={true}
+              outlineIdle="1px solid #bdc3c7"
+              onClick={() => {}}
+              imageMode={imageMode}
+            />
+          ))}
+        </div>
+        {canClose && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -5175,6 +5409,69 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
       return;
     }
 
+    if (activeSkill === '挟征盖牌') {
+      const hand = G.hands[targetId] || [];
+      if (!Array.isArray(hand) || hand.length === 0) {
+        alert("目标没有手牌");
+        return;
+      }
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
+      } else {
+        if (selectedTargetIds.length >= 2) {
+          alert("最多选择两名角色");
+          return;
+        }
+        setSelectedTargetIds([...selectedTargetIds, targetId]);
+      }
+      return;
+    }
+
+    if (activeSkill === '挟征目标') {
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds([]);
+      } else {
+        setSelectedTargetIds([targetId]);
+      }
+      return;
+    }
+
+    if (activeSkill === '谦吞') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      const targetHand = G.hands[targetId] || [];
+      if (!Array.isArray(targetHand) || targetHand.length === 0) {
+        alert("目标没有手牌");
+        return;
+      }
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds([]);
+      } else {
+        setSelectedTargetIds([targetId]);
+      }
+      return;
+    }
+
+    if (activeSkill === '威肆') {
+      if (targetId === playerID) {
+        alert("不能选择自己");
+        return;
+      }
+      const targetHand = G.hands[targetId] || [];
+      if (!Array.isArray(targetHand) || targetHand.length === 0) {
+        alert("目标没有手牌");
+        return;
+      }
+      if (selectedTargetIds.includes(targetId)) {
+        setSelectedTargetIds([]);
+      } else {
+        setSelectedTargetIds([targetId]);
+      }
+      return;
+    }
+
     if (activeSkill === '慷忾') {
       if (selectedTargetIds.includes(targetId)) {
         setSelectedTargetIds(selectedTargetIds.filter(id => id !== targetId));
@@ -5688,6 +5985,42 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
   const [showZhuangShiModal, setShowZhuangShiModal] = React.useState(false);
   const [showKuangbaoSelector, setShowKuangbaoSelector] = React.useState(false);
   const [shanJiaState, setShanJiaState] = React.useState(3);
+  const simazhaoShowHandTimerRef = React.useRef(null);
+  const simazhaoShowHandSeqRef = React.useRef(null);
+  const qiantunShowTimerRef = React.useRef(null);
+  const qiantunShowSeqRef = React.useRef(null);
+
+  const simazhaoShowHandSeq = G.simazhaoShowHand && G.simazhaoShowHand.active ? G.simazhaoShowHand.seq : null;
+  const qiantunShowSeq = G.simazhaoQiantun && G.simazhaoQiantun.active && G.simazhaoQiantun.stage === 'show' && G.simazhaoQiantun.show ? G.simazhaoQiantun.show.seq : null;
+
+  React.useEffect(() => {
+    if (!G.simazhaoShowHand || !G.simazhaoShowHand.active) return;
+    if (G.simazhaoShowHand.sourceID !== playerID) return;
+    if (simazhaoShowHandSeqRef.current === simazhaoShowHandSeq) return;
+    simazhaoShowHandSeqRef.current = simazhaoShowHandSeq;
+    if (simazhaoShowHandTimerRef.current) {
+      clearTimeout(simazhaoShowHandTimerRef.current);
+    }
+    simazhaoShowHandTimerRef.current = setTimeout(() => {
+      moves.simazhaoShowHandClose();
+      simazhaoShowHandTimerRef.current = null;
+    }, 5000);
+  }, [G.simazhaoShowHand, simazhaoShowHandSeq, playerID, moves]);
+
+  React.useEffect(() => {
+    if (!G.simazhaoQiantun || !G.simazhaoQiantun.active || G.simazhaoQiantun.stage !== 'show' || !G.simazhaoQiantun.show) return;
+    const seq = qiantunShowSeq;
+    if (!seq) return;
+    if (qiantunShowSeqRef.current === seq) return;
+    qiantunShowSeqRef.current = seq;
+    if (qiantunShowTimerRef.current) {
+      clearTimeout(qiantunShowTimerRef.current);
+    }
+    qiantunShowTimerRef.current = setTimeout(() => {
+      moves.simazhaoQiantunAcknowledge();
+      qiantunShowTimerRef.current = null;
+    }, 5000);
+  }, [G.simazhaoQiantun, qiantunShowSeq, moves]);
 
   const onKuangbaoClick = () => {
     setShowKuangbaoSelector(true);
@@ -5701,6 +6034,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
   // Pin Dian Modal Logic
   let showPinDianModal = false;
   let pinDianTitle = "";
+  let pinDianAllowedCardIds = null;
   if (G.pindian && G.pindian.active) {
     if (G.pindian.sourceCard === null) {
       if (playerID === G.pindian.sourcePlayerID) {
@@ -5711,6 +6045,9 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
       if (playerID === G.pindian.targetPlayerID) {
         showPinDianModal = true;
         pinDianTitle = "请选择用于拼点的卡牌 (对方已出牌)";
+        if (Array.isArray(G.pindian.targetAllowedCardIds)) {
+          pinDianAllowedCardIds = G.pindian.targetAllowedCardIds;
+        }
       }
     }
   }
@@ -5789,11 +6126,8 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     : [];
 
   const onSkillClick = (rawSkillName) => {
-    // IMPORTANT: Always trim the skill name to avoid issues with invisible characters or spaces
-    // This caused a bug where '却敌' and '仇决' were not matching due to trailing spaces/invisible chars
-    const skillName = rawSkillName.trim();
-    console.log('onSkillClick called with:', skillName, 'length:', skillName.length);
-
+    const skillName = String(rawSkillName || '').replace(/(?:\s|\u200B|\u200C|\u200D|\uFEFF)/g, '');
+    const baseSkillName = skillName.replace(/\(.*\)$/, '');
     // Read-only display skills (containing colon)
     if (skillName.includes(':')) {
         return;
@@ -5876,6 +6210,59 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
 
     if (skillName === '决进') {
       moves.caomaoJuejinStart();
+      return;
+    }
+
+    if (baseSkillName === '挟征') {
+      const waitingTarget = G.simazhaoXiezhen
+        && G.simazhaoXiezhen.active
+        && G.simazhaoXiezhen.stage === 'select_target'
+        && G.simazhaoXiezhen.sourceID === playerID;
+      const nextSkill = waitingTarget ? '挟征目标' : '挟征盖牌';
+      if (activeSkill === nextSkill) {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+      } else {
+        if (!waitingTarget) {
+          moves.useSkill(baseSkillName);
+        }
+        setActiveSkill(nextSkill);
+        setSelectedTargetIds([]);
+      }
+      return;
+    }
+
+    if (baseSkillName === '谦吞') {
+      if (activeSkill === '谦吞') {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+      } else {
+        moves.useSkill(baseSkillName);
+        setActiveSkill('谦吞');
+        setSelectedTargetIds([]);
+      }
+      return;
+    }
+
+    if (baseSkillName === '威肆') {
+      if (activeSkill === '威肆') {
+        setActiveSkill(null);
+        setSelectedTargetIds([]);
+      } else {
+        moves.useSkill(baseSkillName);
+        setActiveSkill('威肆');
+        setSelectedTargetIds([]);
+      }
+      return;
+    }
+
+    if (baseSkillName === '昭凶') {
+      moves.simazhaoZhaoxiong();
+      return;
+    }
+
+    if (baseSkillName.startsWith('荡异')) {
+      moves.simazhaoDangyiAdd();
       return;
     }
 
@@ -6192,12 +6579,13 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
       if (daoxin >= 75) displaySkills.push('放逐');
       if (daoxin >= 99) displaySkills.push('决进');
     }
-    if (general && general.name === '谋黄忠') {
-      const recorded = Array.isArray(player.liegongSuits) ? player.liegongSuits : [];
-      if (recorded.length > 0) {
-        displaySkills = [...displaySkills, `烈弓已记:${recorded.join('')}`];
-      }
+    if (general && general.name === '司马昭') {
+      const pending = typeof player.simazhaoDangyiPending === 'number' ? player.simazhaoDangyiPending : 0;
+      displaySkills = (displaySkills || []).map(s => (s === '荡异' ? `荡异(${pending})` : s));
     }
+    const liegongSuits = general && general.name === '谋黄忠'
+      ? (Array.isArray(player.liegongSuits) ? player.liegongSuits : [])
+      : [];
     if (general && general.name === '留赞') {
       const fenyinLabel = player.fenyinSuit ? `奋音(${player.fenyinSuit})` : null;
       if (fenyinLabel) {
@@ -7034,6 +7422,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               jiuAnimKey={player.jiuAnimKey}
               seatBadge={showSeatBadge ? seatBadgeMap[id] : null}
               isTurnedOver={player.is_turned_over}
+              liegongSuits={liegongSuits}
               daoxinValue={daoxinValue}
               onDaoXinAdd5={onDaoXinAdd5}
               onDaoXinAdd15={onDaoXinAdd15}
@@ -7077,6 +7466,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               jiuAnimKey={player.jiuAnimKey}
               seatBadge={showSeatBadge ? seatBadgeMap[id] : null}
               isTurnedOver={player.is_turned_over}
+              liegongSuits={liegongSuits}
               daoxinValue={daoxinValue}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
@@ -8477,7 +8867,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
       {/* Skill Selection Overlay */}
       {activeSkill && (
         <div style={{
-          position: 'absolute',
+          position: 'fixed',
           top: '20%',
           left: '50%',
           transform: 'translateX(-50%)',
@@ -8485,12 +8875,19 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
           padding: '10px 20px',
           borderRadius: '8px',
           color: 'white',
-          zIndex: 100,
+          zIndex: 3100,
           display: 'flex',
           alignItems: 'center',
-          gap: '10px'
+          gap: '10px',
+          pointerEvents: 'auto'
         }}>
-          <span>请选择 {activeSkill} 的目标</span>
+          <span>
+            {activeSkill === '挟征盖牌'
+              ? '请选择盖牌目标（1~2名有手牌角色，可选自己）'
+              : activeSkill === '挟征目标'
+                ? '请选择兵临城下的目标'
+                : `请选择 ${activeSkill} 的目标`}
+          </span>
           {activeSkill === '缮甲' && (
             <button 
               onClick={() => {
@@ -8670,6 +9067,116 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               确定
             </button>
           )}
+          {(activeSkill === '挟征盖牌' || activeSkill === '挟征目标') && selectedTargetIds.length > 0 && (
+            <button
+              onClick={() => {
+                if (activeSkill === '挟征盖牌') {
+                  if (selectedTargetIds.length < 1 || selectedTargetIds.length > 2) {
+                    alert("请选择1~2名目标");
+                    return;
+                  }
+                  const invalid = selectedTargetIds.some(id => !Array.isArray(G.hands[id]) || (G.hands[id] || []).length === 0);
+                  if (invalid) {
+                    alert("目标必须有手牌");
+                    return;
+                  }
+                  moves.simazhaoXiezhenStart(selectedTargetIds);
+                  setActiveSkill('挟征目标');
+                  setSelectedTargetIds([]);
+                  return;
+                }
+
+                if (activeSkill === '挟征目标') {
+                  if (selectedTargetIds.length !== 1) {
+                    alert("请选择一名目标");
+                    return;
+                  }
+                  moves.simazhaoXiezhenSelectTarget(selectedTargetIds[0]);
+                  setActiveSkill(null);
+                  setSelectedTargetIds([]);
+                }
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          )}
+          {activeSkill === '谦吞' && selectedTargetIds.length > 0 && (
+            <button
+              onClick={() => {
+                if (selectedTargetIds.length !== 1) {
+                  alert("请选择一名目标");
+                  return;
+                }
+                const me = G.players[playerID];
+                if (!me || !me.general || me.general.name !== '司马昭') {
+                  alert("只有司马昭可以发动");
+                  return;
+                }
+                if (me.simazhaoFaction !== '魏') {
+                  alert("当前势力不是魏，无法发动");
+                  return;
+                }
+                if (G.simazhaoQiantun && G.simazhaoQiantun.active) {
+                  alert("谦吞结算中");
+                  return;
+                }
+                const targetHand = G.hands[selectedTargetIds[0]] || [];
+                if (!Array.isArray(targetHand) || targetHand.length === 0) {
+                  alert("目标没有手牌");
+                  return;
+                }
+                moves.simazhaoQiantunStart(selectedTargetIds[0]);
+                setActiveSkill(null);
+                setSelectedTargetIds([]);
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          )}
+          {activeSkill === '威肆' && selectedTargetIds.length > 0 && (
+            <button
+              onClick={() => {
+                if (selectedTargetIds.length !== 1) {
+                  alert("请选择一名目标");
+                  return;
+                }
+                const targetHand = G.hands[selectedTargetIds[0]] || [];
+                if (!Array.isArray(targetHand) || targetHand.length === 0) {
+                  alert("目标没有手牌");
+                  return;
+                }
+                moves.simazhaoWeisiStart(selectedTargetIds[0]);
+                setActiveSkill(null);
+                setSelectedTargetIds([]);
+              }}
+              style={{
+                padding: '5px 10px',
+                backgroundColor: '#2ecc71',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              确定
+            </button>
+          )}
           <button 
             onClick={() => {
               if (activeSkill === '慷忾') {
@@ -8692,7 +9199,6 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
         </div>
       )}
 
-      {/* Action Log - Near Action Buttons */}
       <div style={{
         position: 'absolute',
         left: '50%',
@@ -8894,6 +9400,88 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
         />
       )}
 
+      {G.simazhaoQiantun && G.simazhaoQiantun.active && G.simazhaoQiantun.stage === 'reveal' && G.simazhaoQiantun.targetID === playerID && (
+        <CardSelectionModal
+          targetPlayer={G.players[playerID]}
+          targetHand={G.hands[playerID]}
+          onConfirm={(selected) => moves.simazhaoQiantunConfirmReveal(selected)}
+          onCancel={() => moves.simazhaoQiantunCancel()}
+          title="谦吞：请选择至少一张手牌展示"
+          singleSelection={false}
+          revealHand={true}
+          showEquip={false}
+          showJudges={false}
+          imageMode={cardImageMode}
+        />
+      )}
+
+      {G.simazhaoQiantun && G.simazhaoQiantun.active && G.simazhaoQiantun.stage === 'show' && G.simazhaoQiantun.show && (
+        <QiantunRevealModal
+          title="谦吞：展示手牌"
+          revealedCards={G.simazhaoQiantun.show.revealedCards}
+          hiddenCount={G.simazhaoQiantun.show.hiddenCount}
+          canClose={true}
+          onClose={() => moves.simazhaoQiantunAcknowledge()}
+          imageMode={cardImageMode}
+        />
+      )}
+
+      {G.simazhaoWeisi && G.simazhaoWeisi.active && G.simazhaoWeisi.stage === 'lock' && G.simazhaoWeisi.targetID === playerID && (
+        <CardSelectionModal
+          targetPlayer={G.players[playerID]}
+          targetHand={G.hands[playerID]}
+          onConfirm={(selected) => moves.simazhaoWeisiConfirmLock(selected)}
+          onCancel={() => moves.simazhaoWeisiConfirmLock([])}
+          title="威肆：请选择扣置的手牌"
+          singleSelection={false}
+          revealHand={true}
+          showEquip={false}
+          showJudges={false}
+          imageMode={cardImageMode}
+        />
+      )}
+
+      {G.simazhaoWeisi && G.simazhaoWeisi.active && G.simazhaoWeisi.stage === 'decision' && G.simazhaoWeisi.sourceID === playerID && (
+        <div style={{
+          position: 'fixed',
+          bottom: '250px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '14px',
+          zIndex: 3000
+        }}>
+          <button
+            onClick={() => moves.simazhaoWeisiGet()}
+            style={{
+              padding: '10px 26px',
+              backgroundColor: '#2ecc71',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            获取
+          </button>
+          <button
+            onClick={() => moves.simazhaoWeisiCancel()}
+            style={{
+              padding: '10px 26px',
+              backgroundColor: '#e74c3c',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            取消
+          </button>
+        </div>
+      )}
+
       {G.kangkaiSelect && G.kangkaiSelect.active && G.kangkaiSelect.stage === 'card_selection' && G.kangkaiSelect.sourcePlayerID === playerID && (
         <KangkaiCardModal
           hand={G.hands[playerID]}
@@ -8957,6 +9545,27 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
           hand={G.hands[playerID]}
           onConfirm={(index) => moves.confirmFireAttackShowCard(index)}
           onCancel={() => moves.cancelFireAttackShowCard()}
+          imageMode={cardImageMode}
+        />
+      )}
+
+      {G.simazhaoXiezhenReveal && G.simazhaoXiezhenReveal.active && (
+        <SimazhaoRevealModal
+          title="兵临城下"
+          cards={G.simazhaoXiezhenReveal.revealedCards}
+          canClose={G.simazhaoXiezhenReveal.sourceID === playerID}
+          onClose={() => moves.simazhaoXiezhenResolve()}
+          imageMode={cardImageMode}
+        />
+      )}
+
+      {G.simazhaoShowHand && G.simazhaoShowHand.active && (
+        <SimazhaoShowHandModal
+          title="司马昭展示所有手牌"
+          headerText={G.simazhaoShowHand.headerText}
+          cards={G.simazhaoShowHand.cards}
+          canClose={G.simazhaoShowHand.sourceID === playerID}
+          onClose={() => moves.simazhaoShowHandClose()}
           imageMode={cardImageMode}
         />
       )}
@@ -9142,6 +9751,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
           hand={G.hands[playerID]} 
           title={pinDianTitle}
           onConfirm={(index) => moves.selectPinDianCard(index)}
+          allowedCardIds={pinDianAllowedCardIds}
           imageMode={cardImageMode}
         />
       )}
