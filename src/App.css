@@ -171,3 +171,118 @@
   animation: beam-shot 0.6s ease-out forwards;
   pointer-events: none;
 }
+
+/* ========================================
+   Target Selection Enhancement Animations
+   ======================================== */
+
+/* Selectable target pulse animation */
+@keyframes selectable-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(124, 179, 66, 0.4);
+    border-color: #7cb342;
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(124, 179, 66, 0.7), 0 0 40px rgba(124, 179, 66, 0.3);
+    border-color: #9acd32;
+  }
+}
+
+/* Selected target glow animation */
+@keyframes selected-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(74, 144, 217, 0.6), 0 0 30px rgba(74, 144, 217, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(74, 144, 217, 0.9), 0 0 50px rgba(74, 144, 217, 0.5);
+  }
+}
+
+/* Select bounce animation */
+@keyframes select-bounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.12); }
+  50% { transform: scale(1.0); }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1.02); }
+}
+
+/* Deselect shake animation */
+@keyframes deselect-shake {
+  0%, 100% { transform: translateX(0) scale(1.02); }
+  20% { transform: translateX(-4px) scale(1.0); }
+  40% { transform: translateX(4px) scale(1.0); }
+  60% { transform: translateX(-3px) scale(1.0); }
+  80% { transform: translateX(3px) scale(1.0); }
+}
+
+/* Checkmark appear animation */
+@keyframes checkmark-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-45deg);
+  }
+  50% {
+    transform: scale(1.3) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Target prompt slide in from top */
+@keyframes slide-in-top {
+  0% {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Target order badge pop */
+@keyframes badge-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* CSS Classes for animations */
+.hero-selectable-pulse {
+  animation: selectable-pulse 1.5s ease-in-out infinite;
+}
+
+.hero-selected-glow {
+  animation: selected-glow 1.2s ease-in-out infinite;
+}
+
+.hero-select-bounce {
+  animation: select-bounce 0.35s ease-out forwards;
+}
+
+.hero-deselect-shake {
+  animation: deselect-shake 0.3s ease-out forwards;
+}
+
+.checkmark-badge {
+  animation: checkmark-appear 0.3s ease-out forwards;
+}
+
+.target-prompt-slide {
+  animation: slide-in-top 0.3s ease-out forwards;
+}
+
+.target-order-badge {
+  animation: badge-pop 0.25s ease-out forwards;
+}

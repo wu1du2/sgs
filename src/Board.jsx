@@ -1118,8 +1118,112 @@ const TianduModal = ({ card, onConfirm, onCancel, imageMode = 'url' }) => {
   );
 };
 
+// Checkmark Badge Component for selected targets
+const CheckmarkBadge = ({ visible }) => {
+  if (!visible) return null;
+  return (
+    <div className="checkmark-badge" style={{
+      position: 'absolute',
+      top: -10,
+      right: -10,
+      width: 28,
+      height: 28,
+      borderRadius: '50%',
+      backgroundColor: '#4a90d9',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: '0 2px 8px rgba(74, 144, 217, 0.6), 0 0 15px rgba(74, 144, 217, 0.4)',
+      zIndex: 25,
+      border: '2px solid rgba(255, 255, 255, 0.8)'
+    }}>
+      <span style={{ color: 'white', fontSize: 16, fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>✓</span>
+    </div>
+  );
+};
+
+// Target Order Badge Component
+const TargetOrderBadge = ({ order }) => {
+  if (!order) return null;
+  return (
+    <div className="target-order-badge" style={{
+      position: 'absolute',
+      top: -12,
+      left: -12,
+      width: 26,
+      height: 26,
+      borderRadius: '50%',
+      backgroundColor: '#ff9800',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 13,
+      fontWeight: 'bold',
+      color: 'white',
+      boxShadow: '0 2px 6px rgba(255, 152, 0, 0.5), 0 0 10px rgba(255, 152, 0, 0.3)',
+      zIndex: 25,
+      border: '2px solid rgba(255, 255, 255, 0.8)'
+    }}>
+      {order}
+    </div>
+  );
+};
+
+// Target Selection Prompt Component
+const TargetSelectionPrompt = ({ required, selected, onCancel, message }) => {
+  const isComplete = selected >= required;
+  
+  return (
+    <div className="target-prompt-slide" style={{
+      position: 'fixed',
+      top: 20,
+      left: '50%',
+      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+      color: 'white',
+      padding: '12px 24px',
+      borderRadius: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 20,
+      zIndex: 2000,
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(74, 144, 217, 0.2)',
+      border: '1px solid rgba(255, 255, 255, 0.15)'
+    }}>
+      <span style={{ fontSize: 16, fontWeight: '500' }}>
+        {message || '请选择目标'}
+        <span style={{ 
+          color: isComplete ? '#4caf50' : '#ff9800',
+          marginLeft: 10,
+          fontWeight: 'bold'
+        }}>
+          ({selected}/{required})
+        </span>
+      </span>
+      {onCancel && (
+        <button
+          onClick={onCancel}
+          style={{
+            padding: '6px 16px',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: 6,
+            color: 'white',
+            cursor: 'pointer',
+            fontSize: 14,
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+        >
+          取消
+        </button>
+      )}
+    </div>
+  );
+};
+
 // Hero Area Component
-const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0, seatBadge = null, isTurnedOver = false, liegongSuits = [], daoxinValue = null, onDaoXinAdd5, onDaoXinAdd15 }) => {
+const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["Strike", "Dodge"], portrait, isMe = false, role = 'neutral', onClick, isSelectable, isSelected, equipments = {}, onEquipClick, onModifyHP, judges = {}, onToggleJudgment, onSkillClick, scale = 1, handCount = 0, isLinked = false, onToggleChain, kuangbaoCount = 0, onKuangbaoClick, qiHui = null, onQiHuiClick, onAvatarClick, jiuAnimKey = 0, seatBadge = null, isTurnedOver = false, liegongSuits = [], daoxinValue = null, onDaoXinAdd5, onDaoXinAdd15, targetOrder = null }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
   const [qiHuiCollapsed, setQiHuiCollapsed] = React.useState(false);
   const elementRef = React.useRef(null);
@@ -1129,6 +1233,27 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
   const prevHpRef = React.useRef(hp);
   const [animationState, setAnimationState] = React.useState('idle');
   const [animKey, setAnimKey] = React.useState(0);
+  
+  const [isHovered, setIsHovered] = React.useState(false);
+  const [selectAnimState, setSelectAnimState] = React.useState('idle');
+  const [selectAnimKey, setSelectAnimKey] = React.useState(0);
+  const prevSelectedRef = React.useRef(isSelected);
+
+  React.useEffect(() => {
+    if (isSelected && !prevSelectedRef.current) {
+      setSelectAnimState('selecting');
+      setSelectAnimKey(prev => prev + 1);
+      const timer = setTimeout(() => setSelectAnimState('selected'), 350);
+      prevSelectedRef.current = true;
+      return () => clearTimeout(timer);
+    } else if (!isSelected && prevSelectedRef.current) {
+      setSelectAnimState('deselecting');
+      setSelectAnimKey(prev => prev + 1);
+      const timer = setTimeout(() => setSelectAnimState('idle'), 300);
+      prevSelectedRef.current = false;
+      return () => clearTimeout(timer);
+    }
+  }, [isSelected]);
 
   React.useEffect(() => {
     const currentHp = Number(hp);
@@ -1175,17 +1300,35 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
     return 'rgba(0,0,0,0.7)';
   };
 
+  const getSelectionAnimationClass = () => {
+    if (selectAnimState === 'selecting') return 'hero-select-bounce';
+    if (selectAnimState === 'deselecting') return 'hero-deselect-shake';
+    if (isSelected) return 'hero-selected-glow';
+    if (isSelectable) return 'hero-selectable-pulse';
+    return '';
+  };
+
+  const getDynamicScale = () => {
+    if (isHovered && isSelectable && !isSelected) return 1.06;
+    if (isSelected) return 1.02;
+    return scale;
+  };
+
   if (isMinimized) {
-    const minimizedHeight = 28; // 24px height + 4px border
+    const minimizedHeight = 28;
     const marginBottom = Math.max(0, savedHeight - minimizedHeight);
+    const minAnimClass = isSelected ? 'hero-selected-glow' : (isSelectable ? 'hero-selectable-pulse' : '');
 
     return (
       <div 
         onClick={onClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={minAnimClass}
         style={{
           width: '160px',
           height: '24px',
-          transform: `scale(${scale})`,
+          transform: `scale(${isHovered && isSelectable ? 1.04 : scale})`,
           transformOrigin: 'top center',
           backgroundColor: getBackgroundColor(),
           borderRadius: '4px',
@@ -1195,15 +1338,21 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
           color: '#e0e0e0',
           pointerEvents: 'auto',
           border: `${isSelected ? 4 : 2}px solid ${getBorderColor()}`,
-          boxShadow: isSelected ? '0 2px 8px rgba(74, 144, 217, 0.4)' : (isSelectable ? '0 2px 6px rgba(124, 179, 66, 0.3)' : '0 2px 6px rgba(0,0,0,0.3)'),
+          boxShadow: isSelected 
+            ? '0 2px 12px rgba(74, 144, 217, 0.6)' 
+            : (isSelectable 
+              ? (isHovered ? '0 2px 10px rgba(124, 179, 66, 0.5)' : '0 2px 6px rgba(124, 179, 66, 0.3)') 
+              : '0 2px 6px rgba(0,0,0,0.3)'),
           flexShrink: 0,
           cursor: isSelectable ? 'pointer' : 'default',
-          transition: 'all 0.2s ease',
+          transition: 'all 0.15s ease-out',
           padding: '0 8px',
           overflow: 'hidden',
-          marginBottom: `${marginBottom}px`
+          marginBottom: `${marginBottom}px`,
+          position: 'relative'
         }}
       >
+        {isSelected && <CheckmarkBadge visible={true} />}
         <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#ffd700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
           {name}
         </div>
@@ -1225,15 +1374,21 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
     );
   }
 
+  const baseAnimClass = animationState === 'hurt' ? 'hero-hurt' : animationState === 'recover' ? 'hero-recover' : '';
+  const selectionAnimClass = getSelectionAnimationClass();
+  const combinedClassName = [baseAnimClass, selectionAnimClass].filter(Boolean).join(' ');
+
   return (
     <div 
-      key={animKey}
+      key={`${animKey}-${selectAnimKey}`}
       ref={elementRef}
       onClick={onClick}
-      className={animationState === 'hurt' ? 'hero-hurt' : animationState === 'recover' ? 'hero-recover' : ''}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={combinedClassName}
       style={{
         width: '160px',
-        transform: `scale(${scale})`,
+        transform: `scale(${getDynamicScale()})`,
         transformOrigin: 'top center',
         backgroundColor: getBackgroundColor(),
         borderRadius: '8px',
@@ -1244,14 +1399,19 @@ const HeroArea = ({ name = "General", hp = 4, hpMax = 4, armor = 0, skills = ["S
         color: '#e0e0e0',
         pointerEvents: 'auto',
         border: `${isSelected ? 4 : 2}px solid ${getBorderColor()}`,
-        boxShadow: isSelected ? '0 4px 12px rgba(74, 144, 217, 0.5)' : (isSelectable ? '0 3px 8px rgba(124, 179, 66, 0.4)' : '0 2px 6px rgba(0,0,0,0.3)'),
+        boxShadow: isSelected 
+          ? '0 4px 20px rgba(74, 144, 217, 0.7), 0 0 30px rgba(74, 144, 217, 0.3)' 
+          : (isSelectable 
+            ? (isHovered ? '0 4px 15px rgba(124, 179, 66, 0.6), 0 0 25px rgba(124, 179, 66, 0.3)' : '0 3px 10px rgba(124, 179, 66, 0.5)') 
+            : '0 2px 6px rgba(0,0,0,0.3)'),
         flexShrink: 0,
         cursor: isSelectable ? 'pointer' : 'default',
-        animation: 'none',
-        transition: 'all 0.2s ease',
+        transition: 'all 0.15s ease-out',
         position: 'relative' 
       }}
     >
+      <CheckmarkBadge visible={isSelected} />
+      <TargetOrderBadge order={targetOrder} />
       <button
         onClick={(e) => { e.stopPropagation(); setIsMinimized(true); }}
         style={{
@@ -7391,6 +7551,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
             {(() => {
               const grantedSkills = isMe && Array.isArray(player?.grantedSkills) ? player.grantedSkills : [];
               const finalSkills = Array.from(new Set([...(displaySkills || []), ...grantedSkills]));
+              const targetOrder = isSelected ? selectedTargetIds.indexOf(id) + 1 : null;
               return (
             <HeroArea 
               name={general ? general.name : "My Hero"} 
@@ -7426,6 +7587,7 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               daoxinValue={daoxinValue}
               onDaoXinAdd5={onDaoXinAdd5}
               onDaoXinAdd15={onDaoXinAdd15}
+              targetOrder={targetOrder}
             />
               );
             })()}
@@ -7438,7 +7600,9 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
     return (
       <div style={areaStyle}>
         {/* Hero Area for Left/Right players */}
-        {!isMe && (
+        {!isMe && (() => {
+          const targetOrder = isSelected ? selectedTargetIds.indexOf(id) + 1 : null;
+          return (
           <>
             <HeroArea 
               name={general ? general.name : `Player ${id}`}
@@ -7468,15 +7632,82 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
               isTurnedOver={player.is_turned_over}
               liegongSuits={liegongSuits}
               daoxinValue={daoxinValue}
+              targetOrder={targetOrder}
             />
             <JianyingDisplay suit={G.players[id].jianying?.suit} rank={G.players[id].jianying?.rank} />
           </>
-        )}
+          );
+        })()}
         
         <PlayerInfo />
       </div>
     );
   };
+
+  const getTargetSelectionInfo = () => {
+    const me = G.players[playerID];
+    if (!me) return null;
+    
+    const hand = G.hands[playerID] || [];
+    const selectedCards = selectedCardIndices.map(i => hand[i]).filter(Boolean);
+    
+    if (selectedCards.length > 0) {
+      const card = selectedCards[0];
+      if (['顺手牵羊', '过河拆桥', '借刀杀人', '火攻'].includes(card.name)) {
+        return { required: 1, selected: selectedTargetIds.length, message: `请选择【${card.name}】的目标` };
+      }
+      if (card.name === '铁索连环') {
+        return { required: 0, selected: selectedTargetIds.length, message: '铁索连环：选择0-2名目标', max: 2 };
+      }
+      if (['杀', '火杀', '雷杀'].includes(card.name)) {
+        return { required: 1, selected: selectedTargetIds.length, message: '请选择杀的目标' };
+      }
+      if (card.name === '决斗') {
+        return { required: 1, selected: selectedTargetIds.length, message: '请选择决斗目标' };
+      }
+    }
+    
+    if (G.taoluan && G.taoluan.active && G.taoluan.stage === 'select_targets' && G.taoluan.sourceID === playerID) {
+      const name = G.taoluan.declaredName;
+      if (['顺手牵羊', '过河拆桥', '借刀杀人', '火攻'].includes(name)) {
+        return { required: 1, selected: selectedTargetIds.length, message: `滔乱：选择【${name}】目标` };
+      }
+      if (name === '铁索连环') {
+        return { required: 0, selected: selectedTargetIds.length, message: '滔乱：铁索连环', max: 2 };
+      }
+    }
+    
+    if (mizhaoStage === 'selectA') {
+      return { required: 1, selected: mizhaoTargetA ? 1 : 0, message: '密诏：选择目标A' };
+    }
+    if (mizhaoStage === 'selectB') {
+      return { required: 1, selected: mizhaoTargetB ? 1 : 0, message: '密诏：选择目标B' };
+    }
+    
+    if (G.huishi && G.huishi.active && G.huishi.stage === 'choose_recipient' && G.huishi.sourceID === playerID) {
+      return { required: 1, selected: huishiRecipientId ? 1 : 0, message: '慧识：选择目标' };
+    }
+    
+    if (G.chongzhenSelect && G.chongzhenSelect.active && G.chongzhenSelect.stage === 'target_selection' && G.chongzhenSelect.sourcePlayerID === playerID) {
+      return { required: 1, selected: selectedTargetIds.length, message: '冲阵：选择目标' };
+    }
+    
+    if (G.caomaoQingzheng && G.caomaoQingzheng.active && G.caomaoQingzheng.stage === 'select_target' && G.caomaoQingzheng.sourceID === playerID) {
+      return { required: 1, selected: selectedTargetIds.length, message: '清正：选择目标' };
+    }
+    
+    if (G.caomaoFangzhu && G.caomaoFangzhu.active && G.caomaoFangzhu.stage === 'select_target' && G.caomaoFangzhu.sourceID === playerID) {
+      return { required: 1, selected: selectedTargetIds.length, message: '放逐：选择目标' };
+    }
+    
+    if (activeSkill) {
+      return { required: 1, selected: selectedTargetIds.length, message: `技能【${activeSkill}】：选择目标` };
+    }
+    
+    return null;
+  };
+
+  const targetSelectionInfo = getTargetSelectionInfo();
 
   return (
     <div
@@ -7497,6 +7728,18 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
       position: 'relative',
       overflow: 'auto'
     }}>
+      {targetSelectionInfo && (
+        <TargetSelectionPrompt 
+          required={targetSelectionInfo.required}
+          selected={targetSelectionInfo.selected}
+          message={targetSelectionInfo.message}
+          max={targetSelectionInfo.max}
+          onCancel={() => {
+            setSelectedTargetIds([]);
+            setSelectedCardIndices([]);
+          }}
+        />
+      )}
       {pojunAutoPrompt && (
         <div style={{
           position: 'fixed',
