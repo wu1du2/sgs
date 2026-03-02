@@ -125,6 +125,18 @@ export const caocongSkill = {
       const playerName = player && player.general ? player.general.name : `Player ${playerID}`;
       G.actionLog.push(`${playerName} 取消了称象`);
       G.caocongChengxiang = null;
+    },
+
+    caocongRenxinFlip: ({ G, playerID }) => {
+      const player = G.players[playerID];
+      if (!player || !player.general || player.general.name !== '曹冲') return;
+      player.is_turned_over = !player.is_turned_over;
+      const playerName = player.general.name;
+      if (player.is_turned_over) {
+        G.actionLog.push(`${playerName} 发动仁心，翻面`);
+      } else {
+        G.actionLog.push(`${playerName} 发动仁心，翻回正面`);
+      }
     }
   }
 };

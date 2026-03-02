@@ -17,7 +17,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/势太史慈.png",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "酣战: 界面交互调整数值（体力上限/体力/已损体力/存活数）。",
+      "战烈: 界面交互调整数值（X值）。",
+      "振锋: 界面交互调整数值。"
+    ]
   },
   {
     "id": "界沮授",
@@ -35,7 +40,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/界沮授.jpg",
-    "initial_armor": 3
+    "initial_armor": 3,
+    "skills_info": [
+      "渐营: 点击发动，选择一张手牌，可将其视为【杀】、【酒】或【桃】使用（需符合使用规则）。",
+      "矢北: 手动扣血。"
+    ]
   },
   {
     "id": "友诸葛亮",
@@ -75,7 +84,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/友徐庶.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "侠行: [未实现]游戏开始时装备玄剑。",
+      "启诲: 使用不同类别牌获得标记。集齐3类后点击发动：回血重铸/摸2/下张牌无限制。",
+      "共砺: 无需实现。"
+    ]
   },
   {
     "id": "势魏延",
@@ -95,7 +109,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/势魏延.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "壮誓: 出牌阶段开始时选择效果（弃牌无距离/失血不计次数）。",
+      "饮战: 造成伤害后点击发动，弃置目标一张牌。",
+      "忠傲: 无需实现，请参考技能描述。"
+    ]
   },
   {
     "id": "神鲁肃",
@@ -151,7 +170,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/张让.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "滔乱: 点击发动。将一张牌当任意基本/普通锦囊使用。结算后令一名角色交给你一张牌或令你流失1点体力。"
+    ]
   },
   {
     "id": "马钧",
@@ -185,6 +207,10 @@
       "魄袭:出牌阶段限一次，你可以观看一名其他角色的手牌，且你可以弃置你与其手牌中共计四张不同花色的牌，然后若你以此法被弃置的牌数为：\n【0】你减少1点体力上限；\n【1】你结束出牌阶段且你本回合的手牌上限-1；\n【3】你回复1点体力；\n【4】你摸四张牌。",
       "劫营:①回合开始时，若场上没有角色有“营”标记，你获得“营”标记；②结束阶段，你可以将“营”标记交给一名其他角色；③有“营”标记的其他角色的回合结束后，移去“营”标记，你获得其所有手牌。\n【营】：摸牌阶段多摸一张牌；出牌阶段可多使用一张【杀】；手牌上限+1。"
     ],
+    "skills_info": [
+      "魄袭: 点击发动，选择一名其他角色，查看其手牌。请自觉选择共计4张牌弃置。若弃置了你的：0张牌，减1上限；3张牌，回1血；4张牌，摸4牌。（未实现“弃1张”的效果）。",
+      "劫营: 点击发动，选择一名其他角色，直接获得其所有手牌。（无“营”标记机制，请按需手动使用）。"
+    ],
     "enable": true,
     "localPortrait": "/images/generals/神甘宁.jpg",
     "initial_armor": 0
@@ -207,7 +233,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/神陆逊.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "军略: 造成/受到伤害，点击后增加标记。",
+      "摧克: 无需实现。点击后清空标记。",
+      "绽火: 无需实现。点击后清空标记。"
+    ]
   },
   {
     "id": "徐荣",
@@ -245,7 +276,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/界钟会.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "权计: 手动触发。摸1牌，将1手牌置为“权”。",
+      "自立: 点击发动觉醒。减1上限，回复1血或摸2牌。",
+      "排异: 点击发动。移去一张“权”，令一名角色摸2张牌。"
+    ]
   },
   {
     "id": "杨彪",
@@ -265,7 +301,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/杨彪.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "昭汉: 准备阶段点击发动。前4次加体力上限回复体力，后3次减体力上限。",
+      "让节: 受伤后点击发动。选择获得牌（锦囊/基本/装备）或移动场上的牌。",
+      "义争: 出牌阶段限一次。点击发动，与体力不大于你的角色拼点。赢令其跳过摸牌，输减1上限。"
+    ]
   },
   {
     "id": "界徐盛",
@@ -281,7 +322,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/界徐盛.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "破军: 使用【杀】指定目标后发动。将其至多X张牌（X为体力值）移出游戏，点击归还。"
+    ]
   },
   {
     "id": "文鸯",
@@ -303,7 +347,13 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/文鸯.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "却敌: 点击发动，减1上限。",
+      "仇决: 杀死角色后点击发动，加1上限摸2牌。",
+      "椎锋: 点击发动，摸对手一张牌。",
+      "冲坚: 点击发动，摸对手x张牌。"
+    ]
   },
   {
     "id": "曹髦",
@@ -324,7 +374,14 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/曹髦.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "潜龙: 自动获得道心值。",
+      "清正: (道心>=25) 出牌阶段开始时点击发动。弃置一种花色的所有手牌，令一名角色弃置同花色手牌。",
+      "酒诗: (道心>=50) 点击发动，翻面视为使用【酒】。获得一张锦囊。",
+      "放逐: (道心>=75) 点击发动，选择一名角色，令其技能失效或不能使用非锦囊手牌。",
+      "决进: (道心>=99) 限定技。点击发动，全场体力变1，获得护甲，获得光环效果。"
+    ]
   },
   {
     "id": "十常侍",
@@ -360,7 +417,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/谋黄盖.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "（未实现）苦肉: 出牌阶段开始时点击发动。交给一名角色一张牌，失去体力并获得护甲。",
+      "诈降: 摸牌阶段自动多摸牌。使用牌无距离次数限制（无需实现）。"
+    ]
   },
   {
     "id": "神郭嘉",
@@ -382,7 +443,13 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/神郭嘉.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "慧识: 点击发动，判定直到花色重复。若判定牌生效，可将其交给一名角色。",
+      "辉逝: 点击发动，选择一名角色，令其摸4张牌（你减2上限）。",
+      "天翊: 准备阶段点击觉醒。加上限回血，令一名角色获得【佐幸】。",
+      "佐幸: 出牌阶段点击发动，减上限，视为使用一张普通锦囊。"
+    ]
   },
   {
     "id": "界虞翻",
@@ -606,7 +673,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/马良.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "自书：无需实现",
+      "应援 已实现，未填写。"
+    ]
   },
   {
     "id": "曹昂",
@@ -622,7 +693,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/曹昂.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "慷忾: 点击发动。摸一张牌，然后选择一张手牌或装备牌交给该角色。"
+    ]
   },
   {
     "id": "界关羽",
@@ -658,7 +732,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/界吕布.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "无双: 无需实现",
+      "利驭: 点击发动。获得目标一张牌（手牌/装备/判定）。"
+    ]
   },
   {
     "id": "界孙权",
@@ -676,7 +754,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/界孙权.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "制衡: 无需实现。",
+      "救援: 无需实现。"
+    ]
   },
   {
     "id": "界于禁",
@@ -712,7 +794,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/戏志才.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "天妒 （已实现未填写）",
+      "先辅 （未实现，只需要在开局选定角色（仅自己可见）。再次点击之后公开）",
+      "筹策 （已实现未填写）"
+    ]
   },
   {
     "id": "蔡文姬",
@@ -806,7 +893,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/曹髦.png",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "归心: 受到伤害后自动触发。获得每名角色一张牌，然后翻面。",
+      "飞影: 锁定技，距离+1。"
+    ]
   },
   {
     "id": "神赵云",
@@ -824,7 +915,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/神赵云.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "绝境: 手牌上限+2。濒死摸牌。",
+      "龙魂: 可转化手牌使用。点击发动（主要用于弃置他人牌）：选择一名角色，弃置其一张牌。"
+    ]
   },
   {
     "id": "神吕布",
@@ -846,7 +941,13 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/神吕布.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "狂暴: 造成/受到伤害获得标记。",
+      "无谋: 使用锦囊时选择弃标记或失血。",
+      "无前: 出牌阶段点击发动。消耗标记，无视防具且拥有无双。",
+      "神愤: 出牌阶段点击发动。消耗6标记，全场伤害、弃牌、翻面。"
+    ]
   },
   {
     "id": "神张辽",
@@ -880,7 +981,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/骆统.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "勤政: 锁定技。每使用/打出3/5/8张牌时，自动获得对应类别的牌。"
+    ]
   },
   {
     "id": "张绣",
@@ -898,7 +1002,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/张绣.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "雄乱: 限定技。点击发动，废除判定/装备区，指定角色不能响应牌且无距离限制。",
+      "从谏: 点击发动，交给其他目标一张牌并摸牌（给装备摸2）。"
+    ]
   },
   {
     "id": "孙鲁育",
@@ -916,7 +1024,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/孙鲁育.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "魅步: 无需实现",
+      "穆穆: 出牌阶段开始时点击发动。弃置一名角色装备，或获得其防具。"
+    ]
   },
   {
     "id": "刘焉",
@@ -934,7 +1046,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/刘焉.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "图射: （未实现）使用非装备牌指定目标后，若无手牌则摸X张牌（符合条件询问用户是否摸牌1/摸牌2/摸牌3/取消））。",
+      "立牧: 出牌阶段点击发动。将一张方块牌（手牌/装备）当【乐不思蜀】对自己使用，并回复1点体力。"
+    ]
   },
   {
     "id": "刘协",
@@ -952,7 +1068,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/刘协.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "天命: 无需实现。",
+      "密诏: 出牌阶段点击发动。交给一名角色所有手牌，令其与另一名角色拼点。"
+    ]
   },
   {
     "id": "神荀彧",
@@ -988,7 +1108,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/曹纯.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "缮甲: 无需实现，只需要计数"
+    ]
   },
   {
     "id": "神孙策",
@@ -1028,7 +1151,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/界李儒.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "绝策: （未实现）点击发动。对角色造成1点伤害。",
+      "灭计: 点击发动，将一张黑色锦囊置于牌堆顶，令一名有牌角色选择：交给你一张锦囊牌，或弃置两张非锦囊牌。",
+      "焚城: （未实现）限定技。点击发动，令所有其他角色依次弃置X张牌或受2点火伤。"
+    ]
   },
   {
     "id": "许攸",
@@ -1048,7 +1176,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/许攸.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "成略: 出牌阶段限一次。点击发动，摸1弃2（阳）或摸2弃1（阴），并切换状态。",
+      "恃才: 使用牌后，该牌进入恃才区。可点击恃才区卡牌将其置于牌堆顶并从牌堆底摸一张牌。（部分未实现，装备牌使用后，也出现在恃才的快捷按钮中，确定后也会控顶）",
+      "寸目: 锁定技。摸牌改为从牌堆底摸牌。"
+    ]
   },
   {
     "id": "留赞",
@@ -1064,7 +1197,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/留赞.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "奋音: 使用牌颜色与上一张不同时，自动摸一张牌。（未实现，满足条件的时候，在出牌按钮旁边新增一个摸牌按钮）"
+    ]
   },
   {
     "id": "鲍信",
@@ -1082,7 +1218,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/鲍信.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "募讨: 点击发动，选择一名角色。其手牌中所有【杀】将被取出并随机分配给其他角色，最后一名获得【杀】的角色受到伤害。",
+      "毅谋: 点击发动。可选：1.令其获得一张【杀】；2.令其交给另一名角色一张手牌并摸一张牌。"
+    ]
   },
   {
     "id": "崔琰",
@@ -1120,7 +1260,12 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/杜预.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "武库: 有人使用装备时自动获得标记。",
+      "三陈: 标记满3个后，结束阶段点击觉醒。加1上限回1血，获得灭吴。",
+      "灭吴: 觉醒后点击发动，消耗标记转化手牌/装备使用。"
+    ]
   },
   {
     "id": "高览",
@@ -1138,7 +1283,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/高览.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "无需实现。"
+    ]
   },
   {
     "id": "郝昭",
@@ -1154,7 +1302,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/郝昭.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "镇骨: 结束阶段点击发动。选择一名角色，令其手牌数与你一致。"
+    ]
   },
   {
     "id": "黄盖",
@@ -1170,7 +1321,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/黄盖.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "苦肉: 点击发动。失去1点体力，摸两张牌。"
+    ]
   },
   {
     "id": "黄月英",
@@ -1189,7 +1343,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/黄月英.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "集智: 无需实现。",
+      "奇才: 无需实现。"
+    ]
   },
   {
     "id": "界蔡文姬",
@@ -1207,7 +1365,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/界蔡文姬.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "悲歌: 一名角色受【杀】伤后点击发动。弃牌判定产生效果。",
+      "断肠: 锁定技。死亡时令杀手失去技能。"
+    ]
   },
   {
     "id": "李傕",
@@ -1225,7 +1387,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/李傕.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "狼袭: 点击发动。选择一名体力不大于你的角色，对其造成0-2点随机伤害。",
+      "亦算: 当普通锦囊进入弃牌堆时，点击发动。减1上限获得之。"
+    ]
   },
   {
     "id": "谋黄忠",
@@ -1241,7 +1407,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/谋黄忠.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "烈弓: 自动记录花色。使用杀指定目标后点击发动，增加伤害并封印花色。"
+    ]
   },
   {
     "id": "谋马超",
@@ -1259,7 +1428,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/谋马超.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "马术: 锁定技，距离-1。",
+      "铁骑: 使用杀指定目标后点击发动。进行谋弈（获得牌或摸牌）。"
+    ]
   },
   {
     "id": "SP赵云",
@@ -1277,7 +1450,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/SP赵云.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "龙胆: 选中【杀】或【闪】时可点击“龙胆”按钮转化为另一张使用。",
+      "冲阵: 发动龙胆后自动触发，获得对方一张手牌。点击冲阵也能手动触发"
+    ]
   },
   {
     "id": "神周瑜",
@@ -1295,7 +1472,11 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/神周瑜.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "琴音: 弃牌阶段结束时，若弃置2张以上手牌，点击发动。全场回血或失血。",
+      "业炎: 出牌阶段点击发动。选择目标造成火焰伤害（可弃牌失血增加伤害）。"
+    ]
   },
   {
     "id": "司马昭",
@@ -1319,7 +1500,14 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/司马昭.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "挟征: 点击发动，选择两名角色，将其随机手牌置于牌堆顶，视为对其使用兵临城下。",
+      "谦吞: 点击发动，令一名角色展示手牌并拼点。赢获得展示牌，输获得未展示牌。",
+      "威肆: 点击发动，令一名角色扣置手牌，对其使用【决斗】。造成伤害后获得其一张手牌。",
+      "昭凶: 点击发动。势力变为晋，获得【荡异】。",
+      "荡异: 造成伤害时自动触发。伤害+1（每局限2次），记录数字。"
+    ]
   },
   {
     "id": "曹冲",
@@ -1337,6 +1525,10 @@
     ],
     "enable": true,
     "localPortrait": "/images/generals/曹冲.jpg",
-    "initial_armor": 0
+    "initial_armor": 0,
+    "skills_info": [
+      "称象: 点击发动（受伤后）。亮出5张牌，手动选择点数和<=13的牌获得。",
+      "仁心: 点击发动，翻面。"
+    ]
   }
 ]

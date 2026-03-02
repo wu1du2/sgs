@@ -70,31 +70,17 @@ export const xuyouSkill = {
         },
 
         xuyouChengLue: ({ G, playerID, random }) => {
-            // Check if already used this turn? Prompt says "出牌阶段限一次" in json, but user description doesn't explicitly limit it.
-            // But usually skills are limited. However, user said "Strictly follow my description". 
-            // Description: "Cheng Lue (Yang): Click...". It doesn't say "Once per phase".
-            // BUT, if I don't limit it, they can draw infinite cards?
-            // "Click afterwards... skill name changes".
-            // If it changes, maybe the state change implies the limit or progression.
-            // I'll assume no hard limit unless implied by state. 
-            // But usually "Click" implies an action.
-            // Let's implement the state toggle.
-            
             // Initialize state if needed
             if (!G.players[playerID].xuyouState) {
                 G.players[playerID].xuyouState = 'yang'; // Default to Yang
             }
+            
+            // 1. Clear recorded suits
+            G.players[playerID].chengLueSuits = [];
 
             const state = G.players[playerID].xuyouState;
 
             if (state === 'yang') {
-                // Draw 1 (from bottom? User says "Xu You clicks deck draw cards...". 
-                // Skill says "Xu You draw 1 card". Does skill draw follow special mechanism?
-                // Usually yes, "draw cards" triggers character passives.
-                // "Special mechanism: When Xu You clicks deck...". This skill is clicking skill button.
-                // But "Cun Mu" says "When you draw cards...".
-                // I will assume drawing from skill also draws from bottom.
-                
                 // Draw 1
                  if (G.deck.length === 0) {
                     if (G.discardPile.length > 0) {
@@ -161,7 +147,7 @@ export const xuyouSkill = {
             if (state === 'yang') {
                 G.players[playerID].xuyouState = 'yin';
             } else {
-                G.players[playerID].xuyouState = 'yin'; // User said "Then skill name changes to Cheng Lue (Yin)"
+                G.players[playerID].xuyouState = 'yang';
             }
 
             G.xuyouChengLueSelect = { active: false, stage: null, playerID: null };
@@ -207,45 +193,10 @@ export const xuyouSkill = {
              cardsPlayed.forEach(card => {
                 // 1. Equipment
                 if (['武器', '防具', '加一', '减一'].includes(card.type)) {
-                    let slot = '';
-                    if (card.type === '武器') slot = 'weapon';
-                    else if (card.type === '防具') slot = 'armor';
-                    else if (card.type === '加一') slot = 'plusOne';
-                    else if (card.type === '减一') slot = 'minusOne';
-                    
-                    const oldCard = G.players[playerID].equipments[slot];
-                    if (oldCard) {
-                        addCardsToDiscard(G, oldCard);
-                    }
-                    G.players[playerID].equipments[slot] = card;
-                    G.actionLog.push(`${playerName} 装备了 ${card.name}`);
-                    // Equipment stays on board, NOT to Shi Cai area immediately?
-                    // "Xu You played a card... settle...".
-                    // Equipment is "used". Does it go to Shi Cai?
-                    // User: "After using a card... it enters Shi Cai area".
-                    // Usually equipment enters play area. If it enters Shi Cai area, it's not equipped.
-                    // "Includes equipment cards" in description suggests they ARE included.
-                    // But if I put it in Shi Cai area, it's not equipped.
-                    // The prompt says: "若此牌与你本回合使用的牌类型均不同（包括装备牌），你可以将此牌置于牌堆顶...".
-                    // That is the CONDITION.
-                    // But the ACTION is: "许攸出牌后，牌不会进入弃牌堆，而是进入恃才区域".
-                    // If I equip a weapon, it doesn't go to discard pile anyway. It goes to slot.
-                    // So maybe Shi Cai only applies to cards that WOULD go to discard pile?
-                    // "Xu You played a card... card will not go to discard pile, but to Shi Cai area".
-                    // Equipment goes to slot. So it doesn't apply.
-                    // BUT, what if I replace a weapon? The OLD weapon goes to discard.
-                    // The PLAYED card is the new weapon. It goes to slot.
-                    // So I assume Shi Cai only intercepts cards that are discarded after use (Basic, Scrolls).
-                    // Wait, "Shi Cai" text in prompt: "许攸出牌后，牌不会进入弃牌堆，而是进入恃才区域".
-                    // If I play a Slash, it goes to discard. So it goes to Shi Cai.
-                    // If I play a Weapon, it goes to Slot. So it stays in Slot.
-                    // Unless the skill implies "You play it, it resolves, then goes to Shi Cai INSTEAD of discard".
-                    // Since Weapon stays in Slot, it doesn't go to discard.
-                    // So I will only intercept Non-Equipment, Non-Delayed-Scroll cards?
-                    // Or maybe even Equipment goes to Shi Cai? If so, you can't equip anything. That would be broken.
-                    // So I assume Equipment works as normal (goes to slot).
-                    // What about Delayed Scrolls (Lightning)? They go to Judge area.
-                    // So only Basic and Instant Scrolls go to Shi Cai.
+                    // Plan: Move to Shicai zone, not equipped.
+                    if (!G.players[playerID].shicai) G.players[playerID].shicai = [];
+                    G.players[playerID].shicai.push(card);
+                    G.actionLog.push(`${playerName} 将装备 ${card.name} 置于恃才区域（未装备）`);
                 } 
                 else if (['乐', '兵', '电'].includes(card.type)) {
                      // Delayed scrolls go to judge area.

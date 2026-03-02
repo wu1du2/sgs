@@ -295,9 +295,10 @@ export const simazhaoSkill = {
     simazhaoQiantunAcknowledge: ({ G, playerID }) => {
       const q = G.simazhaoQiantun;
       if (!q || !q.active || q.stage !== 'show' || !q.show) return;
-      q.show.acknowledged[playerID] = true;
-      const all = Object.keys(G.players || {}).every(id => q.show.acknowledged[id]);
-      if (!all) return;
+      
+      // Source or Target can acknowledge to prevent deadlock if one is AFK
+      if (playerID !== q.sourceID && playerID !== q.targetID) return;
+
       q.stage = 'pindian';
       q.show = null;
       G.pindian = {
