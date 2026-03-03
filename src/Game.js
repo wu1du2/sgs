@@ -139,7 +139,7 @@ const getNextBidder = (current) => {
   return BID_ORDER[(index + 1) % BID_ORDER.length];
 };
 
-const assignLandlord = (G, playerID, amount) => {
+const assignLandlord = (G, playerID, amount, rng) => {
   G.landlord = playerID;
   G.bidAmount = amount;
   G.highestBid = amount;
@@ -152,6 +152,38 @@ const assignLandlord = (G, playerID, amount) => {
       if (G.players[pid].general) {
         G.players[pid].hpMax += 1;
         G.players[pid].hp += 1;
+      }
+      // Give landlord 2 extra general options
+      if (G.generalOptions && G.generalOptions[pid]) {
+        // Collect all used generals
+        const usedGeneralIds = new Set();
+        Object.values(G.generalOptions).forEach(options => {
+            options.forEach(g => usedGeneralIds.add(g.id));
+        });
+
+        // Filter available generals
+        const available = ENABLED_GENERALS.filter(g => !usedGeneralIds.has(g.id));
+        
+        // Randomly select 2
+        const extra = [];
+        if (rng) {
+            const shuffled = shuffle(available, rng);
+            while (extra.length < 2 && shuffled.length > 0) {
+                extra.push(shuffled.pop());
+            }
+        } else {
+             // Fallback if no rng provided (shouldn't happen if properly called)
+             console.warn('No RNG provided to assignLandlord');
+             while (extra.length < 2 && available.length > 0) {
+                const idx = Math.floor(Math.random() * available.length);
+                extra.push(available.splice(idx, 1)[0]);
+            }
+        }
+        
+        G.generalOptions[pid].push(...extra);
+        if (G.generalChangeUsed && G.generalChangeUsed[pid]) {
+            G.generalChangeUsed[pid].push(false, false);
+        }
       }
     } else {
       G.players[pid].role = 'peasant';
@@ -394,9 +426,12 @@ const playCardsInternal = ({ G, playerID, random }, cardIndices, targetIds) => {
       
       const player = G.players[playerID];
       if (currentColor && player.lastPlayedCardColor && player.lastPlayedCardColor !== currentColor) {
-          drawCards(G, playerID, 1, random);
+          G.fenyinTrigger = {
+              active: true,
+              playerID: playerID
+          };
           const playerName = player.general ? player.general.name : `Player ${playerID}`;
-          G.actionLog.push(`${playerName} 发动奋音，摸一张牌`);
+          G.actionLog.push(`${playerName} 触发奋音，等待操作`);
       }
       if (currentColor) {
           player.lastPlayedCardColor = currentColor;
@@ -1833,7 +1868,7 @@ export const CardGame = {
         });
       }
     },
-    claimLandlord: ({ G, playerID }, amount) => {
+    claimLandlord: ({ G, playerID, random }, amount) => {
       if (G.landlord !== null) return;
       if (!playerID || playerID !== G.bidTurn) return;
       if (![0, 100, 200, 300].includes(amount)) return;
@@ -1844,7 +1879,7 @@ export const CardGame = {
         if (!G.highestBidder && G.passCount >= 2) return;
         G.passCount += 1;
         if (G.highestBidder && G.passCount >= 2) {
-          assignLandlord(G, G.highestBidder, highestBid);
+          assignLandlord(G, G.highestBidder, highestBid, random);
           return;
         }
         G.bidTurn = getNextBidder(G.bidTurn);
@@ -1854,7 +1889,7 @@ export const CardGame = {
       if (amount <= highestBid) return;
 
       if (amount === 300) {
-        assignLandlord(G, playerID, 300);
+        assignLandlord(G, playerID, 300, random);
         return;
       }
 
@@ -3683,6 +3718,24 @@ export const CardGame = {
             playerID: null,
             card: null
         };
+    },
+
+    confirmFenyin: ({ G, random }, playerID) => {
+        if (!G.fenyinTrigger || !G.fenyinTrigger.active || G.fenyinTrigger.playerID !== playerID) return;
+        
+        drawCards(G, playerID, 1, random);
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 发动奋音，摸一张牌`);
+        
+        G.fenyinTrigger = { active: false, playerID: null };
+    },
+
+    cancelFenyin: ({ G }, playerID) => {
+        if (!G.fenyinTrigger || !G.fenyinTrigger.active || G.fenyinTrigger.playerID !== playerID) return;
+        
+        G.fenyinTrigger = { active: false, playerID: null };
+        const playerName = G.players[playerID].general ? G.players[playerID].general.name : `Player ${playerID}`;
+        G.actionLog.push(`${playerName} 放弃发动奋音`);
     }
   },
 };

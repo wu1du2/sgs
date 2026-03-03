@@ -10169,6 +10169,68 @@ export function CardBoard({ ctx, G, moves, playerID, userId, roomId, enableLobby
         />
       )}
       
+      {/* Fenyin Modal */}
+      {G.fenyinTrigger && G.fenyinTrigger.active && G.fenyinTrigger.playerID === playerID && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 3000,
+          color: 'white',
+        }}>
+          <div style={{
+            backgroundColor: '#333',
+            padding: '30px',
+            borderRadius: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            alignItems: 'center',
+            boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+          }}>
+            <h3 style={{ margin: 0, color: '#ffd700' }}>奋音触发</h3>
+            <div style={{ fontSize: '16px' }}>是否发动奋音摸一张牌？</div>
+            <div style={{ display: 'flex', gap: '20px' }}>
+              <button
+                onClick={() => moves.cancelFenyin(playerID)}
+                style={{
+                  padding: '10px 30px',
+                  backgroundColor: '#95a5a6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: 'bold'
+                }}
+              >
+                取消
+              </button>
+              <button
+                onClick={() => moves.confirmFenyin(playerID)}
+                style={{
+                  padding: '10px 30px',
+                  backgroundColor: '#2ecc71',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 0 10px rgba(46, 204, 113, 0.5)'
+                }}
+              >
+                奋音摸牌
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Tiandu Modal */}
       {G.tianduSelect && G.tianduSelect.active && G.tianduSelect.playerID === playerID && (
         <TianduModal
